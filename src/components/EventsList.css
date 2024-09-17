@@ -1,0 +1,35 @@
+/* src/components/EventsList.css */
+
+.events-list {
+    margin-top: 30px;
+    max-height: 50vh; /* La mitad de la altura de la pantalla */
+    overflow-y: auto; /* Habilitar scroll vertical */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .events-list h2 {
+    margin-bottom: 15px;
+  }
+  
+  .events-list ul {
+    list-style-type: none;
+    padding: 0;
+  }
+  
+  .events-list li {
+    background-color: #f1f1f1;
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+  }
+  
+  .events-list li strong {
+    display: block;
+  }
+  
+  .events-list li p {
+    margin: 5px 0 0 0;
+  }
+  

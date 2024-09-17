@@ -1,0 +1,39 @@
+/* src/components/EventModal.css */
+
+@import './Modal.css';
+
+/* Estilos específicos para EventModal */
+
+.modal {
+    max-width: 90vw; /* Ajustar el ancho del modal para la pantalla de usuario */
+    padding: 20px; /* Añadido para crear espacio interno entre el contenido y los bordes */
+    box-sizing: border-box; /* Asegura que el padding se incluya en el ancho total */
+  }
+
+.modal textarea {
+    width: 100%; /* Ocupa todo el ancho disponible dentro del modal */
+    box-sizing: border-box; /* Incluye padding y borde en el ancho total */
+    height: 100px;
+    margin-bottom: 15px;
+    padding: 10px;
+    font-size: 1rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+
+.modal textarea:focus {
+  outline: none;
+  border-color: #007bff;
+}
+
+.modal-buttons {
+  justify-content: space-between; /* Distribuir los botones equitativamente */
+}
+
+.modal-buttons button {
+  flex: 1;
+}
+
+
+
+

@@ -1,0 +1,45 @@
+.admin-screen {
+    padding: 20px;
+  }
+  
+  .admin-screen h1 {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  
+  .tables-list {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  
+  .tables-list th,
+  .tables-list td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: center;
+  }
+  
+  .tables-list th {
+    background-color: #f2f2f2;
+  }
+  
+  .badge {
+    display: inline-block;
+    padding: 5px 10px;
+    font-size: 0.9rem;
+    color: #fff;
+    background-color: #dc3545;
+    border-radius: 12px;
+  }
+  
+  button {
+    margin: 0 5px;
+    padding: 5px 10px;
+    font-size: 0.9rem;
+    cursor: pointer;
+  }
+  
+  button:hover {
+    background-color: #e0e0e0;
+  }
+  
