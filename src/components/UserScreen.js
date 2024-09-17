@@ -27,7 +27,7 @@ const UserScreen = () => {
     // Obtener los datos de la mesa y enviar el evento SCAN
     const fetchTableData = async () => {
       try {
-        const response = await axios.get(`http://localhost:3001/tables/${tableId}`);
+        const response = await axios.get(`/api/tables/${tableId}`);
         const tableData = response.data;
 
         // Crear el evento SCAN
@@ -47,7 +47,7 @@ const UserScreen = () => {
         };
 
         // Enviar la actualización al servidor
-        await axios.put(`http://localhost:3001/tables/${tableId}`, updatedTable);
+        await axios.put(`/api/tables/${tableId}`, updatedTable);
 
         // Actualizar el estado local
         setTable(updatedTable);
@@ -82,7 +82,7 @@ const UserScreen = () => {
       };
 
       // Enviar la actualización al servidor
-      await axios.put(`http://localhost:3001/tables/${tableId}`, updatedTable);
+      await axios.put(`/api/tables/${tableId}`, updatedTable);
 
       // Actualizar el estado local
       setTable(updatedTable);

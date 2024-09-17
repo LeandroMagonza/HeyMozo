@@ -53,7 +53,7 @@ const AdminScreen = () => {
 
   const fetchTables = () => {
     axios
-      .get('http://localhost:3001/tables')
+      .get('/api/tables')
       .then((response) => {
         setTables(response.data);
       })
@@ -189,7 +189,7 @@ const AdminScreen = () => {
 
     // Actualizar la mesa en el servidor
     axios
-      .put(`http://localhost:3001/tables/${tableId}`, updatedTable)
+      .put(`/api/tables/${tableId}`, updatedTable)
       .then(() => {
         fetchTables(); // Volver a obtener las mesas actualizadas
       })
@@ -217,7 +217,7 @@ const AdminScreen = () => {
 
     // Actualizar la mesa en el servidor
     axios
-      .put(`http://localhost:3001/tables/${tableId}`, updatedTable)
+      .put(`/api/tables/${tableId}`, updatedTable)
       .then(() => {
         fetchTables(); // Volver a obtener las mesas actualizadas
       })
@@ -245,7 +245,7 @@ const AdminScreen = () => {
 
     // Actualizar la mesa en el servidor
     axios
-      .put(`http://localhost:3001/tables/${tableId}`, updatedTable)
+      .put(`/api/tables/${tableId}`, updatedTable)
       .then(() => {
         fetchTables(); // Volver a obtener las mesas actualizadas
       })
