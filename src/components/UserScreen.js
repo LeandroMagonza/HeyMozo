@@ -5,9 +5,8 @@ import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import ButtonsGroup from './ButtonsGroup';
 import EventsList from './EventsList';
-// Cambiamos la importación de constants.js
-const { EventTypes } = require('../constants');
 import './UserScreen.css';
+const { EventTypes } = require('../constants');
 
 const UserScreen = () => {
   const { tableId } = useParams();

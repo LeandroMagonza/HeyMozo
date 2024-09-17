@@ -2,8 +2,8 @@
 
 import React, { useState } from 'react';
 import EventModal from './EventModal';
-const { EventTypes } = require('../constants');
 import './ButtonsGroup.css';
+const { EventTypes } = require('../constants');
 
 const ButtonsGroup = ({ menuLink, texts, onEventSubmit }) => {
   const [showModal, setShowModal] = useState(false);
