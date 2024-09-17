@@ -1,34 +1,35 @@
 // server.js
 
-const jsonServer = require('json-server');
 const path = require('path');
 const express = require('express');
 const app = express();
+const { execSync } = require('child_process');
 
 // Ejecutar db.js para generar db.json
-const { execSync } = require('child_process');
 execSync('node db.js');
-
-// Configurar JSON Server
-const router = jsonServer.router('db.json');
-const middlewares = jsonServer.defaults();
-
-// Usar los middlewares de JSON Server
-app.use(middlewares);
 
 // Servir los archivos estáticos de React
 app.use(express.static(path.join(__dirname, 'build')));
 
-// Usar el router de JSON Server
-app.use('/api', router);
+// Configurar JSON Server
+const jsonServer = require('json-server');
+const apiServer = jsonServer.create();
+const apiRouter = jsonServer.router('db.json');
+const middlewares = jsonServer.defaults();
 
-// Para todas las demás rutas, servir index.html
+apiServer.use(middlewares);
+apiServer.use(apiRouter);
+
+// Usar /api como prefijo para las rutas de la API
+app.use('/api', apiServer);
+
+// Para cualquier otra ruta, devolver el index.html de React
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'build', 'index.html'));
 });
 
-// Configurar el puerto
-const port = process.env.PORT || 3000;
-app.listen(port, () => {
-  console.log('Servidor escuchando en el puerto ' + port);
+// Iniciar el servidor
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Servidor escuchando en el puerto ${PORT}`);
 });
