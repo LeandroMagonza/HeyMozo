@@ -1,35 +1,43 @@
 // server.js
 
-const path = require('path');
 const express = require('express');
+const path = require('path');
+const { createProxyMiddleware } = require('http-proxy-middleware');
+
 const app = express();
-const { execSync } = require('child_process');
 
-// Ejecutar db.js para generar db.json
-execSync('node db.js');
+// Serve static files from the React app in production
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static(path.join(__dirname, 'build')));
+}
 
-// Servir los archivos estáticos de React
-app.use(express.static(path.join(__dirname, 'build')));
+// Proxy API requests to JSON Server
+app.use('/api', createProxyMiddleware({ 
+  target: 'http://localhost:3002', // JSON Server
+  changeOrigin: true,
+  pathRewrite: {
+    '^/api': '', // remove /api prefix when forwarding to JSON Server
+  },
+}));
 
-// Configurar JSON Server
-const jsonServer = require('json-server');
-const apiServer = jsonServer.create();
-const apiRouter = jsonServer.router('db.json');
-const middlewares = jsonServer.defaults();
+// The "catchall" handler: for any request that doesn't
+// match one above, send back React's index.html file.
+if (process.env.NODE_ENV === 'production') {
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'build', 'index.html'));
+  });
+}
 
-apiServer.use(middlewares);
-apiServer.use(apiRouter);
-
-// Usar /api como prefijo para las rutas de la API
-app.use('/api', apiServer);
-
-// Para cualquier otra ruta, devolver el index.html de React
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'build', 'index.html'));
+const port = process.env.PORT || 3001;
+app.listen(port, () => {
+  console.log(`Server is running on port ${port}`);
 });
 
-// Iniciar el servidor
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Servidor escuchando en el puerto ${PORT}`);
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('SIGTERM signal received: closing HTTP server')
+  jsonServerProcess.kill();
+  server.close(() => {
+    console.log('HTTP server closed')
+  })
 });

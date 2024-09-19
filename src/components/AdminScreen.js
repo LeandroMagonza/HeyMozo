@@ -1,12 +1,11 @@
 // src/components/AdminScreen.js
 
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import EventsList from './EventsList';
+import React, { useState, useEffect, useMemo } from 'react';
+import { getTables, updateTable } from '../services/api';
 import './AdminScreen.css';
 import './AdminModal.css';
+import EventsList from './EventsList';
 const { EventTypes } = require('../constants');
-
 
 // Definición de los posibles estados de la mesa
 const TableStates = {
@@ -19,8 +18,8 @@ const TableStates = {
 const AdminScreen = () => {
   const [tables, setTables] = useState([]);
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [companyName, setCompanyName] = useState('Nombre de la Compañía');
-  const [branchName, setBranchName] = useState('Nombre de la Sucursal');
+  const companyName = 'Nombre de la Compañía';
+  const branchName = 'Nombre de la Sucursal';
   const refreshInterval = 15; // Intervalo de refresco en segundos
   const [refreshCountdown, setRefreshCountdown] = useState(refreshInterval);
 
@@ -28,19 +27,34 @@ const AdminScreen = () => {
   const [selectedTableEvents, setSelectedTableEvents] = useState([]);
   const [selectedTableNumber, setSelectedTableNumber] = useState('');
 
-  // Obtener las mesas desde el servidor al montar el componente y cada 15 segundos
   useEffect(() => {
+    const fetchTables = async () => {
+      try {
+        console.log('Attempting to fetch tables...');
+        const response = await getTables();
+        console.log('Fetched tables:', response.data);
+        setTables(response.data);
+      } catch (error) {
+        console.error('Error fetching tables:', error);
+        if (error.response) {
+          console.error('Response data:', error.response.data);
+          console.error('Response status:', error.response.status);
+          console.error('Response headers:', error.response.headers);
+        } else if (error.request) {
+          console.error('No response received:', error.request);
+        } else {
+          console.error('Error setting up request:', error.message);
+        }
+      }
+    };
+
     fetchTables();
 
-    const interval = setInterval(() => {
-      fetchTables();
-      setRefreshCountdown(refreshInterval); // Reiniciar el contador
-    }, refreshInterval * 1000);
+    const intervalId = setInterval(fetchTables, refreshInterval * 1000);
 
-    return () => clearInterval(interval);
-  }, []);
+    return () => clearInterval(intervalId);
+  }, [refreshInterval]);
 
-  // Contador regresivo para mostrar el tiempo restante hasta el próximo refresco
   useEffect(() => {
     const countdown = setInterval(() => {
       setRefreshCountdown((prevCountdown) =>
@@ -49,20 +63,8 @@ const AdminScreen = () => {
     }, 1000);
 
     return () => clearInterval(countdown);
-  }, []);
+  }, [refreshInterval]);
 
-  const fetchTables = () => {
-    axios
-      .get('/api/tables')
-      .then((response) => {
-        setTables(response.data);
-      })
-      .catch((error) => {
-        console.error('Error al obtener las mesas:', error);
-      });
-  };
-
-  // Actualizar el tiempo actual cada segundo para el temporizador
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
@@ -171,7 +173,7 @@ const AdminScreen = () => {
   };
 
   // Función para marcar eventos como vistos (agrega un evento MARK_SEEN)
-  const markEventsAsSeen = (tableId) => {
+  const markEventsAsSeen = async (tableId) => {
     const table = tables.find((t) => t.id === tableId);
     if (!table) return;
 
@@ -187,19 +189,17 @@ const AdminScreen = () => {
       events: [...table.events, newEvent],
     };
 
-    // Actualizar la mesa en el servidor
-    axios
-      .put(`/api/tables/${tableId}`, updatedTable)
-      .then(() => {
-        fetchTables(); // Volver a obtener las mesas actualizadas
-      })
-      .catch((error) => {
-        console.error('Error al actualizar los eventos:', error);
-      });
+    try {
+      await updateTable(tableId, updatedTable);
+      const response = await getTables();
+      setTables(response.data);
+    } catch (error) {
+      console.error('Error al actualizar los eventos:', error);
+    }
   };
 
   // Función para marcar la mesa como disponible (agrega un evento MARK_AVAILABLE)
-  const markAsAvailable = (tableId) => {
+  const markAsAvailable = async (tableId) => {
     const table = tables.find((t) => t.id === tableId);
     if (!table) return;
 
@@ -215,19 +215,17 @@ const AdminScreen = () => {
       events: [...table.events, newEvent],
     };
 
-    // Actualizar la mesa en el servidor
-    axios
-      .put(`/api/tables/${tableId}`, updatedTable)
-      .then(() => {
-        fetchTables(); // Volver a obtener las mesas actualizadas
-      })
-      .catch((error) => {
-        console.error('Error al actualizar la mesa:', error);
-      });
+    try {
+      await updateTable(tableId, updatedTable);
+      const response = await getTables();
+      setTables(response.data);
+    } catch (error) {
+      console.error('Error al actualizar la mesa:', error);
+    }
   };
 
   // Función para marcar la mesa como ocupada (agrega un evento MARK_OCCUPIED)
-  const markAsOccupied = (tableId) => {
+  const markAsOccupied = async (tableId) => {
     const table = tables.find((t) => t.id === tableId);
     if (!table) return;
 
@@ -243,40 +241,36 @@ const AdminScreen = () => {
       events: [...table.events, newEvent],
     };
 
-    // Actualizar la mesa en el servidor
-    axios
-      .put(`/api/tables/${tableId}`, updatedTable)
-      .then(() => {
-        fetchTables(); // Volver a obtener las mesas actualizadas
-      })
-      .catch((error) => {
-        console.error('Error al actualizar la mesa:', error);
-      });
+    try {
+      await updateTable(tableId, updatedTable);
+      const response = await getTables();
+      setTables(response.data);
+    } catch (error) {
+      console.error('Error al actualizar la mesa:', error);
+    }
   };
 
-  // Actualizar los datos de las mesas después de obtenerlos o cuando cambian
-  useEffect(() => {
-    setTables((prevTables) =>
-      prevTables.map((table) => {
-        // Calcular el estado de la mesa basado en los eventos
-        const state = getTableState(table.events);
+  // Utilizar useMemo para procesar las mesas con los datos calculados
+  const processedTables = useMemo(() => {
+    return tables.map((table) => {
+      // Calcular el estado de la mesa basado en los eventos
+      const state = getTableState(table.events);
 
-        // Obtener eventos no vistos y el temporizador
-        const { unseenEventsCount, timer } = getUnseenEvents(table.events);
+      // Obtener eventos no vistos y el temporizador
+      const { unseenEventsCount, timer } = getUnseenEvents(table.events);
 
-        return {
-          ...table,
-          state: state,
-          unseenEventsCount: unseenEventsCount,
-          timer: timer,
-        };
-      })
-    );
+      return {
+        ...table,
+        state: state,
+        unseenEventsCount: unseenEventsCount,
+        timer: timer,
+      };
+    });
   }, [tables, currentTime]);
 
   // Función de ordenamiento según los criterios especificados
-  const sortTables = (tables) => {
-    return [...tables].sort((a, b) => {
+  const sortTables = (tablesToSort) => {
+    return [...tablesToSort].sort((a, b) => {
       // Prioridad de estados
       const statePriority = {
         [TableStates.WAITER]: 1,
@@ -317,7 +311,7 @@ const AdminScreen = () => {
     });
   };
 
-  const sortedTables = sortTables(tables);
+  const sortedTables = sortTables(processedTables);
 
   return (
     <div className="admin-screen">
@@ -390,20 +384,20 @@ const AdminScreen = () => {
 
       {/* Modal para mostrar el historial de eventos */}
       {showEventsModal && (
-  <div className="modal-overlay">
-    <div className="modal">
-      <div className="modal-header">
-        <h2>Historial de Eventos - Mesa {selectedTableNumber}</h2>
-        <button className="app-button close-button" onClick={closeEventsModal}>
-          Cerrar
-        </button>
-      </div>
-      <div className="modal-content">
-        <EventsList events={selectedTableEvents} />
-      </div>
-    </div>
-  </div>
-)}
+        <div className="modal-overlay">
+          <div className="modal">
+            <div className="modal-header">
+              <h2>Historial de Eventos - Mesa {selectedTableNumber}</h2>
+              <button className="app-button close-button" onClick={closeEventsModal}>
+                Cerrar
+              </button>
+            </div>
+            <div className="modal-content">
+              <EventsList events={selectedTableEvents} />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
