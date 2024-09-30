@@ -1,74 +1,61 @@
 // src/components/ButtonsGroup.js
 
-import React, { useState } from 'react';
-import EventModal from './EventModal';
-import './ButtonsGroup.css';
-const { EventTypes } = require('../constants');
+import React, { useState } from "react";
+import "./ButtonsGroup.css";
+const { EventTypes } = require("../constants");
 
 const ButtonsGroup = ({ menuLink, texts, onEventSubmit }) => {
-  const [showModal, setShowModal] = useState(false);
-  const [modalConfig, setModalConfig] = useState({
-    title: '',
-    eventType: '',
-    messagePlaceholder: '',
-  });
+  const [showMessageInput, setShowMessageInput] = useState(false);
+  const [message, setMessage] = useState("");
+  const [currentEventType, setCurrentEventType] = useState(null);
 
-  const handleOpenModal = (type) => {
-    if (type === 'CALL_WAITER') {
-      setModalConfig({
-        title: texts.callWaiter,
-        eventType: EventTypes.CALL_WAITER, // Usamos EventTypes
-        messagePlaceholder: 'Escribe un mensaje (opcional)',
-      });
-    } else if (type === 'REQUEST_CHECK') {
-      setModalConfig({
-        title: texts.requestCheck,
-        eventType: EventTypes.REQUEST_CHECK, // Usamos EventTypes
-        messagePlaceholder: 'Escribe un mensaje (opcional)',
-      });
-    }
-    setShowModal(true);
+  const handleEventClick = (eventType) => {
+    setCurrentEventType(eventType);
+    setShowMessageInput(true);
   };
 
-  const handleCloseModal = () => {
-    setShowModal(false);
-  };
-
-  const handleSubmitModal = (message) => {
-    onEventSubmit(modalConfig.eventType, message);
-    setShowModal(false);
+  const handleSubmit = () => {
+    onEventSubmit(currentEventType, message);
+    setShowMessageInput(false);
+    setMessage("");
   };
 
   return (
-    <div className="buttons-container">
+    <div className="buttons-group">
       {menuLink && (
-        <button
+        <a
+          href={menuLink}
+          target="_blank"
+          rel="noopener noreferrer"
           className="app-button"
-          onClick={() => window.open(menuLink, '_blank')}
         >
           {texts.showMenu}
-        </button>
+        </a>
       )}
       <button
         className="app-button"
-        onClick={() => handleOpenModal('CALL_WAITER')}
+        onClick={() => handleEventClick(EventTypes.CALL_WAITER)}
       >
         {texts.callWaiter}
       </button>
       <button
         className="app-button"
-        onClick={() => handleOpenModal('REQUEST_CHECK')}
+        onClick={() => handleEventClick(EventTypes.REQUEST_CHECK)}
       >
         {texts.requestCheck}
       </button>
 
-      <EventModal
-        show={showModal}
-        onClose={handleCloseModal}
-        onSubmit={handleSubmitModal}
-        title={modalConfig.title}
-        messagePlaceholder={modalConfig.messagePlaceholder}
-      />
+      {showMessageInput && (
+        <div className="message-input">
+          <input
+            type="text"
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            placeholder="Mensaje opcional"
+          />
+          <button onClick={handleSubmit}>Enviar</button>
+        </div>
+      )}
     </div>
   );
 };

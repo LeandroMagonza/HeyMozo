@@ -1,59 +1,74 @@
 // src/components/AdminScreen.js
 
-import React, { useState, useEffect, useMemo } from 'react';
-import { getTables, updateTable } from '../services/api';
-import './AdminScreen.css';
-import './AdminModal.css';
-import EventsList from './EventsList';
-const { EventTypes } = require('../constants');
+import React, { useState, useEffect, useMemo } from "react";
+import { useParams } from "react-router-dom";
+import { getCompany, getTables, updateTable } from "../services/api";
+import "./AdminScreen.css";
+import "./AdminModal.css";
+import EventsList from "./EventsList";
+const { EventTypes } = require("../constants");
 
 // Definición de los posibles estados de la mesa
 const TableStates = {
-  AVAILABLE: 'AVAILABLE',
-  OCCUPIED: 'OCCUPIED',
-  WAITER: 'WAITER',
-  CHECK: 'CHECK',
+  AVAILABLE: "AVAILABLE",
+  OCCUPIED: "OCCUPIED",
+  WAITER: "WAITER",
+  CHECK: "CHECK",
 };
 
 const AdminScreen = () => {
+  const { companyId } = useParams();
+
+  const [company, setCompany] = useState(null);
   const [tables, setTables] = useState([]);
   const [currentTime, setCurrentTime] = useState(new Date());
-  const companyName = 'Nombre de la Compañía';
-  const branchName = 'Nombre de la Sucursal';
   const refreshInterval = 15; // Intervalo de refresco en segundos
   const [refreshCountdown, setRefreshCountdown] = useState(refreshInterval);
 
   const [showEventsModal, setShowEventsModal] = useState(false);
   const [selectedTableEvents, setSelectedTableEvents] = useState([]);
-  const [selectedTableNumber, setSelectedTableNumber] = useState('');
+  const [selectedTableNumber, setSelectedTableNumber] = useState("");
+
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const fetchTables = async () => {
+    const fetchCompanyAndTables = async () => {
+      setIsLoading(true);
       try {
-        console.log('Attempting to fetch tables...');
-        const response = await getTables();
-        console.log('Fetched tables:', response.data);
-        setTables(response.data);
-      } catch (error) {
-        console.error('Error fetching tables:', error);
-        if (error.response) {
-          console.error('Response data:', error.response.data);
-          console.error('Response status:', error.response.status);
-          console.error('Response headers:', error.response.headers);
-        } else if (error.request) {
-          console.error('No response received:', error.request);
+        const companyResponse = await getCompany(companyId);
+        const tablesResponse = await getTables(companyId);
+
+        setCompany(companyResponse.data);
+
+        if (
+          Array.isArray(tablesResponse.data) &&
+          tablesResponse.data.length > 0
+        ) {
+          setTables(tablesResponse.data);
         } else {
-          console.error('Error setting up request:', error.message);
+          console.error(
+            "Received invalid or empty tables data:",
+            tablesResponse.data
+          );
+          setTables([]);
         }
+      } catch (error) {
+        console.error("Error fetching company and tables:", error);
+        setTables([]);
+      } finally {
+        setIsLoading(false);
       }
     };
 
-    fetchTables();
+    fetchCompanyAndTables();
 
-    const intervalId = setInterval(fetchTables, refreshInterval * 1000);
+    const intervalId = setInterval(
+      fetchCompanyAndTables,
+      refreshInterval * 1000
+    );
 
     return () => clearInterval(intervalId);
-  }, [refreshInterval]);
+  }, [companyId, refreshInterval]);
 
   useEffect(() => {
     const countdown = setInterval(() => {
@@ -125,7 +140,10 @@ const AdminScreen = () => {
     for (let i = events.length - 1; i >= 0; i--) {
       const event = events[i];
 
-      if (event.type === EventTypes.MARK_SEEN || event.type === EventTypes.MARK_AVAILABLE) {
+      if (
+        event.type === EventTypes.MARK_SEEN ||
+        event.type === EventTypes.MARK_AVAILABLE
+      ) {
         break; // Detenerse al encontrar un evento de marcar como visto
       }
 
@@ -190,11 +208,11 @@ const AdminScreen = () => {
     };
 
     try {
-      await updateTable(tableId, updatedTable);
-      const response = await getTables();
+      await updateTable(companyId, tableId, updatedTable);
+      const response = await getTables(companyId);
       setTables(response.data);
     } catch (error) {
-      console.error('Error al actualizar los eventos:', error);
+      console.error("Error al actualizar los eventos:", error);
     }
   };
 
@@ -216,18 +234,21 @@ const AdminScreen = () => {
     };
 
     try {
-      await updateTable(tableId, updatedTable);
-      const response = await getTables();
+      await updateTable(companyId, tableId, updatedTable);
+      const response = await getTables(companyId);
       setTables(response.data);
     } catch (error) {
-      console.error('Error al actualizar la mesa:', error);
+      console.error("Error al actualizar la mesa:", error);
     }
   };
 
   // Función para marcar la mesa como ocupada (agrega un evento MARK_OCCUPIED)
   const markAsOccupied = async (tableId) => {
     const table = tables.find((t) => t.id === tableId);
-    if (!table) return;
+    if (!table) {
+      console.error("Table not found:", tableId);
+      return;
+    }
 
     const newEvent = {
       type: EventTypes.MARK_OCCUPIED,
@@ -235,37 +256,49 @@ const AdminScreen = () => {
       message: null,
     };
 
-    // Actualizar la mesa con el nuevo evento
     const updatedTable = {
       ...table,
       events: [...table.events, newEvent],
     };
 
+    console.log("Sending update request for table:", tableId);
+    console.log("Updated table data:", JSON.stringify(updatedTable));
+
     try {
-      await updateTable(tableId, updatedTable);
-      const response = await getTables();
-      setTables(response.data);
+      const result = await updateTable(companyId, tableId, updatedTable);
+      console.log("Update successful:", result);
+      // Actualizar el estado local con la nueva información
+      setTables((prevTables) =>
+        prevTables.map((t) => (t.id === tableId ? result : t))
+      );
     } catch (error) {
-      console.error('Error al actualizar la mesa:', error);
+      console.error("Error updating table:", error);
+      // Aquí puedes agregar lógica para mostrar un mensaje de error al usuario
     }
   };
 
   // Utilizar useMemo para procesar las mesas con los datos calculados
   const processedTables = useMemo(() => {
-    return tables.map((table) => {
-      // Calcular el estado de la mesa basado en los eventos
-      const state = getTableState(table.events);
-
-      // Obtener eventos no vistos y el temporizador
-      const { unseenEventsCount, timer } = getUnseenEvents(table.events);
-
-      return {
-        ...table,
-        state: state,
-        unseenEventsCount: unseenEventsCount,
-        timer: timer,
-      };
-    });
+    if (!Array.isArray(tables) || tables.length === 0) {
+      return [];
+    }
+    return tables
+      .map((table) => {
+        if (!table || typeof table !== "object") {
+          return null;
+        }
+        const state = getTableState(table.events || []);
+        const { unseenEventsCount, timer } = getUnseenEvents(
+          table.events || []
+        );
+        return {
+          ...table,
+          state,
+          unseenEventsCount,
+          timer,
+        };
+      })
+      .filter(Boolean);
   }, [tables, currentTime]);
 
   // Función de ordenamiento según los criterios especificados
@@ -287,19 +320,14 @@ const AdminScreen = () => {
         return statePriority[stateA] - statePriority[stateB];
       } else {
         // Mismo estado, aplicar criterios adicionales
-        if (
-          stateA === TableStates.WAITER ||
-          stateA === TableStates.CHECK
-        ) {
+        if (stateA === TableStates.WAITER || stateA === TableStates.CHECK) {
           // Mesas con notificaciones sin leer arriba
           if (a.unseenEventsCount !== b.unseenEventsCount) {
             return b.unseenEventsCount - a.unseenEventsCount;
           }
           // Ordenar por tiempo transcurrido
           if (a.timer && b.timer) {
-            return (
-              new Date(b.timer).getTime() - new Date(a.timer).getTime()
-            );
+            return new Date(b.timer).getTime() - new Date(a.timer).getTime();
           } else {
             return 0;
           }
@@ -313,90 +341,100 @@ const AdminScreen = () => {
 
   const sortedTables = sortTables(processedTables);
 
+  if (isLoading) {
+    return <div>Cargando...</div>;
+  }
+
   return (
     <div className="admin-screen">
-      <h1>{companyName}</h1>
-      <h2>{branchName}</h2>
-      <div className="refresh-timer">
-        Refrescando en {refreshCountdown} segundos
-      </div>
-      <table className="tables-list">
-        <thead>
-          <tr>
-            <th>Número</th>
-            <th>Nombre</th>
-            <th>Estado</th>
-            <th>No Vistos</th>
-            <th>Tiempo Transcurrido</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          {sortedTables.map((table) => (
-            <tr key={table.id}>
-              <td>{table.number}</td>
-              <td>{table.name || '-'}</td>
-              <td>{table.state}</td>
-              <td>
-                {table.unseenEventsCount > 0 ? (
-                  <span className="badge">{table.unseenEventsCount}</span>
-                ) : (
-                  '-'
-                )}
-              </td>
-              <td>{table.timer || '-'}</td>
-              <td>
-                {/* Botones de acciones */}
-                <button
-                  className="app-button"
-                  onClick={() => viewEventHistory(table.id)}
-                >
-                  Ver Historial
-                </button>
-                {table.unseenEventsCount > 0 && (
-                  <button
-                    className="app-button"
-                    onClick={() => markEventsAsSeen(table.id)}
-                  >
-                    Marcar Vistos
-                  </button>
-                )}
-                {table.state === TableStates.AVAILABLE ? (
-                  <button
-                    className="app-button"
-                    onClick={() => markAsOccupied(table.id)}
-                  >
-                    Marcar Ocupada
-                  </button>
-                ) : (
-                  <button
-                    className="app-button"
-                    onClick={() => markAsAvailable(table.id)}
-                  >
-                    Marcar Disponible
-                  </button>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      {/* Modal para mostrar el historial de eventos */}
-      {showEventsModal && (
-        <div className="modal-overlay">
-          <div className="modal">
-            <div className="modal-header">
-              <h2>Historial de Eventos - Mesa {selectedTableNumber}</h2>
-              <button className="app-button close-button" onClick={closeEventsModal}>
-                Cerrar
-              </button>
-            </div>
-            <div className="modal-content">
-              <EventsList events={selectedTableEvents} />
-            </div>
+      {company && (
+        <>
+          <h1>{company.name}</h1>
+          <div className="refresh-timer">
+            Refrescando en {refreshCountdown} segundos
           </div>
-        </div>
+          <table className="tables-list">
+            <thead>
+              <tr>
+                <th>Número</th>
+                <th>Nombre</th>
+                <th>Estado</th>
+                <th>No Vistos</th>
+                <th>Tiempo Transcurrido</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sortedTables.map((table) => (
+                <tr key={table.id}>
+                  <td>{table.number}</td>
+                  <td>{table.name || "-"}</td>
+                  <td>{table.state}</td>
+                  <td>
+                    {table.unseenEventsCount > 0 ? (
+                      <span className="badge">{table.unseenEventsCount}</span>
+                    ) : (
+                      "-"
+                    )}
+                  </td>
+                  <td>{table.timer || "-"}</td>
+                  <td>
+                    {/* Botones de acciones */}
+                    <button
+                      className="app-button"
+                      onClick={() => viewEventHistory(table.id)}
+                    >
+                      Ver Historial
+                    </button>
+                    {table.unseenEventsCount > 0 && (
+                      <button
+                        className="app-button"
+                        onClick={() => markEventsAsSeen(table.id)}
+                      >
+                        Marcar Vistos
+                      </button>
+                    )}
+                    {table.state === TableStates.AVAILABLE ? (
+                      <button
+                        className="app-button"
+                        onClick={() => markAsOccupied(table.id)}
+                      >
+                        Marcar Ocupada
+                      </button>
+                    ) : (
+                      <button
+                        className="app-button"
+                        onClick={() => markAsAvailable(table.id)}
+                      >
+                        Marcar Disponible
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          {/* Modal para mostrar el historial de eventos */}
+          {showEventsModal && (
+            <div className="modal-overlay">
+              <div className="modal">
+                <div className="modal-header">
+                  <h2>Historial de Eventos - Mesa {selectedTableNumber}</h2>
+                  <button
+                    className="app-button close-button"
+                    onClick={closeEventsModal}
+                  >
+                    Cerrar
+                  </button>
+                </div>
+                <div className="modal-content">
+                  <EventsList events={selectedTableEvents} />
+                </div>
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

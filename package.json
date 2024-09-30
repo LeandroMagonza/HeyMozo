@@ -6,10 +6,10 @@
     "@faker-js/faker": "^9.0.1",
     "axios": "^1.7.7",
     "concurrently": "^9.0.1",
+    "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.21.0",
     "http-proxy-middleware": "^3.0.2",
-    "json-server": "^1.0.0-beta.2",
     "lowdb": "^7.0.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -28,7 +28,7 @@
     "build": "react-scripts build",
     "server": "node server.js",
     "generate-db": "node db.js",
-    "json-server": "npm run generate-db && json-server --watch db.json --port 3002",
+    "json-server": "npm run generate-db && json-server --watch db.json --port 3002 --middlewares ./middleware.js --routes ./routes.json",
     "dev": "concurrently \"npm start\" \"npm run server\" \"npm run json-server\"",
     "render-start": "NODE_ENV=production concurrently \"npm run server\" \"npm run json-server\""
   },
@@ -53,5 +53,6 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
-  }
+  },
+  "proxy": "http://localhost:3001"
 }

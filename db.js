@@ -1,9 +1,9 @@
 // db.js
 
-const { faker } = require('@faker-js/faker');
-const fs = require('fs');
-const path = require('path');
-const { EventTypes } = require('./src/constants'); // Importamos EventTypes
+const { faker } = require("@faker-js/faker");
+const fs = require("fs");
+const path = require("path");
+const { EventTypes } = require("./src/constants"); // Importamos EventTypes
 
 // Obtener la fecha y hora actual
 const currentTime = new Date();
@@ -15,7 +15,10 @@ const subtractMinutes = (date, minutes) => {
 
 // Generar eventos con fechas relativas
 const generateEvent = (type, minMinutesAgo, maxMinutesAgo) => {
-  const minutesAgo = faker.number.int({ min: minMinutesAgo, max: maxMinutesAgo });
+  const minutesAgo = faker.number.int({
+    min: minMinutesAgo,
+    max: maxMinutesAgo,
+  });
   const createdAt = subtractMinutes(currentTime, minutesAgo);
   return {
     type,
@@ -28,8 +31,8 @@ const generateEvent = (type, minMinutesAgo, maxMinutesAgo) => {
 const availableTables = [
   {
     id: 1,
-    number: '1',
-    name: 'Mesa 1',
+    number: "1",
+    name: "Mesa 1",
     events: [
       {
         type: EventTypes.MARK_AVAILABLE,
@@ -40,8 +43,8 @@ const availableTables = [
   },
   {
     id: 2,
-    number: '2',
-    name: 'Mesa 2',
+    number: "2",
+    name: "Mesa 2",
     events: [
       {
         type: EventTypes.MARK_AVAILABLE,
@@ -55,8 +58,8 @@ const availableTables = [
 // Mesa ocupada (con evento SCAN)
 const occupiedTable = {
   id: 3,
-  number: '3',
-  name: 'Mesa 3',
+  number: "3",
+  name: "Mesa 3",
   events: [
     {
       type: EventTypes.MARK_AVAILABLE,
@@ -70,8 +73,8 @@ const occupiedTable = {
 // Mesa que llamó al mesero
 const calledWaiterTable = {
   id: 4,
-  number: '4',
-  name: 'Mesa 4',
+  number: "4",
+  name: "Mesa 4",
   events: [
     {
       type: EventTypes.MARK_AVAILABLE,
@@ -86,8 +89,8 @@ const calledWaiterTable = {
 // Mesa que pidió la cuenta
 const requestedCheckTable = {
   id: 5,
-  number: '5',
-  name: 'Mesa 5',
+  number: "5",
+  name: "Mesa 5",
   events: [
     {
       type: EventTypes.MARK_AVAILABLE,
@@ -108,9 +111,22 @@ const tables = [
   requestedCheckTable,
 ];
 
-const data = { tables };
+// Función para generar compañías
+const generateCompanies = (numCompanies) => {
+  return Array.from({ length: numCompanies }, (_, index) => ({
+    id: index + 1,
+    name: faker.company.name(),
+    url: faker.internet.url(),
+    tables: tables, // Usar las mesas predefinidas
+  }));
+};
+
+// Generar datos
+const companies = generateCompanies(3); // Genera 3 compañías como ejemplo
+
+const data = { companies };
 
 // Escribir el archivo db.json
-fs.writeFileSync('db.json', JSON.stringify(data, null, 2));
+fs.writeFileSync("db.json", JSON.stringify(data, null, 2));
 
-console.log('db.json generado correctamente');
+console.log("db.json generado correctamente");

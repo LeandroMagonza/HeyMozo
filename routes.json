@@ -1,3 +1,5 @@
 {
-  "/api/tables/*": "/$1"
+  "/api/*": "/$1",
+  "/companies/:id/tables": "/companies/:id/tables",
+  "/companies/:id/tables/:tableId": "/companies/:id/tables/:tableId"
 }

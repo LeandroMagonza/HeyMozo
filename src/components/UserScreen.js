@@ -1,32 +1,28 @@
 // src/components/UserScreen.js
 
-import React, { useEffect, useState, useRef } from 'react';
-import { useParams } from 'react-router-dom';
-import ButtonsGroup from './ButtonsGroup';
-import EventsList from './EventsList';
-import './UserScreen.css';
-import api, { getTable, updateTable } from '../services/api';
-const { EventTypes } = require('../constants');
+import React, { useEffect, useState, useRef } from "react";
+import { useParams } from "react-router-dom";
+import ButtonsGroup from "./ButtonsGroup";
+import EventsList from "./EventsList";
+import "./UserScreen.css";
+import { getCompany, getTable, updateTable } from "../services/api";
+const { EventTypes } = require("../constants");
 
 const UserScreen = () => {
-  const { tableId } = useParams();
-  const [branchName, setBranchName] = useState('Nombre de la Sucursal');
-  const [menuLink, setMenuLink] = useState('');
-  const [texts, setTexts] = useState({
-    showMenu: 'Mostrar Menú',
-    callWaiter: 'Llamar al Mesero',
-    requestCheck: 'Solicitar Cuenta',
-  });
-
+  const { companyId, tableId } = useParams();
+  const [company, setCompany] = useState(null);
   const [table, setTable] = useState(null);
   const [events, setEvents] = useState([]);
   const pageLoadTime = useRef(null);
 
   useEffect(() => {
-    const fetchTableData = async () => {
+    const fetchData = async () => {
       try {
-        const response = await getTable(tableId);
-        const tableData = response.data;
+        const companyResponse = await getCompany(companyId);
+        setCompany(companyResponse.data);
+
+        const tableResponse = await getTable(companyId, tableId);
+        const tableData = tableResponse.data;
 
         const scanEvent = {
           type: EventTypes.SCAN,
@@ -41,22 +37,24 @@ const UserScreen = () => {
           events: [...tableData.events, scanEvent],
         };
 
-        await updateTable(tableId, updatedTable);
+        await updateTable(companyId, tableId, updatedTable);
 
         setTable(updatedTable);
         const filteredEvents = updatedTable.events.filter(
           (event) => new Date(event.createdAt) >= pageLoadTime.current
         );
         setEvents(
-          filteredEvents.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+          filteredEvents.sort(
+            (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+          )
         );
       } catch (error) {
-        console.error('Error al obtener los datos de la mesa:', error);
+        console.error("Error al obtener los datos:", error);
       }
     };
 
-    fetchTableData();
-  }, [tableId]);
+    fetchData();
+  }, [companyId, tableId]);
 
   const handleEventSubmit = async (eventType, message) => {
     try {
@@ -71,26 +69,38 @@ const UserScreen = () => {
         events: [...table.events, newEvent],
       };
 
-      await updateTable(tableId, updatedTable);
+      await updateTable(companyId, tableId, updatedTable);
 
       setTable(updatedTable);
       const filteredEvents = updatedTable.events.filter(
         (event) => new Date(event.createdAt) >= pageLoadTime.current
       );
       setEvents(
-        filteredEvents.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+        filteredEvents.sort(
+          (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+        )
       );
     } catch (error) {
-      console.error('Error al enviar el evento:', error);
+      console.error("Error al enviar el evento:", error);
     }
+  };
+
+  if (!company || !table) {
+    return <div>Cargando...</div>;
+  }
+
+  const texts = {
+    showMenu: "Mostrar Menú",
+    callWaiter: "Llamar al Mesero",
+    requestCheck: "Solicitar Cuenta",
   };
 
   return (
     <div className="user-screen">
-      <h1 className="restaurant-name">{branchName}</h1>
+      <h1 className="restaurant-name">{company.name}</h1>
 
       <ButtonsGroup
-        menuLink={menuLink}
+        menuLink={company.url}
         texts={texts}
         onEventSubmit={handleEventSubmit}
       />
