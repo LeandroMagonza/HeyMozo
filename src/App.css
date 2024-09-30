@@ -44,10 +44,24 @@
   cursor: pointer;
   background-color: #007bff; /* Color de fondo azul */
   color: #fff; /* Texto blanco */
-  border: none;
+  /*border: 2px solid black; /* Añadimos un borde negro de 2px */
   border-radius: 5px;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .app-button:hover {
   background-color: #0056b3; /* Color al pasar el cursor */
+}
+
+.app-button:disabled {
+  background-color: #cccccc; /* Color de fondo gris para botones deshabilitados */
+  color: #666666; /* Color de texto más oscuro para botones deshabilitados */
+  cursor: not-allowed; /* Cambia el cursor para indicar que el botón está deshabilitado */
+}
+
+.app-button svg {
+  margin-right: 5px;
 }

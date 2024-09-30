@@ -2,10 +2,13 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
+import { FaUtensils, FaUser, FaFileInvoiceDollar } from 'react-icons/fa';
 import ButtonsGroup from './ButtonsGroup';
 import EventsList from './EventsList';
+import EventModal from './EventModal';
 import './UserScreen.css';
 import api, { getTable, updateTable } from '../services/api';
+import backgroundImage from '../images/background-image.jpg';  // Importa la imagen
 const { EventTypes } = require('../constants');
 
 const UserScreen = () => {
@@ -21,6 +24,10 @@ const UserScreen = () => {
   const [table, setTable] = useState(null);
   const [events, setEvents] = useState([]);
   const pageLoadTime = useRef(null);
+
+  // Nuevo estado para el modal
+  const [showModal, setShowModal] = useState(false);
+  const [modalEventType, setModalEventType] = useState(null);
 
   useEffect(() => {
     const fetchTableData = async () => {
@@ -85,17 +92,60 @@ const UserScreen = () => {
     }
   };
 
+  // Nueva función para manejar la apertura del modal
+  const handleOpenModal = (eventType) => {
+    setModalEventType(eventType);
+    setShowModal(true);
+  };
+
+  // Nueva función para manejar el cierre del modal
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setModalEventType(null);
+  };
+
+  // Nueva función para manejar el envío del modal
+  const handleModalSubmit = (message) => {
+    handleEventSubmit(modalEventType, message);
+    handleCloseModal();
+  };
+
+  const backgroundStyle = {
+    backgroundImage: `url(${backgroundImage})`,
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+    backgroundRepeat: 'no-repeat',
+  };
+
   return (
-    <div className="user-screen">
-      <h1 className="restaurant-name">{branchName}</h1>
+    <div className="user-screen" style={backgroundStyle}>
+      <div className="content-wrapper">
+        <h1 className="restaurant-name">{branchName}</h1>
 
-      <ButtonsGroup
-        menuLink={menuLink}
-        texts={texts}
-        onEventSubmit={handleEventSubmit}
-      />
+        <div className="buttons-wrapper">
+          <ButtonsGroup
+            menuLink={menuLink}
+            texts={{
+              showMenu: <><FaUtensils /> {texts.showMenu}</>,
+              callWaiter: <><FaUser /> {texts.callWaiter}</>,
+              requestCheck: <><FaFileInvoiceDollar /> {texts.requestCheck}</>
+            }}
+            onEventSubmit={(eventType) => handleOpenModal(eventType)}
+          />
+        </div>
 
-      <EventsList events={events} />
+        <div className="events-list-wrapper">
+          <EventsList events={events} />
+        </div>
+
+        <EventModal
+          show={showModal}
+          onClose={handleCloseModal}
+          onSubmit={handleModalSubmit}
+          title={modalEventType === EventTypes.CALL_WAITER ? "Llamar al Mesero" : "Solicitar Cuenta"}
+          messagePlaceholder="Ingrese un mensaje opcional..."
+        />
+      </div>
     </div>
   );
 };

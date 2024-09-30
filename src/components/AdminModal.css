@@ -37,8 +37,20 @@
 
 .modal-content {
   flex: 1;
-  overflow-y: auto; /* Habilitar scroll vertical */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* Cambiamos de overflow-y: auto a overflow: hidden */
   padding-top: 10px;
+}
+
+.modal-actions {
+  margin-bottom: 10px; /* Espacio entre el botón y la lista de eventos */
+}
+
+/* Asegúrate de que estos estilos estén aplicados correctamente a tu EventsList */
+.events-list-container {
+  flex: 1;
+  overflow-y: auto; /* Mantenemos el scroll vertical solo en la lista de eventos */
 }
 
 

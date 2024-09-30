@@ -5,15 +5,9 @@ import { getTables, updateTable } from '../services/api';
 import './AdminScreen.css';
 import './AdminModal.css';
 import EventsList from './EventsList';
+import { TableStates, TableColors } from '../theme';
+import { FaHistory, FaCheckCircle, FaSignOutAlt, FaSignInAlt, FaUser, FaFileInvoiceDollar } from 'react-icons/fa';
 const { EventTypes } = require('../constants');
-
-// Definición de los posibles estados de la mesa
-const TableStates = {
-  AVAILABLE: 'AVAILABLE',
-  OCCUPIED: 'OCCUPIED',
-  WAITER: 'WAITER',
-  CHECK: 'CHECK',
-};
 
 const AdminScreen = () => {
   const [tables, setTables] = useState([]);
@@ -26,6 +20,7 @@ const AdminScreen = () => {
   const [showEventsModal, setShowEventsModal] = useState(false);
   const [selectedTableEvents, setSelectedTableEvents] = useState([]);
   const [selectedTableNumber, setSelectedTableNumber] = useState('');
+  const [selectedTableId, setSelectedTableId] = useState(null);
 
   useEffect(() => {
     const fetchTables = async () => {
@@ -81,75 +76,116 @@ const AdminScreen = () => {
     return `${hours}h ${minutes}m ${seconds}s`;
   };
 
-  // Función para determinar el estado de la mesa según los eventos
+  // Función para determinar el estado de la mesa
   const getTableState = (events) => {
     if (events.length === 0) return TableStates.AVAILABLE;
-
-    // Obtener el último evento
+    
     const lastEvent = events[events.length - 1];
-
+    if ([EventTypes.SCAN, EventTypes.MARK_OCCUPIED, EventTypes.MARK_SEEN].includes(lastEvent.type)) {
+      return TableStates.OCCUPIED;
+    }
     if (lastEvent.type === EventTypes.MARK_AVAILABLE) {
       return TableStates.AVAILABLE;
     }
 
-    // Verificar si hay eventos no vistos que requieren atención
-    const { unseenEvents } = getUnseenEvents(events);
-
-    if (unseenEvents.some((e) => e.type === EventTypes.CALL_WAITER)) {
-      return TableStates.WAITER;
-    }
-
-    if (unseenEvents.some((e) => e.type === EventTypes.REQUEST_CHECK)) {
-      return TableStates.CHECK;
-    }
-
-    if (
-      lastEvent.type === EventTypes.SCAN ||
-      lastEvent.type === EventTypes.MARK_OCCUPIED ||
-      lastEvent.type === EventTypes.CALL_WAITER ||
-      lastEvent.type === EventTypes.REQUEST_CHECK ||
-      lastEvent.type === EventTypes.MARK_SEEN
-    ) {
-      return TableStates.OCCUPIED;
-    }
-
-    return TableStates.AVAILABLE;
-  };
-
-  // Función para obtener eventos no vistos y el temporizador
-  const getUnseenEvents = (events) => {
-    const unseenEvents = [];
-    let attentionEvent = null;
-
-    // Recorrer eventos desde el más reciente al más antiguo
+    let hasWaiter = false;
+    let hasCheck = false;
     for (let i = events.length - 1; i >= 0; i--) {
       const event = events[i];
+      if (event.type === EventTypes.MARK_SEEN) break;
+      if (event.type === EventTypes.CALL_WAITER) hasWaiter = true;
+      if (event.type === EventTypes.REQUEST_CHECK) hasCheck = true;
+      if (hasWaiter && hasCheck) return TableStates.WAITER_AND_CHECK;
+    }
+    if (hasWaiter) return TableStates.WAITER;
+    if (hasCheck) return TableStates.CHECK;
+    return TableStates.OCCUPIED;
+  };
 
-      if (event.type === EventTypes.MARK_SEEN || event.type === EventTypes.MARK_AVAILABLE) {
-        break; // Detenerse al encontrar un evento de marcar como visto
-      }
-
-      if (
-        event.type === EventTypes.CALL_WAITER ||
-        event.type === EventTypes.REQUEST_CHECK
-      ) {
-        unseenEvents.push(event);
-        attentionEvent = event;
+  // Función para contar eventos no vistos con mensaje
+  const countUnseenEventsWithMessage = (events) => {
+    let count = 0;
+    for (let i = events.length - 1; i >= 0; i--) {
+      const event = events[i];
+      if (event.type === EventTypes.MARK_SEEN) break;
+      if ((event.type === EventTypes.CALL_WAITER || event.type === EventTypes.REQUEST_CHECK) && event.message) {
+        count++;
       }
     }
+    return count;
+  };
 
-    // Calcular el temporizador desde el evento que requiere atención
-    let timer = null;
-    if (attentionEvent) {
-      const timeDiff = currentTime - new Date(attentionEvent.createdAt);
-      timer = msToTime(timeDiff);
+  // Función para verificar si hay eventos no vistos sin mensaje
+  const hasUnseenEventsWithoutMessage = (events) => {
+    for (let i = events.length - 1; i >= 0; i--) {
+      const event = events[i];
+      if (event.type === EventTypes.MARK_SEEN) break;
+      if ((event.type === EventTypes.CALL_WAITER || event.type === EventTypes.REQUEST_CHECK) && !event.message) {
+        return true;
+      }
     }
+    return false;
+  };
 
-    return {
-      unseenEvents: unseenEvents.reverse(), // Para mantener el orden cronológico
-      unseenEventsCount: unseenEvents.length,
-      timer: timer,
+  // Función para marcar eventos como vistos
+  const markEventsAsSeen = async (tableId) => {
+    const table = tables.find((t) => t.id === tableId);
+    if (!table) return;
+
+    const newEvent = {
+      type: EventTypes.MARK_SEEN,
+      createdAt: new Date().toISOString(),
+      message: null,
     };
+
+    const updatedTable = {
+      ...table,
+      events: [...table.events, newEvent],
+    };
+
+    try {
+      await updateTable(tableId, updatedTable);
+      const response = await getTables();
+      setTables(response.data);
+      
+      if (selectedTableId === tableId) {
+        setSelectedTableEvents([newEvent, ...selectedTableEvents]);
+      }
+    } catch (error) {
+      console.error('Error al marcar eventos como vistos:', error);
+    }
+  };
+
+  // Procesar las mesas con los datos calculados
+  const processedTables = useMemo(() => {
+    return tables.map(table => {
+      const state = getTableState(table.events);
+      const unseenCount = countUnseenEventsWithMessage(table.events);
+      const canMarkSeenFromOutside = hasUnseenEventsWithoutMessage(table.events);
+      return { ...table, state, unseenCount, canMarkSeenFromOutside };
+    });
+  }, [tables]);
+
+  // Función para ordenar las mesas
+  const sortTables = (tables) => {
+    return tables.sort((a, b) => {
+      if (a.state !== b.state) {
+        const stateOrder = { [TableStates.WAITER]: 0, [TableStates.CHECK]: 1, [TableStates.OCCUPIED]: 2, [TableStates.AVAILABLE]: 3 };
+        return stateOrder[a.state] - stateOrder[b.state];
+      }
+      return b.waitTime - a.waitTime;
+    });
+  };
+
+  // Ordenar las mesas procesadas
+  const sortedTables = useMemo(() => sortTables(processedTables), [processedTables]);
+
+  // Función para formatear el tiempo de espera
+  const formatWaitTime = (milliseconds) => {
+    const seconds = Math.floor(milliseconds / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    return `${hours}h ${minutes % 60}m ${seconds % 60}s`;
   };
 
   // Función para ver el historial de eventos
@@ -164,38 +200,13 @@ const AdminScreen = () => {
 
     setSelectedTableEvents(sortedEvents);
     setSelectedTableNumber(table.number);
+    setSelectedTableId(tableId); // Guardamos el ID de la tabla seleccionada
     setShowEventsModal(true);
   };
 
   // Función para cerrar el modal de eventos
   const closeEventsModal = () => {
     setShowEventsModal(false);
-  };
-
-  // Función para marcar eventos como vistos (agrega un evento MARK_SEEN)
-  const markEventsAsSeen = async (tableId) => {
-    const table = tables.find((t) => t.id === tableId);
-    if (!table) return;
-
-    const newEvent = {
-      type: EventTypes.MARK_SEEN,
-      createdAt: new Date().toISOString(),
-      message: null,
-    };
-
-    // Actualizar la mesa con el nuevo evento
-    const updatedTable = {
-      ...table,
-      events: [...table.events, newEvent],
-    };
-
-    try {
-      await updateTable(tableId, updatedTable);
-      const response = await getTables();
-      setTables(response.data);
-    } catch (error) {
-      console.error('Error al actualizar los eventos:', error);
-    }
   };
 
   // Función para marcar la mesa como disponible (agrega un evento MARK_AVAILABLE)
@@ -250,69 +261,6 @@ const AdminScreen = () => {
     }
   };
 
-  // Utilizar useMemo para procesar las mesas con los datos calculados
-  const processedTables = useMemo(() => {
-    return tables.map((table) => {
-      // Calcular el estado de la mesa basado en los eventos
-      const state = getTableState(table.events);
-
-      // Obtener eventos no vistos y el temporizador
-      const { unseenEventsCount, timer } = getUnseenEvents(table.events);
-
-      return {
-        ...table,
-        state: state,
-        unseenEventsCount: unseenEventsCount,
-        timer: timer,
-      };
-    });
-  }, [tables, currentTime]);
-
-  // Función de ordenamiento según los criterios especificados
-  const sortTables = (tablesToSort) => {
-    return [...tablesToSort].sort((a, b) => {
-      // Prioridad de estados
-      const statePriority = {
-        [TableStates.WAITER]: 1,
-        [TableStates.CHECK]: 2,
-        [TableStates.OCCUPIED]: 3,
-        [TableStates.AVAILABLE]: 4,
-      };
-
-      // Obtener el estado actual
-      const stateA = a.state;
-      const stateB = b.state;
-
-      if (statePriority[stateA] !== statePriority[stateB]) {
-        return statePriority[stateA] - statePriority[stateB];
-      } else {
-        // Mismo estado, aplicar criterios adicionales
-        if (
-          stateA === TableStates.WAITER ||
-          stateA === TableStates.CHECK
-        ) {
-          // Mesas con notificaciones sin leer arriba
-          if (a.unseenEventsCount !== b.unseenEventsCount) {
-            return b.unseenEventsCount - a.unseenEventsCount;
-          }
-          // Ordenar por tiempo transcurrido
-          if (a.timer && b.timer) {
-            return (
-              new Date(b.timer).getTime() - new Date(a.timer).getTime()
-            );
-          } else {
-            return 0;
-          }
-        } else {
-          // Ordenar por número de mesa
-          return a.number - b.number;
-        }
-      }
-    });
-  };
-
-  const sortedTables = sortTables(processedTables);
-
   return (
     <div className="admin-screen">
       <h1>{companyName}</h1>
@@ -326,54 +274,33 @@ const AdminScreen = () => {
             <th>Número</th>
             <th>Nombre</th>
             <th>Estado</th>
-            <th>No Vistos</th>
-            <th>Tiempo Transcurrido</th>
             <th>Acciones</th>
           </tr>
         </thead>
         <tbody>
           {sortedTables.map((table) => (
-            <tr key={table.id}>
+            <tr key={table.id} style={{ backgroundColor: TableColors[table.state] }}>
               <td>{table.number}</td>
               <td>{table.name || '-'}</td>
               <td>{table.state}</td>
               <td>
-                {table.unseenEventsCount > 0 ? (
-                  <span className="badge">{table.unseenEventsCount}</span>
-                ) : (
-                  '-'
-                )}
-              </td>
-              <td>{table.timer || '-'}</td>
-              <td>
-                {/* Botones de acciones */}
-                <button
-                  className="app-button"
-                  onClick={() => viewEventHistory(table.id)}
-                >
-                  Ver Historial
+                <button className="app-button" onClick={() => viewEventHistory(table.id)}>
+                  <FaHistory /> Historial
+                  {table.unseenCount > 0 && <span className="unseen-count">{table.unseenCount}</span>}
                 </button>
-                {table.unseenEventsCount > 0 && (
-                  <button
-                    className="app-button"
-                    onClick={() => markEventsAsSeen(table.id)}
-                  >
-                    Marcar Vistos
+                {table.canMarkSeenFromOutside && (
+                  <button className="app-button" onClick={() => markEventsAsSeen(table.id)}>
+                    <FaCheckCircle /> Marcar Visto
                   </button>
                 )}
-                {table.state === TableStates.AVAILABLE ? (
-                  <button
-                    className="app-button"
-                    onClick={() => markAsOccupied(table.id)}
-                  >
-                    Marcar Ocupada
+                {table.state === TableStates.AVAILABLE && (
+                  <button className="app-button" onClick={() => markAsOccupied(table.id)}>
+                    <FaSignInAlt /> Ocupar
                   </button>
-                ) : (
-                  <button
-                    className="app-button"
-                    onClick={() => markAsAvailable(table.id)}
-                  >
-                    Marcar Disponible
+                )}
+                {table.state !== TableStates.AVAILABLE && (
+                  <button className="app-button" onClick={() => markAsAvailable(table.id)}>
+                    <FaSignOutAlt /> Liberar
                   </button>
                 )}
               </td>
@@ -393,7 +320,21 @@ const AdminScreen = () => {
               </button>
             </div>
             <div className="modal-content">
-              <EventsList events={selectedTableEvents} />
+              <div className="modal-actions">
+                <button 
+                  className="app-button" 
+                  onClick={() => markEventsAsSeen(selectedTableId)}
+                  disabled={!selectedTableEvents.some(e => 
+                    (e.type === EventTypes.CALL_WAITER || e.type === EventTypes.REQUEST_CHECK) && 
+                    !e.message
+                  )}
+                >
+                  <FaCheckCircle /> Marcar Vistos
+                </button>
+              </div>
+              <div className="events-list-container">
+                <EventsList events={selectedTableEvents} />
+              </div>
             </div>
           </div>
         </div>

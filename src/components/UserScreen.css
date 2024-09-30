@@ -1,10 +1,43 @@
 /* src/components/UserScreen.css */
 
 .user-screen {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    padding: 0;
+    margin: 0;
+}
+
+.content-wrapper {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto;
     padding: 20px;
-  }
-  
-  .restaurant-name {
+    box-sizing: border-box;
+}
+
+.restaurant-name {
     text-align: center;
-  }
-  
+    color: black;
+    margin: 0;
+    height: 15vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.buttons-wrapper {
+    height: 45vh; /* 15% * 3 botones */
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.events-list-wrapper {
+    height: 40vh; /* o 55vh si no está el botón de menú */
+    overflow: hidden;
+}
