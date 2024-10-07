@@ -14,101 +14,101 @@ const subtractMinutes = (date, minutes) => {
 };
 
 // Generar eventos con fechas relativas
-const generateEvent = (type, minMinutesAgo, maxMinutesAgo) => {
-  const minutesAgo = faker.number.int({ min: minMinutesAgo, max: maxMinutesAgo });
+const generateEvent = (type, minutesAgo, withMessage = false) => {
   const createdAt = subtractMinutes(currentTime, minutesAgo);
   return {
     type,
     createdAt: createdAt.toISOString(),
-    message: null,
+    message: withMessage ? faker.lorem.sentence() : null,
   };
 };
 
-// Mesas disponibles (sin eventos)
-const availableTables = [
-  {
-    id: 1,
-    number: '1',
-    name: 'Mesa 1',
-    events: [
-      {
-        type: EventTypes.MARK_AVAILABLE,
-        createdAt: subtractMinutes(currentTime, 60).toISOString(),
-        message: null,
-      },
-    ],
-  },
-  {
-    id: 2,
-    number: '2',
-    name: 'Mesa 2',
-    events: [
-      {
-        type: EventTypes.MARK_AVAILABLE,
-        createdAt: subtractMinutes(currentTime, 50).toISOString(),
-        message: null,
-      },
-    ],
-  },
+// Generar mesas con eventos aleatorios
+const generateTable = (id, number, name, branchId, scenario) => {
+  let events = [
+    generateEvent(EventTypes.MARK_AVAILABLE, 30),
+  ];
+
+  switch(scenario) {
+    case 1:
+      // Solo MARK_AVAILABLE
+      break;
+    case 2:
+      // MARK_AVAILABLE y SCAN
+      events.push(generateEvent(EventTypes.SCAN, faker.number.int({ min: 22, max: 27 })));
+      break;
+    case 3:
+      // MARK_AVAILABLE, SCAN y CALL_WAITER sin mensaje
+      events.push(generateEvent(EventTypes.SCAN, 20));
+      events.push(generateEvent(EventTypes.CALL_WAITER, faker.number.int({ min: 10, max: 15 })));
+      break;
+    case 4:
+      // MARK_AVAILABLE, SCAN y CALL_WAITER con mensaje
+      events.push(generateEvent(EventTypes.SCAN, 20));
+      events.push(generateEvent(EventTypes.CALL_WAITER, faker.number.int({ min: 10, max: 15 }), true));
+      break;
+    case 5:
+      // MARK_AVAILABLE, SCAN, CALL_WAITER sin mensaje y REQUEST_CHECK con mensaje
+      events.push(generateEvent(EventTypes.SCAN, 20));
+      events.push(generateEvent(EventTypes.CALL_WAITER, 15));
+      events.push(generateEvent(EventTypes.REQUEST_CHECK, faker.number.int({ min: 2, max: 8 }), true));
+      break;
+  }
+
+  // Ordenar eventos del más antiguo al más reciente
+
+  return {
+    id,
+    number,
+    tableName: name,
+    branchId,
+    tableDescription: faker.lorem.sentence(),
+    events,
+  };
+};
+
+// Generar sucursales con mesas
+const generateBranch = (id, name, companyId) => ({
+  id,
+  name,
+  companyId,
+  website: faker.internet.url(),
+  menu: faker.internet.url(),
+  tableIds: [], // Añadimos esto
+});
+
+// Generar compañías con sucursales
+const generateCompany = (id, name) => ({
+  id,
+  name,
+  website: faker.internet.url(),
+  menu: faker.internet.url(),
+  branchIds: [], // Añadimos esto
+});
+
+const companies = [
+  generateCompany(1, "Fast Food SRL"),
+  generateCompany(2, "Restaurantes Gourmet SA"),
 ];
 
-// Mesa ocupada (con evento SCAN)
-const occupiedTable = {
-  id: 3,
-  number: '3',
-  name: 'Mesa 3',
-  events: [
-    {
-      type: EventTypes.MARK_AVAILABLE,
-      createdAt: subtractMinutes(currentTime, 60).toISOString(),
-      message: null,
-    },
-    generateEvent(EventTypes.SCAN, 40, 50),
-  ],
-};
-
-// Mesa que llamó al mesero
-const calledWaiterTable = {
-  id: 4,
-  number: '4',
-  name: 'Mesa 4',
-  events: [
-    {
-      type: EventTypes.MARK_AVAILABLE,
-      createdAt: subtractMinutes(currentTime, 60).toISOString(),
-      message: null,
-    },
-    generateEvent(EventTypes.SCAN, 40, 50),
-    generateEvent(EventTypes.CALL_WAITER, 5, 10),
-  ],
-};
-
-// Mesa que pidió la cuenta
-const requestedCheckTable = {
-  id: 5,
-  number: '5',
-  name: 'Mesa 5',
-  events: [
-    {
-      type: EventTypes.MARK_AVAILABLE,
-      createdAt: subtractMinutes(currentTime, 60).toISOString(),
-      message: null,
-    },
-    generateEvent(EventTypes.SCAN, 40, 50),
-    generateEvent(EventTypes.CALL_WAITER, 20, 30),
-    generateEvent(EventTypes.REQUEST_CHECK, 5, 10),
-  ],
-};
-
-// Todas las mesas
-const tables = [
-  ...availableTables,
-  occupiedTable,
-  calledWaiterTable,
-  requestedCheckTable,
+const branches = [
+  generateBranch(1, "Sucursal Centro", 1),
+  generateBranch(2, "Sucursal Norte", 1),
+  generateBranch(3, "Restaurante La Estrella", 2),
+  generateBranch(4, "Bistró El Rincón", 2),
 ];
 
-const data = { tables };
+const tables = [];
+branches.forEach(branch => {
+  for (let i = 1; i <= 5; i++) {
+    const table = generateTable(tables.length + 1, i.toString(), `Mesa ${i}`, branch.id, i);
+    tables.push(table);
+    branch.tableIds.push(table.id);
+  }
+  companies.find(c => c.id === branch.companyId).branchIds.push(branch.id);
+});
+
+const data = { companies, branches, tables };
 
 // Escribir el archivo db.json
 fs.writeFileSync('db.json', JSON.stringify(data, null, 2));

@@ -1,3 +1,8 @@
 {
-  "/api/tables/*": "/$1"
+  "/api/companies": "/companies",
+  "/api/companies/:id": "/companies/:id",
+  "/api/branches": "/branches",
+  "/api/branches/:id": "/branches/:id",
+  "/api/tables": "/tables",
+  "/api/tables/:id": "/tables/:id"
 }

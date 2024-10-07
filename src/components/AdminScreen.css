@@ -1,5 +1,7 @@
 .admin-screen {
     padding: 20px;
+    max-width: 100%;
+    overflow-x: auto;
   }
   
   .admin-screen h1 {
@@ -10,6 +12,7 @@
   .tables-list {
     width: 100%;
     border-collapse: collapse;
+    table-layout: auto;
   }
   
   .tables-list th,
@@ -21,6 +24,31 @@
   
   .tables-list th {
     background-color: #f2f2f2;
+  }
+  
+  .tables-list th:nth-child(1),
+  .tables-list td:nth-child(1) {
+    width: 10%;
+  }
+  
+  .tables-list th:nth-child(2),
+  .tables-list td:nth-child(2) {
+    width: 20%;
+  }
+  
+  .tables-list th:nth-child(3),
+  .tables-list td:nth-child(3) {
+    width: 20%;
+  }
+  
+  .tables-list th:nth-child(4),
+  .tables-list td:nth-child(4) {
+    width: 20%;
+  }
+  
+  .tables-list th:last-child,
+  .tables-list td:last-child {
+    width: 30%;
   }
   
   .badge {
@@ -60,4 +88,36 @@
     padding: 10px;
     margin-bottom: 5px;
     border-radius: 5px;
+  }
+
+  .table-actions {
+    display: flex;
+    justify-content: center;
+    gap: 5px;
+  }
+
+  .table-actions .app-button {
+    flex: 0 1 auto;
+    white-space: nowrap;
+  }
+
+  .tables-list td {
+    vertical-align: middle;
+  }
+
+  .sort-selector {
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+  }
+
+  .sort-selector label {
+    margin-right: 10px;
+  }
+
+  .sort-selector select {
+    padding: 5px;
+    font-size: 16px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
   }

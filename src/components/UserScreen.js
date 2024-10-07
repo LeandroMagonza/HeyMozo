@@ -7,33 +7,37 @@ import ButtonsGroup from './ButtonsGroup';
 import EventsList from './EventsList';
 import EventModal from './EventModal';
 import './UserScreen.css';
-import api, { getTable, updateTable } from '../services/api';
+import { getCompany, getBranch, getTable, updateTable } from '../services/api';
 import backgroundImage from '../images/background-image.jpg';  // Importa la imagen
 const { EventTypes } = require('../constants');
 
 const UserScreen = () => {
-  const { tableId } = useParams();
-  const [branchName, setBranchName] = useState('Nombre de la Sucursal');
+  const { companyId, branchId, tableId } = useParams();
+  const [company, setCompany] = useState(null);
+  const [branch, setBranch] = useState(null);
+  const [table, setTable] = useState(null);
+  const [events, setEvents] = useState([]);
   const [menuLink, setMenuLink] = useState('');
   const [texts, setTexts] = useState({
     showMenu: 'Mostrar Menú',
     callWaiter: 'Llamar al Mesero',
     requestCheck: 'Solicitar Cuenta',
   });
-
-  const [table, setTable] = useState(null);
-  const [events, setEvents] = useState([]);
   const pageLoadTime = useRef(null);
-
-  // Nuevo estado para el modal
   const [showModal, setShowModal] = useState(false);
   const [modalEventType, setModalEventType] = useState(null);
 
   useEffect(() => {
-    const fetchTableData = async () => {
+    const fetchData = async () => {
       try {
-        const response = await getTable(tableId);
-        const tableData = response.data;
+        const companyResponse = await getCompany(companyId);
+        setCompany(companyResponse.data);
+
+        const branchResponse = await getBranch(branchId);
+        setBranch(branchResponse.data);
+
+        const tableResponse = await getTable(tableId);
+        const tableData = tableResponse.data;
 
         const scanEvent = {
           type: EventTypes.SCAN,
@@ -57,13 +61,15 @@ const UserScreen = () => {
         setEvents(
           filteredEvents.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
         );
+
+        setMenuLink(branchResponse.data.menu || companyResponse.data.menu);
       } catch (error) {
-        console.error('Error al obtener los datos de la mesa:', error);
+        console.error('Error al obtener los datos:', error);
       }
     };
 
-    fetchTableData();
-  }, [tableId]);
+    fetchData();
+  }, [companyId, branchId, tableId]);
 
   const handleEventSubmit = async (eventType, message) => {
     try {
@@ -120,7 +126,7 @@ const UserScreen = () => {
   return (
     <div className="user-screen" style={backgroundStyle}>
       <div className="content-wrapper">
-        <h1 className="restaurant-name">{branchName}</h1>
+        <h1 className="restaurant-name">{branch?.name || 'Cargando...'}</h1>
 
         <div className="buttons-wrapper">
           <ButtonsGroup
