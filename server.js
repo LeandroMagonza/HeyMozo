@@ -2,18 +2,26 @@
 
 const express = require('express');
 const path = require('path');
-const { createProxyMiddleware } = require('http-proxy-middleware');
 const jsonServer = require('json-server');
-const server = jsonServer.create();
+
+const app = express();
+const port = process.env.PORT || 3000;
+
+// Sirve los archivos estáticos desde la carpeta build
+app.use(express.static(path.join(__dirname, 'build')));
+
+// Configura json-server
 const router = jsonServer.router('db.json');
 const middlewares = jsonServer.defaults();
-const routes = require('./routes.json');
 
-server.use(middlewares);
-server.use(jsonServer.rewriter(routes));
-server.use('/api', router);
+// Usa json-server para /api
+app.use('/api', middlewares, router);
 
-const port = 3002;
-server.listen(port, () => {
-  console.log(`JSON Server is running on port ${port}`);
+// Todas las demás solicitudes GET no manejadas devolverán nuestra app de React
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'build', 'index.html'));
+});
+
+app.listen(port, () => {
+  console.log(`Servidor corriendo en http://localhost:${port}`);
 });
