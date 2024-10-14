@@ -31,7 +31,7 @@
     "generate-db": "node db.js",
     "json-server": "npm run generate-db && json-server --watch db.json --port 3002",
     "dev": "concurrently \"npm start\" \"npm run server\" \"npm run json-server\"",
-    "render-start": "npm install && npm run generate-db && node server.js",
+    "render-start": "echo 'Starting installation' && npm install && echo 'Starting server' && node server.js",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },

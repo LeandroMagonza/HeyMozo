@@ -1,5 +1,7 @@
 // db.js
 
+console.log('Starting database generation');
+
 const { faker } = require('@faker-js/faker');
 const fs = require('fs');
 const path = require('path');
@@ -109,6 +111,9 @@ branches.forEach(branch => {
 });
 
 const data = { companies, branches, tables };
+
+// Añade esto al final del archivo, justo antes de guardar la base de datos
+console.log('Database generation complete');
 
 // Escribir el archivo db.json
 fs.writeFileSync('db.json', JSON.stringify(data, null, 2));
