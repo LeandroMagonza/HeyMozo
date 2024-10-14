@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: heymozo
+    env: node
+    buildCommand: npm install && npm run build
+    startCommand: npm run render-start
+    envVars:
+      - key: NODE_ENV
+        value: production
