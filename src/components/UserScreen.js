@@ -2,10 +2,11 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { FaUtensils, FaUser, FaFileInvoiceDollar } from 'react-icons/fa';
+import { FaUtensils, FaUser, FaFileInvoiceDollar, FaHistory } from 'react-icons/fa';
 import ButtonsGroup from './ButtonsGroup';
 import EventsList from './EventsList';
 import EventModal from './EventModal';
+import HistoryModal from './HistoryModal';
 import './UserScreen.css';
 import { getCompany, getBranch, getTable, updateTable } from '../services/api';
 import backgroundImage from '../images/background-image.jpg';  // Importa la imagen
@@ -26,6 +27,7 @@ const UserScreen = () => {
   const pageLoadTime = useRef(null);
   const [showModal, setShowModal] = useState(false);
   const [modalEventType, setModalEventType] = useState(null);
+  const [showEventsModal, setShowEventsModal] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -116,6 +118,14 @@ const UserScreen = () => {
     handleCloseModal();
   };
 
+  const handleOpenEventsModal = () => {
+    setShowEventsModal(true);
+  };
+
+  const handleCloseEventsModal = () => {
+    setShowEventsModal(false);
+  };
+
   const backgroundStyle = {
     backgroundImage: `url(${backgroundImage})`,
     backgroundSize: 'cover',
@@ -134,14 +144,12 @@ const UserScreen = () => {
             texts={{
               showMenu: <><FaUtensils /> {texts.showMenu}</>,
               callWaiter: <><FaUser /> {texts.callWaiter}</>,
-              requestCheck: <><FaFileInvoiceDollar /> {texts.requestCheck}</>
+              requestCheck: <><FaFileInvoiceDollar /> {texts.requestCheck}</>,
+              showEvents: <><FaHistory /> Histórico</>
             }}
             onEventSubmit={(eventType) => handleOpenModal(eventType)}
+            onShowEvents={handleOpenEventsModal}
           />
-        </div>
-
-        <div className="events-list-wrapper">
-          <EventsList events={events} />
         </div>
 
         <EventModal
@@ -150,6 +158,12 @@ const UserScreen = () => {
           onSubmit={handleModalSubmit}
           title={modalEventType === EventTypes.CALL_WAITER ? "Llamar al Mesero" : "Solicitar Cuenta"}
           messagePlaceholder="Ingrese un mensaje opcional..."
+        />
+
+        <HistoryModal
+          show={showEventsModal}
+          onClose={handleCloseEventsModal}
+          events={events}
         />
       </div>
     </div>

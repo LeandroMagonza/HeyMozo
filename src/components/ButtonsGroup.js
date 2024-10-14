@@ -2,26 +2,32 @@
 
 import React from 'react';
 import './ButtonsGroup.css';
-const { EventTypes } = require('../constants');
 
-const ButtonsGroup = ({ menuLink, texts, onEventSubmit }) => {
+const ButtonsGroup = ({ menuLink, texts, onEventSubmit, onShowEvents }) => {
+  const handleMenuClick = () => {
+    window.open(menuLink, '_blank');
+  };
+
   return (
     <div className="buttons-group">
-      { menuLink && (
-        <div className="button-container">
-          <button className="user-button" onClick={() => window.open(menuLink, '_blank')}>
-            {texts.showMenu}
-          </button>
-        </div>
-      )}
       <div className="button-container">
-        <button className="user-button" onClick={() => onEventSubmit(EventTypes.CALL_WAITER)}>
+        <button className="user-button" onClick={handleMenuClick}>
+          {texts.showMenu}
+        </button>
+      </div>
+      <div className="button-container">
+        <button className="user-button" onClick={() => onEventSubmit('CALL_WAITER')}>
           {texts.callWaiter}
         </button>
       </div>
       <div className="button-container">
-        <button className="user-button" onClick={() => onEventSubmit(EventTypes.REQUEST_CHECK)}>
+        <button className="user-button" onClick={() => onEventSubmit('REQUEST_CHECK')}>
           {texts.requestCheck}
+        </button>
+      </div>
+      <div className="button-container">
+        <button className="user-button" onClick={onShowEvents}>
+          {texts.showEvents}
         </button>
       </div>
     </div>
