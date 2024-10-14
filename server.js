@@ -3,6 +3,7 @@
 const express = require('express');
 const path = require('path');
 const jsonServer = require('json-server');
+const fs = require('fs');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -11,7 +12,19 @@ const port = process.env.PORT || 3000;
 app.use(express.static(path.join(__dirname, 'build')));
 
 // Configura json-server
-const router = jsonServer.router('db.json');
+let router;
+try {
+  if (fs.existsSync('db.json')) {
+    router = jsonServer.router('db.json');
+  } else {
+    console.warn('db.json not found, creating an empty database');
+    router = jsonServer.router({});
+  }
+} catch (err) {
+  console.error('Error setting up json-server:', err);
+  router = jsonServer.router({});
+}
+
 const middlewares = jsonServer.defaults();
 
 // Usa json-server para /api
