@@ -26,7 +26,7 @@ const generateEvent = (type, minutesAgo, withMessage = false) => {
 };
 
 // Generar mesas con eventos aleatorios
-const generateTable = (id, number, name, branchId, scenario) => {
+const generateTable = (id, name, branchId, scenario) => {
   let events = [
     generateEvent(EventTypes.MARK_AVAILABLE, 30),
   ];
@@ -61,7 +61,6 @@ const generateTable = (id, number, name, branchId, scenario) => {
 
   return {
     id,
-    number,
     tableName: name,
     branchId,
     tableDescription: faker.lorem.sentence(),
@@ -103,7 +102,7 @@ const branches = [
 const tables = [];
 branches.forEach(branch => {
   for (let i = 1; i <= 5; i++) {
-    const table = generateTable(tables.length + 1, i.toString(), `Mesa ${i}`, branch.id, i);
+    const table = generateTable(tables.length + 1, `Mesa ${i}`, branch.id, i);
     tables.push(table);
     branch.tableIds.push(table.id);
   }

@@ -186,15 +186,16 @@ const AdminScreen = () => {
   // Procesar las mesas con los datos calculados
   const processedTables = useMemo(() => {
     console.log('Procesando mesas:', tables);
-    return tables.map(table => {
+    return tables.map((table, index) => {
       const { state, waitTime, firstAttentionTime, hasUnseenAttention } = getTableStateAndWaitTime(table.events, currentTime);
       console.log(`Mesa ${table.id} - Estado calculado:`, state);
       const unseenEvents = countUnseenEvents(table.events);
       const canMarkSeenFromOutside = unseenEvents.hasUnseenWithoutMessage && !unseenEvents.hasUnseenWithMessage && hasUnseenAttention;
       return { 
         ...table, 
+        number: index + 1, // Calcular el número de mesa basado en el índice
         state, 
-        unseenCount: unseenEvents.countWithMessage, // Cambiado de totalUnseen a countWithMessage
+        unseenCount: unseenEvents.countWithMessage,
         canMarkSeenFromOutside, 
         waitTime,
         firstAttentionTime,

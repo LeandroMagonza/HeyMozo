@@ -13,8 +13,11 @@ console.log('API Base URL:', api.defaults.baseURL);
 export const getCompany = (companyId) => api.get(`/companies/${companyId}`);
 export const getBranches = (companyId) => api.get(`/branches?companyId=${companyId}`);
 export const getBranch = (branchId) => api.get(`/branches/${branchId}`);
+export const updateBranch = (branchId, data) => api.put(`/branches/${branchId}`, data);
 export const getTables = (branchId) => api.get(`/tables?branchId=${branchId}`);
 export const getTable = (tableId) => api.get(`/tables/${tableId}`);
-export const updateTable = (tableId, tableData) => api.put(`/tables/${tableId}`, tableData);
+export const createTable = (data) => api.post('/tables', data);
+export const updateTable = (tableId, data) => api.put(`/tables/${tableId}`, data);
+export const deleteTable = (tableId) => api.delete(`/tables/${tableId}`);
 
 export default api;
