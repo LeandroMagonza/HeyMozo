@@ -111,10 +111,12 @@ branches.forEach(branch => {
 
 const data = { companies, branches, tables };
 
-// Añade esto al final del archivo, justo antes de guardar la base de datos
-console.log('Database generation complete');
+const dbPath = path.join(__dirname, 'data', 'db.json');
 
-// Escribir el archivo db.json
-fs.writeFileSync('db.json', JSON.stringify(data, null, 2));
+// Ensure the directory exists
+fs.mkdirSync(path.dirname(dbPath), { recursive: true });
 
-console.log('db.json generado correctamente');
+// Write the file
+fs.writeFileSync(dbPath, JSON.stringify(data, null, 2));
+
+console.log('db.json generated correctly at', dbPath);

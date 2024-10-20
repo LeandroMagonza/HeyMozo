@@ -1,0 +1,36 @@
+.company-list {
+  padding: 20px;
+}
+
+.company-list h2 {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.add-company-btn {
+  margin-bottom: 20px;
+}
+
+.companies-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.company-row {
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.company-row td {
+  padding: 10px;
+  vertical-align: middle;
+}
+
+.company-row td:first-child {
+  font-weight: bold;
+}
+
+.company-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}

@@ -6,6 +6,7 @@ import './AdminModal.css';
 import EventsList from './EventsList';
 import { TableStates, TableColors } from '../theme';
 import { FaHistory, FaCheckCircle, FaSignOutAlt, FaSignInAlt, FaUser, FaFileInvoiceDollar } from 'react-icons/fa';
+import { translateState, translateEvent } from '../utils/translations';
 const { EventTypes } = require('../constants');
 
 const AdminScreen = () => {
@@ -186,14 +187,20 @@ const AdminScreen = () => {
   // Procesar las mesas con los datos calculados
   const processedTables = useMemo(() => {
     console.log('Procesando mesas:', tables);
-    return tables.map((table, index) => {
+    // Create a map of table id to its index in the branch.tableIds array
+    const tableIdToIndex = branch?.tableIds.reduce((acc, id, index) => {
+      acc[id] = index + 1; // Add 1 to make it 1-based instead of 0-based
+      return acc;
+    }, {}) || {};
+
+    return tables.map((table) => {
       const { state, waitTime, firstAttentionTime, hasUnseenAttention } = getTableStateAndWaitTime(table.events, currentTime);
       console.log(`Mesa ${table.id} - Estado calculado:`, state);
       const unseenEvents = countUnseenEvents(table.events);
       const canMarkSeenFromOutside = unseenEvents.hasUnseenWithoutMessage && !unseenEvents.hasUnseenWithMessage && hasUnseenAttention;
       return { 
         ...table, 
-        number: index + 1, // Calcular el número de mesa basado en el índice
+        number: tableIdToIndex[table.id] || 0, // Use the index from the map, or 0 if not found
         state, 
         unseenCount: unseenEvents.countWithMessage,
         canMarkSeenFromOutside, 
@@ -202,7 +209,7 @@ const AdminScreen = () => {
         hasUnseenAttention
       };
     });
-  }, [tables, currentTime]);
+  }, [tables, currentTime, branch?.tableIds]);
 
   // Nueva función para manejar el cambio de ordenamiento
   const handleSortChange = (event) => {
@@ -226,10 +233,10 @@ const AdminScreen = () => {
         return b.waitTime - a.waitTime;
       } else {
         // Ordenar por número de mesa
-        return a.number.localeCompare(b.number, undefined, { numeric: true, sensitivity: 'base' });
+        return a.number - b.number;
       }
     });
-  }, [processedTables, sortType]); // Añadir sortType como dependencia
+  }, [processedTables, sortType]);
 
   // Función para ver el historial de eventos
   const viewEventHistory = (tableId) => {
@@ -337,7 +344,6 @@ const AdminScreen = () => {
       <div className="refresh-timer">
         Refrescando en {refreshCountdown} segundos
       </div>
-      {/* Añadir selector de ordenamiento */}
       <div className="sort-selector">
         <label htmlFor="sort-type">Ordenar por: </label>
         <select id="sort-type" value={sortType} onChange={handleSortChange}>
@@ -360,7 +366,7 @@ const AdminScreen = () => {
             <tr key={table.id} style={{ backgroundColor: TableColors[table.state] }}>
               <td>{table.number}</td>
               <td>{table.tableName || '-'}</td>
-              <td>{table.state}</td>
+              <td>{translateState(table.state)}</td>
               <td>{msToTime(table.waitTime)}</td>
               <td>
                 <div className="table-actions">
@@ -419,6 +425,5 @@ const AdminScreen = () => {
     </div>
   );
 };
-
 
 export default AdminScreen;

@@ -1,34 +1,34 @@
 .branch-config {
-  max-width: 800px;
-  margin: 0 auto;
   padding: 20px;
 }
 
-.branch-header {
-  text-align: center;
+.branch-details {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
   margin-bottom: 20px;
+}
+
+.branch-details input {
+  padding: 8px;
+  font-size: 16px;
 }
 
 .add-table-container {
-  text-align: center;
   margin-bottom: 20px;
 }
 
-.app-button {
+.add-table-btn {
+  background-color: #4CAF50;
+  color: white;
   padding: 10px 15px;
   border: none;
   border-radius: 4px;
   cursor: pointer;
 }
 
-.add-table-btn {
-  background-color: #4CAF50;
-  color: white;
-}
-
-.delete-table-btn {
-  background-color: #f44336;
-  color: white;
+.add-table-btn:hover {
+  background-color: #45a049;
 }
 
 .tables-list {
@@ -42,13 +42,13 @@
   margin-bottom: 10px;
   padding: 10px;
   background-color: #f9f9f9;
-  border: 1px solid #ddd;
   border-radius: 4px;
 }
 
 .table-number {
-  margin-right: 10px;
   font-weight: bold;
+  margin-right: 10px;
+  min-width: 30px;
 }
 
 .table-name-input,
@@ -57,22 +57,61 @@
   padding: 5px;
   border: 1px solid #ddd;
   border-radius: 4px;
-  width: 100%;
 }
 
 .table-name-input {
-  width: 100px;
+  width: 150px;
 }
 
 .table-description-input {
   flex-grow: 1;
 }
 
-/* Styles for drag and drop */
-.table-item:hover {
-  background-color: #f8f9fa;
+.delete-table-btn {
+  background-color: #f44336;
+  color: white;
+  padding: 5px 10px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
 }
 
-.table-item:active {
-  background-color: #e9ecef;
+.delete-table-btn:hover {
+  background-color: #d32f2f;
+}
+
+.loading {
+  font-size: 18px;
+  color: #666;
+  text-align: center;
+  margin-top: 50px;
+}
+
+/* Styles for drag and drop */
+.table-item {
+  transition: background-color 0.2s ease;
+}
+
+.table-item:hover {
+  background-color: #e9e9e9;
+}
+
+.table-item.dragging {
+  background-color: #d4d4d4;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.button-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.button-row .app-button {
+  flex: 1;
+  margin-right: 10px;
+}
+
+.button-row .app-button:last-child {
+  margin-right: 0;
 }

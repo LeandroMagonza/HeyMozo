@@ -1,0 +1,32 @@
+.table-urls {
+  padding: 20px;
+}
+
+.table-urls table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+
+.table-urls th, .table-urls td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: left;
+}
+
+.table-urls th {
+  background-color: #f2f2f2;
+}
+
+.table-urls tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.table-urls a {
+  color: #007bff;
+  text-decoration: none;
+}
+
+.table-urls a:hover {
+  text-decoration: underline;
+}

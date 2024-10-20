@@ -1,0 +1,55 @@
+.company-config {
+  padding: 20px;
+}
+
+.company-details {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.company-details input {
+  padding: 8px;
+  font-size: 16px;
+}
+
+.branches-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+
+.branch-row {
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.branch-row td {
+  padding: 10px;
+  vertical-align: middle;
+}
+
+.branch-row td:first-child {
+  font-weight: bold;
+}
+
+.app-button {
+  padding: 8px 16px;
+  font-size: 14px;
+  cursor: pointer;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  transition: background-color 0.3s;
+}
+
+.app-button:hover {
+  background-color: #0056b3;
+}
+
+.loading {
+  text-align: center;
+  font-size: 18px;
+  margin-top: 20px;
+}
