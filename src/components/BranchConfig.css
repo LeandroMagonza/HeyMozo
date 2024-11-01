@@ -1,17 +1,33 @@
 .branch-config {
   padding: 20px;
+  max-width: 800px;
+  margin: 0 auto;
 }
 
 .branch-details {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  flex-wrap: wrap;
   gap: 10px;
   margin-bottom: 20px;
+  max-width: 100%;
 }
 
 .branch-details input {
   padding: 8px;
-  font-size: 16px;
+  font-size: 14px;
+  flex: 1;
+  min-width: 200px;
+}
+button {
+  margin: 0;
+}
+.branch-details .app-button {
+  align-self: flex-start;
+  padding: 6px 10px;
+  font-size: 12px;
+  margin-top: 10px;
+  flex-basis: 100%;
 }
 
 .add-table-container {
@@ -19,18 +35,27 @@
 }
 
 .add-table-btn {
-  background-color: #4CAF50;
+  background-color: #4caf50;
   color: white;
-  padding: 10px 15px;
+  padding: 8px 12px;
   border: none;
   border-radius: 4px;
   cursor: pointer;
+  font-size: 14px;
 }
 
 .add-table-btn:hover {
   background-color: #45a049;
 }
-
+.app-button {
+  transition: background-color 0.2s;
+}
+.app-button:hover {
+  background-color: #0056b3;
+}
+.app-button-cambios {
+  margin-left: 0 !important;
+}
 .tables-list {
   list-style-type: none;
   padding: 0;
@@ -57,27 +82,26 @@
   padding: 5px;
   border: 1px solid #ddd;
   border-radius: 4px;
+  font-size: 14px;
 }
 
 .table-name-input {
-  width: 150px;
+  width: 120px;
 }
 
 .table-description-input {
   flex-grow: 1;
 }
 
-.delete-table-btn {
-  background-color: #f44336;
-  color: white;
-  padding: 5px 10px;
-  border: none;
-  border-radius: 4px;
+.delete-icon {
+  width: 20px;
+  height: 20px;
   cursor: pointer;
+  margin-left: 10px;
 }
 
-.delete-table-btn:hover {
-  background-color: #d32f2f;
+.delete-icon:hover {
+  opacity: 0.8;
 }
 
 .loading {
@@ -98,7 +122,7 @@
 
 .table-item.dragging {
   background-color: #d4d4d4;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }
 
 .button-row {
@@ -108,10 +132,99 @@
 }
 
 .button-row .app-button {
-  flex: 1;
+  flex: 0 1 auto;
   margin-right: 10px;
+  padding: 8px 12px;
+  font-size: 14px;
 }
 
 .button-row .app-button:last-child {
   margin-right: 0;
+}
+
+.app-button {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.app-button:hover {
+  background-color: #0056b3;
+}
+
+@media (max-width: 600px) {
+  .branch-details {
+    max-width: 100%;
+  }
+
+  .button-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .button-row .app-button {
+    margin-right: 0;
+    margin-bottom: 10px;
+  }
+}
+
+.view-icon,
+.delete-icon {
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  margin-left: 10px;
+  transition: opacity 0.2s;
+  position: relative;
+}
+
+.view-icon {
+  height: 15px;
+}
+
+.view-icon:hover,
+.delete-icon:hover {
+  opacity: 0.8;
+}
+
+.view-icon::after,
+.delete-icon::after {
+  content: attr(title);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s, visibility 0.2s;
+}
+
+.view-icon:hover::after,
+.delete-icon:hover::after {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Eliminar los estilos que ya no se usan */
+.view-table-btn {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .branch-details {
+    flex-direction: column;
+  }
+
+  .branch-details input {
+    width: 100%;
+  }
 }
