@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { getBranch, getTables } from '../services/api';
+import QRCodeDocument from './QRCodeDocument';
+import { PDFDownloadLink } from '@react-pdf/renderer';
 import './TableUrls.css';
 
 const TableUrls = () => {
@@ -35,6 +37,28 @@ const TableUrls = () => {
   return (
     <div className="table-urls">
       <h2>URLs de Mesas - {branch.name}</h2>
+      
+      <div className="actions">
+        <PDFDownloadLink
+          document={
+            <QRCodeDocument 
+              tables={tables} 
+              companyId={companyId} 
+              branchId={branchId}
+              branchName={branch.name}
+              restaurantLogo={branch.logo}
+              textColor={branch.textColor || "#000000"}
+              fontFamily={branch.fontFamily || "Helvetica"}
+              qrBackgroundImage={branch.qrBackgroundImage}
+              website={branch.website}
+            />
+          }
+          fileName={`qr-codes-${branch.name}.pdf`}
+        >
+          {({ loading }) => (loading ? 'Generando PDF...' : 'Descargar PDF con códigos QR')}
+        </PDFDownloadLink>
+      </div>
+
       <table>
         <thead>
           <tr>

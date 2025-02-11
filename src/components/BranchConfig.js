@@ -4,6 +4,23 @@ import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { getBranch, getTables, updateBranch, updateTable, createTable, deleteTable } from '../services/api';
 import './BranchConfig.css';
 
+const FONT_OPTIONS = [
+  { value: 'Helvetica', label: 'Helvetica' },
+  { value: 'Helvetica-Bold', label: 'Helvetica Bold' },
+  { value: 'Helvetica-Oblique', label: 'Helvetica Oblique' },
+  { value: 'Helvetica-BoldOblique', label: 'Helvetica Bold Oblique' },
+  { value: 'Times-Roman', label: 'Times Roman' },
+  { value: 'Times-Bold', label: 'Times Bold' },
+  { value: 'Times-Italic', label: 'Times Italic' },
+  { value: 'Times-BoldItalic', label: 'Times Bold Italic' },
+  { value: 'Courier', label: 'Courier' },
+  { value: 'Courier-Bold', label: 'Courier Bold' },
+  { value: 'Courier-Oblique', label: 'Courier Oblique' },
+  { value: 'Courier-BoldOblique', label: 'Courier Bold Oblique' },
+  { value: 'Symbol', label: 'Symbol' },
+  { value: 'ZapfDingbats', label: 'ZapfDingbats' }
+];
+
 const BranchConfig = () => {
   const { companyId, branchId } = useParams();
   const navigate = useNavigate();
@@ -172,6 +189,41 @@ const BranchConfig = () => {
           value={editedBranch.menu}
           onChange={handleBranchInputChange}
           placeholder="Menu URL"
+        />
+        <input
+          type="text"
+          name="logo"
+          value={editedBranch.logo}
+          onChange={handleBranchInputChange}
+          placeholder="URL del Logo"
+        />
+        <div className="style-controls" style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <input
+            type="color"
+            name="textColor"
+            value={editedBranch.textColor || "#000000"}
+            onChange={handleBranchInputChange}
+            style={{ width: '100px', height: '40px' }}
+          />
+          <select
+            name="fontFamily"
+            value={editedBranch.fontFamily || "Helvetica"}
+            onChange={handleBranchInputChange}
+            style={{ height: '40px', padding: '0 10px' }}
+          >
+            {FONT_OPTIONS.map(font => (
+              <option key={font.value} value={font.value}>
+                {font.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <input
+          type="text"
+          name="qrBackgroundImage"
+          value={editedBranch.qrBackgroundImage}
+          onChange={handleBranchInputChange}
+          placeholder="URL de imagen de fondo para QR"
         />
         <button className="app-button" onClick={handleSaveBranch}>Guardar Cambios de Sucursal</button>
       </div>
