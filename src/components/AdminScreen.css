@@ -106,9 +106,7 @@
   }
 
   .sort-selector {
-    margin-bottom: 20px;
-    display: flex;
-    align-items: center;
+    margin-bottom: 0;
   }
 
   .sort-selector label {
@@ -120,4 +118,71 @@
     font-size: 16px;
     border-radius: 4px;
     border: 1px solid #ccc;
+  }
+
+  .branch-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 20px;
+  }
+
+  .branch-title {
+    flex: 1;
+  }
+
+  .release-all-button {
+    background-color: #dc3545;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: background-color 0.3s;
+    margin-left: auto;
+  }
+
+  .release-all-button:hover {
+    background-color: #c82333;
+  }
+
+  .release-all-button svg {
+    font-size: 1.2em;
+  }
+
+  .controls-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+
+  .controls-right {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .sound-toggle-button {
+    background-color: #6c757d;
+    color: white;
+    padding: 10px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    transition: background-color 0.3s;
+  }
+
+  .sound-toggle-button:hover {
+    background-color: #5a6268;
+  }
+
+  .sound-toggle-button svg {
+    font-size: 1.2em;
   }

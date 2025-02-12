@@ -4,9 +4,7 @@ import './HistoryModal.css';
 import { FaTimes } from 'react-icons/fa';
 
 const HistoryModal = ({ show, onClose, events }) => {
-  if (!show) {
-    return null;
-  }
+  if (!show) return null;
 
   return (
     <div className="history-modal-overlay">
@@ -18,7 +16,7 @@ const HistoryModal = ({ show, onClose, events }) => {
           </button>
         </div>
         <div className="history-modal-content">
-          <EventsList events={events} />
+          <EventsList events={events} showSeenStatus={false} />
         </div>
       </div>
     </div>

@@ -4,13 +4,12 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { FaUtensils, FaUser, FaFileInvoiceDollar, FaHistory } from 'react-icons/fa';
 import ButtonsGroup from './ButtonsGroup';
-import EventsList from './EventsList';
 import EventModal from './EventModal';
 import HistoryModal from './HistoryModal';
 import './UserScreen.css';
-import { getCompany, getBranch, getTable, updateTable } from '../services/api';
+import { getCompany, getBranch, getTable, sendEvent } from '../services/api';
 import backgroundImage from '../images/background-image.jpg';  // Importa la imagen
-const { EventTypes } = require('../constants');
+import { EventTypes } from '../constants';
 
 const UserScreen = () => {
   const { companyId, branchId, tableId } = useParams();
@@ -30,92 +29,84 @@ const UserScreen = () => {
   const [showEventsModal, setShowEventsModal] = useState(false);
 
   useEffect(() => {
-    const fetchData = async () => {
+    const loadData = async () => {
       try {
-        const companyResponse = await getCompany(companyId);
-        setCompany(companyResponse.data);
+        const [companyData, branchData, tableData] = await Promise.all([
+          getCompany(companyId),
+          getBranch(branchId),
+          getTable(tableId)
+        ]);
 
-        const branchResponse = await getBranch(branchId);
-        setBranch(branchResponse.data);
+        setCompany(companyData.data);
+        setBranch(branchData.data);
+        setTable(tableData.data);
 
-        const tableResponse = await getTable(tableId);
-        const tableData = tableResponse.data;
-
+        // Crear evento de escaneo local (sin seenAt)
         const scanEvent = {
           type: EventTypes.SCAN,
-          createdAt: new Date().toISOString(),
           message: null,
+          createdAt: new Date().toISOString(),
+          seenAt: null  // Explícitamente null
         };
 
-        pageLoadTime.current = new Date(scanEvent.createdAt);
+        try {
+          const response = await sendEvent(tableId, scanEvent);
+          // Solo mantener los eventos locales
+          setEvents([scanEvent]);
+        } catch (error) {
+          console.error('Error sending scan event:', error);
+        }
 
-        const updatedTable = {
-          ...tableData,
-          events: [...tableData.events, scanEvent],
-        };
-
-        await updateTable(tableId, updatedTable);
-
-        setTable(updatedTable);
-        const filteredEvents = updatedTable.events.filter(
-          (event) => new Date(event.createdAt) >= pageLoadTime.current
-        );
-        setEvents(
-          filteredEvents.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-        );
-
-        setMenuLink(branchResponse.data.menu || companyResponse.data.menu);
+        setMenuLink(branchData.data.menu || companyData.data.menu);
       } catch (error) {
-        console.error('Error al obtener los datos:', error);
+        console.error('Error loading data:', error);
       }
     };
 
-    fetchData();
+    loadData();
   }, [companyId, branchId, tableId]);
 
-  const handleEventSubmit = async (eventType, message) => {
-    try {
-      const newEvent = {
-        type: eventType,
-        createdAt: new Date().toISOString(),
-        message: message || null,
-      };
-
-      const updatedTable = {
-        ...table,
-        events: [...table.events, newEvent],
-      };
-
-      await updateTable(tableId, updatedTable);
-
-      setTable(updatedTable);
-      const filteredEvents = updatedTable.events.filter(
-        (event) => new Date(event.createdAt) >= pageLoadTime.current
-      );
-      setEvents(
-        filteredEvents.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-      );
-    } catch (error) {
-      console.error('Error al enviar el evento:', error);
-    }
-  };
-
-  // Nueva función para manejar la apertura del modal
   const handleOpenModal = (eventType) => {
     setModalEventType(eventType);
     setShowModal(true);
   };
 
-  // Nueva función para manejar el cierre del modal
   const handleCloseModal = () => {
     setShowModal(false);
     setModalEventType(null);
   };
 
-  // Nueva función para manejar el envío del modal
-  const handleModalSubmit = (message) => {
-    handleEventSubmit(modalEventType, message);
-    handleCloseModal();
+  const handleModalSubmit = async (message) => {
+    try {
+      const newEvent = {
+        type: modalEventType,
+        message: message || null,
+        createdAt: new Date().toISOString(),
+        seenAt: null  // Explícitamente null
+      };
+
+      const response = await sendEvent(tableId, newEvent);
+      
+      // Agregar el nuevo evento a la lista local
+      setEvents(prevEvents => [...prevEvents, newEvent]);
+      handleCloseModal();
+    } catch (error) {
+      console.error('Error sending event:', error);
+    }
+  };
+
+  const handleDirectEvent = async (eventType) => {
+    try {
+      const response = await sendEvent(tableId, {
+        type: eventType,
+        message: null
+      });
+
+      setTable(response.data);
+      setEvents(response.data.events || []);
+    } catch (error) {
+      console.error('Error sending event:', error);
+    }
   };
 
   const handleOpenEventsModal = () => {

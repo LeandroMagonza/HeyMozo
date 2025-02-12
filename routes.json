@@ -4,5 +4,7 @@
   "/api/branches": "/branches",
   "/api/branches/:id": "/branches/:id",
   "/api/tables": "/tables",
-  "/api/tables/:id": "/tables/:id"
+  "/api/tables/:id": "/tables/:id",
+  "/api/tables/:id/events": "/tables/:id/events",
+  "/api/branches/:id/release-all-tables": "/branches/:id/release-all-tables"
 }

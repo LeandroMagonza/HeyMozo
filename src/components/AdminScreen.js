@@ -1,13 +1,15 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { getCompany, getBranch, getTables, updateTable } from '../services/api';
+import { getCompany, getBranch, getTables, updateTable, markTableEventsSeen, releaseAllTables } from '../services/api';
 import './AdminScreen.css';
 import './AdminModal.css';
 import EventsList from './EventsList';
 import { TableStates, TableColors } from '../theme';
-import { FaHistory, FaCheckCircle, FaSignOutAlt, FaSignInAlt, FaUser, FaFileInvoiceDollar } from 'react-icons/fa';
+import { FaHistory, FaCheckCircle, FaSignOutAlt, FaSignInAlt, FaUser, FaFileInvoiceDollar, FaTimes, FaVolumeMute, FaVolumeUp } from 'react-icons/fa';
 import { translateState, translateEvent } from '../utils/translations';
-const { EventTypes } = require('../constants');
+import { EventTypes } from '../constants';
+import AdminHistoryModal from './AdminHistoryModal';
+import notificationSound from '../sounds/notification.mp3';
 
 const AdminScreen = () => {
   const { companyId, branchId } = useParams();
@@ -15,14 +17,26 @@ const AdminScreen = () => {
   const [branch, setBranch] = useState(null);
   const [tables, setTables] = useState([]);
   const [currentTime, setCurrentTime] = useState(new Date());
-  const refreshInterval = 15000; // Cambiado a milisegundos
+  const refreshInterval = 15000; // 15 segundos en milisegundos
   const [refreshCountdown, setRefreshCountdown] = useState(refreshInterval / 1000);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const [showEventsModal, setShowEventsModal] = useState(false);
-  const [selectedTableEvents, setSelectedTableEvents] = useState([]);
-  const [selectedTableNumber, setSelectedTableNumber] = useState('');
-  const [selectedTableId, setSelectedTableId] = useState(null);
+  const [selectedTable, setSelectedTable] = useState(null);
   const [sortType, setSortType] = useState('priority'); // Nuevo estado para el tipo de ordenamiento
+  const [isSoundEnabled, setIsSoundEnabled] = useState(true);
+
+  const TableStates = {
+    AVAILABLE: 'AVAILABLE',
+    OCCUPIED: 'OCCUPIED',
+    WAITER: 'WAITER',
+    CHECK: 'CHECK',
+    WAITER_AND_CHECK: 'WAITER_AND_CHECK'
+  };
+
+  const audioRef = useRef(new Audio(notificationSound));
+  const previousUnseenCountRef = useRef(0);
 
   // Función para obtener los datos
   const fetchData = useCallback(async () => {
@@ -36,8 +50,11 @@ const AdminScreen = () => {
       const tablesResponse = await getTables(branchId);
       setTables(tablesResponse.data);
       console.log('Tablas obtenidas:', tablesResponse.data);
+      setLoading(false);
     } catch (error) {
       console.error('Error fetching data:', error.response || error);
+      setError(error.message);
+      setLoading(false);
     }
   }, [companyId, branchId]);
 
@@ -67,6 +84,7 @@ const AdminScreen = () => {
     return () => clearInterval(countdownId);
   }, [refreshInterval]);
 
+  // Efecto para actualizar el tiempo actual
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
@@ -74,39 +92,36 @@ const AdminScreen = () => {
     return () => clearInterval(timer);
   }, []);
 
-  // Función para convertir milisegundos a formato hh:mm:ss
-  const msToTime = (duration) => {
-    let seconds = Math.floor((duration / 1000) % 60);
-    let minutes = Math.floor((duration / (1000 * 60)) % 60);
-    let hours = Math.floor(duration / (1000 * 60 * 60));
-
-    return `${hours}h ${minutes}m ${seconds}s`;
+  // Función para convertir milisegundos a minutos
+  const msToMinutes = (duration) => {
+    return Math.floor(duration / (1000 * 60));
   };
 
-  // Función para determinar el estado de la mesa
+  // Función para determinar el estado y tiempo de espera de una mesa
   const getTableStateAndWaitTime = (events, currentTime) => {
-    if (events.length === 0) return { state: TableStates.AVAILABLE, waitTime: 0 };
+    if (!events || events.length === 0) return { state: TableStates.AVAILABLE, waitTime: 0 };
 
     let state = TableStates.AVAILABLE;
     let waitTime = 0;
-    let firstAttentionTime = null;
     let lastOccupiedTime = null;
-    let hasUnseenAttention = false;
-    let lastAvailableTime = new Date(events[0].createdAt);
-    let lastSeenOrAvailableTime = null;
+    let hasUnseenWaiter = false;
+    let hasUnseenCheck = false;
 
-    for (let i = 0; i < events.length; i++) {
-      const event = events[i];
+    // Ordenar eventos por fecha, más antiguo primero
+    const sortedEvents = [...events].sort((a, b) => 
+      new Date(a.createdAt) - new Date(b.createdAt)
+    );
+
+    for (const event of sortedEvents) {
       const eventTime = new Date(event.createdAt);
 
       switch (event.type) {
         case EventTypes.MARK_AVAILABLE:
           state = TableStates.AVAILABLE;
-          lastAvailableTime = eventTime;
-          hasUnseenAttention = false;
-          firstAttentionTime = null;
           lastOccupiedTime = null;
-          lastSeenOrAvailableTime = eventTime;
+          hasUnseenWaiter = false;
+          hasUnseenCheck = false;
+          waitTime = currentTime - eventTime;
           break;
 
         case EventTypes.SCAN:
@@ -118,52 +133,70 @@ const AdminScreen = () => {
           break;
 
         case EventTypes.CALL_WAITER:
+          if (!event.seenAt) {
+            hasUnseenWaiter = true;
+          }
+          break;
+
         case EventTypes.REQUEST_CHECK:
-          if (lastSeenOrAvailableTime === null || eventTime > lastSeenOrAvailableTime) {
-            hasUnseenAttention = true;
-            if (!firstAttentionTime) {
-              firstAttentionTime = eventTime;
-            }
-            if (event.type === EventTypes.CALL_WAITER) {
-              state = state === TableStates.CHECK ? TableStates.WAITER_AND_CHECK : TableStates.WAITER;
-            } else {
-              state = state === TableStates.WAITER ? TableStates.WAITER_AND_CHECK : TableStates.CHECK;
-            }
+          if (!event.seenAt) {
+            hasUnseenCheck = true;
           }
           break;
 
         case EventTypes.MARK_SEEN:
-          lastSeenOrAvailableTime = eventTime;
-          if (hasUnseenAttention) {
-            hasUnseenAttention = false;
-            state = TableStates.OCCUPIED;
-            firstAttentionTime = null;
-          }
+          hasUnseenWaiter = false;
+          hasUnseenCheck = false;
           break;
       }
     }
 
-    // Calcular el tiempo de espera basado en el estado final
+    // Determinar estado final
     if (state === TableStates.AVAILABLE) {
-      waitTime = currentTime - lastAvailableTime;
-    } else if (hasUnseenAttention) {
-      waitTime = currentTime - firstAttentionTime;
-    } else if (lastOccupiedTime) {
-      waitTime = currentTime - lastOccupiedTime;
+      waitTime = currentTime - new Date(sortedEvents[sortedEvents.length - 1].createdAt);
+    } else {
+      if (hasUnseenWaiter && hasUnseenCheck) {
+        state = TableStates.WAITER_AND_CHECK;
+      } else if (hasUnseenWaiter) {
+        state = TableStates.WAITER;
+      } else if (hasUnseenCheck) {
+        state = TableStates.CHECK;
+      } else {
+        state = TableStates.OCCUPIED;
+      }
+      
+      // El tiempo de espera siempre es desde que la mesa se ocupó
+      if (lastOccupiedTime) {
+        waitTime = currentTime - lastOccupiedTime;
+      }
     }
 
-    return { state, waitTime, firstAttentionTime, hasUnseenAttention };
+    return { state, waitTime };
   };
 
-  // Función para contar eventos no vistos con mensaje y verificar si hay eventos sin mensaje
+  // Función para contar eventos no vistos
   const countUnseenEvents = (events) => {
+    // Verificar que events existe y es un array
+    if (!Array.isArray(events)) {
+      return {
+        countWithMessage: 0,
+        hasUnseenWithoutMessage: false,
+        hasUnseenWithMessage: false,
+        totalUnseen: 0
+      };
+    }
+
     let countWithMessage = 0;
     let hasUnseenWithoutMessage = false;
     let hasUnseenWithMessage = false;
     let lastSeenOrAvailableTime = null;
 
-    for (let i = events.length - 1; i >= 0; i--) {
-      const event = events[i];
+    // Ordenar eventos por fecha, más reciente primero
+    const sortedEvents = [...events].sort((a, b) => 
+      new Date(b.createdAt) - new Date(a.createdAt)
+    );
+
+    for (const event of sortedEvents) {
       if (event.type === EventTypes.MARK_SEEN || event.type === EventTypes.MARK_AVAILABLE) {
         lastSeenOrAvailableTime = new Date(event.createdAt);
       } else if ((event.type === EventTypes.CALL_WAITER || event.type === EventTypes.REQUEST_CHECK) &&
@@ -176,40 +209,34 @@ const AdminScreen = () => {
         }
       }
     }
+
     return {
-      countWithMessage: countWithMessage,
-      hasUnseenWithoutMessage: hasUnseenWithoutMessage,
-      hasUnseenWithMessage: hasUnseenWithMessage,
+      countWithMessage,
+      hasUnseenWithoutMessage,
+      hasUnseenWithMessage,
       totalUnseen: countWithMessage + (hasUnseenWithoutMessage ? 1 : 0)
     };
   };
 
-  // Procesar las mesas con los datos calculados
+  // Procesar las mesas
   const processedTables = useMemo(() => {
     console.log('Procesando mesas:', tables);
-    // Create a map of table id to its index in the branch.tableIds array
-    const tableIdToIndex = branch?.tableIds.reduce((acc, id, index) => {
-      acc[id] = index + 1; // Add 1 to make it 1-based instead of 0-based
-      return acc;
-    }, {}) || {};
+    const currentTime = new Date();
 
-    return tables.map((table) => {
-      const { state, waitTime, firstAttentionTime, hasUnseenAttention } = getTableStateAndWaitTime(table.events, currentTime);
-      console.log(`Mesa ${table.id} - Estado calculado:`, state);
+    return tables.map(table => {
+      const { state, waitTime } = getTableStateAndWaitTime(table.events, currentTime);
       const unseenEvents = countUnseenEvents(table.events);
-      const canMarkSeenFromOutside = unseenEvents.hasUnseenWithoutMessage && !unseenEvents.hasUnseenWithMessage && hasUnseenAttention;
-      return { 
-        ...table, 
-        number: tableIdToIndex[table.id] || 0, // Use the index from the map, or 0 if not found
-        state, 
+      const canMarkSeenFromOutside = unseenEvents.hasUnseenWithoutMessage && !unseenEvents.hasUnseenWithMessage;
+
+      return {
+        ...table,
+        currentState: state,
         unseenCount: unseenEvents.countWithMessage,
-        canMarkSeenFromOutside, 
-        waitTime,
-        firstAttentionTime,
-        hasUnseenAttention
+        canMarkSeenFromOutside,
+        waitingTime: waitTime,
       };
     });
-  }, [tables, currentTime, branch?.tableIds]);
+  }, [tables]);
 
   // Nueva función para manejar el cambio de ordenamiento
   const handleSortChange = (event) => {
@@ -220,7 +247,7 @@ const AdminScreen = () => {
   const sortedTables = useMemo(() => {
     return [...processedTables].sort((a, b) => {
       if (sortType === 'priority') {
-        if (a.state !== b.state) {
+        if (a.currentState !== b.currentState) {
           const stateOrder = {
             [TableStates.WAITER_AND_CHECK]: 0,
             [TableStates.WAITER]: 1,
@@ -228,12 +255,12 @@ const AdminScreen = () => {
             [TableStates.OCCUPIED]: 3,
             [TableStates.AVAILABLE]: 4
           };
-          return stateOrder[a.state] - stateOrder[b.state];
+          return stateOrder[a.currentState] - stateOrder[b.currentState];
         }
-        return b.waitTime - a.waitTime;
+        return b.waitingTime - a.waitingTime;
       } else {
         // Ordenar por número de mesa
-        return a.number - b.number;
+        return a.id - b.id;
       }
     });
   }, [processedTables, sortType]);
@@ -243,14 +270,7 @@ const AdminScreen = () => {
     const table = tables.find((t) => t.id === tableId);
     if (!table) return;
 
-    // Ordenar los eventos en orden descendente por fecha de creación
-    const sortedEvents = [...table.events].sort(
-      (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
-    );
-
-    setSelectedTableEvents(sortedEvents);
-    setSelectedTableNumber(table.number);
-    setSelectedTableId(tableId);
+    setSelectedTable(table);
     setShowEventsModal(true);
   };
 
@@ -261,25 +281,22 @@ const AdminScreen = () => {
 
   // Función para marcar eventos como vistos
   const markEventsAsSeen = async (tableId) => {
-    const table = tables.find((t) => t.id === tableId);
-    if (!table) return;
-
-    const newEvent = {
-      type: EventTypes.MARK_SEEN,
-      createdAt: new Date().toISOString(),
-      message: null,
-    };
-
-    const updatedTable = {
-      ...table,
-      events: [...table.events, newEvent],
-    };
-
     try {
-      await updateTable(tableId, updatedTable);
-      const tablesResponse = await getTables(branchId);
-      setTables(tablesResponse.data);
-      console.log('Eventos marcados como vistos para la mesa:', tableId);
+      const response = await markTableEventsSeen(tableId);
+      
+      if (response.data && typeof response.data === 'object') {
+        // Actualizar la tabla en el estado local
+        setTables(prevTables => 
+          prevTables.map(table => 
+            table.id === tableId ? response.data : table
+          )
+        );
+        
+        // Actualizar la tabla seleccionada si es la que estamos viendo
+        if (selectedTable?.id === tableId) {
+          setSelectedTable(response.data);
+        }
+      }
     } catch (error) {
       console.error('Error al marcar eventos como vistos:', error);
     }
@@ -337,19 +354,81 @@ const AdminScreen = () => {
     }
   };
 
+  const handleReleaseAllTables = async () => {
+    const confirmed = window.confirm(
+      '¿Está seguro que desea liberar todas las mesas?\n' +
+      'Esta acción marcará todas las mesas como disponibles y todos los eventos como vistos.'
+    );
+
+    if (confirmed) {
+      try {
+        const response = await releaseAllTables(branchId);
+        setTables(response.data);
+      } catch (error) {
+        console.error('Error liberando todas las mesas:', error);
+      }
+    }
+  };
+
+  // Función para verificar si hay mensajes sin leer
+  const totalUnseenMessages = useMemo(() => {
+    return processedTables.reduce((total, table) => total + (table.unseenCount || 0), 0);
+  }, [processedTables]);
+
+  // Efecto para reproducir el sonido cuando hay nuevos mensajes
+  useEffect(() => {
+    if (isSoundEnabled && totalUnseenMessages > previousUnseenCountRef.current) {
+      audioRef.current.play().catch(error => {
+        console.log('Audio playback was prevented:', error);
+      });
+    }
+    previousUnseenCountRef.current = totalUnseenMessages;
+  }, [totalUnseenMessages, isSoundEnabled]);
+
+  if (loading) return <div>Cargando...</div>;
+  if (error) return <div>Error: {error}</div>;
+  if (!company) return <div>No se encontró la compañía</div>;
+
   return (
     <div className="admin-screen">
-      <h1>{company?.name || 'Cargando...'}</h1>
-      <h2>{branch?.name || 'Cargando...'}</h2>
+      <div className="branch-info">
+        {loading ? (
+          <p>Cargando...</p>
+        ) : error ? (
+          <p className="error">{error}</p>
+        ) : (
+          <>
+            <h1>{company?.name}</h1>
+            <h2>{branch?.name}</h2>
+          </>
+        )}
+      </div>
       <div className="refresh-timer">
         Refrescando en {refreshCountdown} segundos
       </div>
-      <div className="sort-selector">
-        <label htmlFor="sort-type">Ordenar por: </label>
-        <select id="sort-type" value={sortType} onChange={handleSortChange}>
-          <option value="priority">Prioridad de atención</option>
-          <option value="tableNumber">Número de mesa</option>
-        </select>
+      <div className="controls-row">
+        <div className="sort-selector">
+          <label htmlFor="sort-type">Ordenar por: </label>
+          <select id="sort-type" value={sortType} onChange={handleSortChange}>
+            <option value="priority">Prioridad de atención</option>
+            <option value="tableNumber">Número de mesa</option>
+          </select>
+        </div>
+        <div className="controls-right">
+          <button 
+            className="sound-toggle-button app-button"
+            onClick={() => setIsSoundEnabled(!isSoundEnabled)}
+            title={isSoundEnabled ? "Silenciar notificaciones" : "Activar notificaciones"}
+          >
+            {isSoundEnabled ? <FaVolumeUp />: <FaVolumeMute />}
+          </button>
+          <button 
+            className="release-all-button app-button"
+            onClick={handleReleaseAllTables}
+          >
+            <FaSignOutAlt /> Liberar TODAS las Mesas
+          </button>
+        </div>
       </div>
       <table className="tables-list">
         <thead>
@@ -363,28 +442,25 @@ const AdminScreen = () => {
         </thead>
         <tbody>
           {sortedTables.map((table) => (
-            <tr key={table.id} style={{ backgroundColor: TableColors[table.state] }}>
-              <td>{table.number}</td>
+            <tr key={table.id} style={{ backgroundColor: TableColors[table.currentState] }}>
+              <td>{table.id}</td>
               <td>{table.tableName || '-'}</td>
-              <td>{translateState(table.state)}</td>
-              <td>{msToTime(table.waitTime)}</td>
+              <td>{translateState(table.currentState)}</td>
+              <td>
+                {msToMinutes(table.waitingTime)} min
+              </td>
               <td>
                 <div className="table-actions">
                   <button className="app-button" onClick={() => viewEventHistory(table.id)}>
                     <FaHistory /> Historial
                     {table.unseenCount > 0 && <span className="unseen-count">{table.unseenCount}</span>}
                   </button>
-                  {table.canMarkSeenFromOutside && (
-                    <button className="app-button" onClick={() => markEventsAsSeen(table.id)}>
-                      <FaCheckCircle /> Marcar Visto
-                    </button>
-                  )}
-                  {table.state === TableStates.AVAILABLE && (
+                  {table.currentState === TableStates.AVAILABLE && (
                     <button className="app-button" onClick={() => markAsOccupied(table.id)}>
                       <FaSignInAlt /> Ocupar
                     </button>
                   )}
-                  {table.state !== TableStates.AVAILABLE && (
+                  {table.currentState !== TableStates.AVAILABLE && (
                     <button className="app-button" onClick={() => markAsAvailable(table.id)}>
                       <FaSignOutAlt /> Liberar
                     </button>
@@ -396,32 +472,12 @@ const AdminScreen = () => {
         </tbody>
       </table>
 
-      {showEventsModal && (
-        <div className="modal-overlay">
-          <div className="modal">
-            <div className="modal-header">
-              <h2>Historial de Eventos - Mesa {selectedTableNumber}</h2>
-              <button className="app-button close-button" onClick={closeEventsModal}>
-                Cerrar
-              </button>
-            </div>
-            <div className="modal-content">
-              <div className="modal-actions">
-                <button 
-                  className="app-button" 
-                  onClick={() => markEventsAsSeen(selectedTableId)}
-                  disabled={!processedTables.find(t => t.id === selectedTableId)?.hasUnseenAttention}
-                >
-                  <FaCheckCircle /> Marcar Vistos
-                </button>
-              </div>
-              <div className="events-list-container">
-                <EventsList events={selectedTableEvents} />
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <AdminHistoryModal
+        show={showEventsModal}
+        onClose={closeEventsModal}
+        selectedTable={selectedTable}
+        onMarkSeen={markEventsAsSeen}
+      />
     </div>
   );
 };
