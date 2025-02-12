@@ -2229,6 +2229,336 @@ _**Assistant**_
 
 
 
+Vamos a hacer estos ajustes:
+
+```css:src/components/UserScreen.css
+.user-screen {
+    /* ... resto igual ... */
+}
+
+.content-wrapper {
+    /* ... resto igual ... */
+    position: relative; /* Para posicionar el footer */
+}
+
+.location-info {
+    flex-shrink: 0;
+    text-align: center;
+    margin: 5vh 0;
+}
+
+.company-name {
+    font-size: 2.6rem; /* Aumentado */
+    margin: 0;
+    font-weight: bold;
+}
+
+/* ... resto de location-info igual ... */
+
+.buttons-wrapper {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 8vh; /* Aumentado para dejar espacio al footer */
+}
+
+/* Nuevo footer */
+.heymozo-footer {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+    gap: 8px;
+}
+
+.heymozo-footer img {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+}
+
+.heymozo-footer span {
+    color: #666666;
+    font-size: 0.9rem;
+}
+```
+
+```css:src/components/ButtonsGroup.css
+.buttons-group {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 25px; /* Aumentado de 15px a 25px */
+}
+
+.button-container {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    max-height: 80px; /* Agregado para limitar altura */
+}
+
+.user-button {
+    width: 100%;
+    height: 100%;
+    font-size: 1.6rem; /* Reducido de 1.8rem */
+    /* ... resto igual ... */
+}
+
+.user-button svg {
+    margin-right: 12px;
+    font-size: 1.8rem; /* Reducido de 2rem */
+}
+```
+
+Y modificar el UserScreen.js para agregar el footer:
+
+```javascript:src/components/UserScreen.js
+return (
+  <div className="user-screen" style={backgroundStyle}>
+    <div className="content-wrapper">
+      <div className="location-info">
+        {/* ... contenido existente ... */}
+      </div>
+
+      <div className="buttons-wrapper">
+        <ButtonsGroup
+          {/* ... props existentes ... */}
+        />
+      </div>
+
+      {/* Nuevo footer */}
+      <div className="heymozo-footer">
+        <img src="/images/heymozo-logo.png" alt="HeyMozo Logo" />
+        <span>Generado por HeyMozo</span>
+      </div>
+
+      {/* ... modales existentes ... */}
+    </div>
+  </div>
+);
+```
+
+Los cambios principales son:
+1. Aumentar el tamaño del título de la compañía
+2. Reducir ligeramente el tamaño de los botones y sus íconos
+3. Aumentar el espacio entre botones
+4. Limitar la altura máxima de los botones
+5. Agregar el footer con el logo y texto de HeyMozo
+6. Ajustar los márgenes para acomodar el nuevo footer
+
+Asegúrate de que la imagen `/images/heymozo-logo.png` esté disponible en tu proyecto.
+
+---
+
+_**User**_
+
+ok, volvemos a achicar un poco los botones, y agranda el margen de abajo a 20% y que el logo de heymozo y lo otro este en la parte de arriba de ese 20% , porque en los celulares la barra de url ocupa un pedazo de la pantalla y lo empuja para abajo y no se ve
+
+---
+
+_**Assistant**_
+
+
+
+
+
+Vamos a ajustar los tamaños y posiciones:
+
+```css:src/components/ButtonsGroup.css
+.user-button {
+    width: 100%;
+    height: 100%;
+    font-size: 1.4rem; /* Reducido de 1.6rem */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(0, 123, 255, 0.8);
+    color: black;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    padding: 0 20px;
+}
+
+.user-button svg {
+    margin-right: 12px;
+    font-size: 1.6rem; /* Reducido de 1.8rem */
+}
+
+.button-container {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    max-height: 70px; /* Reducido de 80px */
+}
+```
+
+
+```css:src/components/UserScreen.css
+.buttons-wrapper {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 20vh; /* Aumentado a 20vh */
+}
+
+/* Reposicionar el footer */
+.heymozo-footer {
+    position: absolute;
+    bottom: 20vh; /* Posicionarlo en la parte superior del espacio del 20% */
+    left: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+    gap: 8px;
+    transform: translateY(50%); /* Centrarlo verticalmente en ese espacio */
+}
+
+.heymozo-footer img {
+    width: 20px; /* Reducido de 24px */
+    height: 20px;
+    object-fit: contain;
+}
+
+.heymozo-footer span {
+    color: #666666;
+    font-size: 0.85rem; /* Reducido de 0.9rem */
+}
+```
+
+
+Los cambios principales son:
+1. Reducir el tamaño de fuente de los botones a 1.4rem
+2. Reducir el tamaño de los íconos a 1.6rem
+3. Reducir la altura máxima de los botones a 70px
+4. Aumentar el margen inferior a 20vh
+5. Posicionar el footer en la parte superior del espacio del 20%
+6. Reducir ligeramente el tamaño del logo y texto de HeyMozo
+7. Usar transform para centrar verticalmente el footer en ese espacio
+
+Esto debería hacer que todo se vea mejor en móviles y evitar problemas con la barra de URL.
+
+---
+
+_**User**_
+
+hace un 15 en vez de 20 para lo de heymozo
+
+---
+
+_**Assistant**_
+
+
+
+
+
+Vamos a ajustar el espacio a 15vh:
+
+```css:src/components/UserScreen.css
+.buttons-wrapper {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 15vh; /* Cambiado de 20vh a 15vh */
+}
+
+/* Reposicionar el footer */
+.heymozo-footer {
+    position: absolute;
+    bottom: 15vh; /* Cambiado de 20vh a 15vh */
+    left: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+    gap: 8px;
+    transform: translateY(50%);
+}
+```
+
+Esto reducirá el espacio inferior del 20% al 15%, manteniendo el footer centrado en ese espacio.
+
+---
+
+_**User**_
+
+y dale un poco de margen con respecto al ultimo boton, tambien pone el texto en blanco con outline negro para que se pueda leer en cualquier fondo
+
+---
+
+_**Assistant**_
+
+
+
+
+
+Vamos a ajustar el footer con margen y texto con outline:
+
+```css:src/components/UserScreen.css
+.buttons-wrapper {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 15vh;
+}
+
+/* Ajustar el footer */
+.heymozo-footer {
+    position: absolute;
+    bottom: 15vh;
+    left: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+    gap: 8px;
+    transform: translateY(100%); /* Cambiado de 50% a 100% para más espacio */
+    margin-top: 20px; /* Agregar margen superior */
+}
+
+.heymozo-footer img {
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+    filter: drop-shadow(0px 0px 1px rgba(0, 0, 0, 0.8)); /* Sombra para el logo */
+}
+
+.heymozo-footer span {
+    color: white;
+    font-size: 0.85rem;
+    text-shadow: 
+        -1px -1px 0 #000,  
+         1px -1px 0 #000,
+        -1px  1px 0 #000,
+         1px  1px 0 #000; /* Outline negro para el texto */
+    font-weight: 500; /* Un poco más de peso para mejor legibilidad */
+}
+```
+
+
+Los cambios principales son:
+1. Cambiar el transform a 100% para más separación del último botón
+2. Agregar margen superior de 20px
+3. Agregar text-shadow para crear un efecto de outline en el texto
+4. Cambiar el color del texto a blanco
+5. Agregar una sombra suave al logo
+6. Aumentar ligeramente el peso de la fuente para mejor legibilidad
+
+Esto debería hacer que el footer sea legible en cualquier fondo y tenga mejor separación de los botones.
+
 ---
 
 
