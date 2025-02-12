@@ -8,16 +8,17 @@ const EventTypes = {
     MARK_SEEN: 'MARK_SEEN',
     MARK_AVAILABLE: 'MARK_AVAILABLE',
     MARK_OCCUPIED: 'MARK_OCCUPIED',
-  };
+    CALL_MANAGER: 'CALL_MANAGER'
+};
   
-  // Definición de los posibles estados de la mesa
-  const TableStates = {
+// Definición de los posibles estados de la mesa
+const TableStates = {
     AVAILABLE: 'AVAILABLE',
     OCCUPIED: 'OCCUPIED',
     WAITER: 'WAITER',
     CHECK: 'CHECK',
-  };
+};
   
-  // Exportar para uso en Node.js y React
-  module.exports = { EventTypes, TableStates };
+// Exportar para uso en Node.js y React
+module.exports = { EventTypes, TableStates };
   

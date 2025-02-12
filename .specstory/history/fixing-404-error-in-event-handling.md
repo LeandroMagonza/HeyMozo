@@ -2027,6 +2027,615 @@ El botón de mute ya está implementado y funciona con el estado `isSoundEnabled
 
 ---
 
+_**User**_
+
+muy bien, ahora quiero agregar en el @UserScreen.js que tenga tambien el tablename
+que tenga grande el nombre de la compania, mas chico abajlo el nombre de la sucursal y abajo el nombre de la mesa
+
+tambien quiero agregar un nuevo boton y evento, que sea CALL MANAGER - llamar encargado en el en el buttonsgroup
+
+va a estar en el user screen en rojo y abajo de todo, va a permitir un mensaje, y va a figurar en @AdminScreen.js @EventsList.js como rojo tambien 
+
+posiblemente tengas que agregar el event type en algun lado
+
+no hagas modificaciones que no te pedi, respeta los formatos que ya estan y trata de hacer las agregaciones siguiendo la misma forma
+
+---
+
+_**Assistant**_
+
+
+
+Vamos por partes. Primero agreguemos el nuevo tipo de evento en las constantes:
+
+```javascript:src/constants.js
+export const EventTypes = {
+  SCAN: 'SCAN',
+  CALL_WAITER: 'CALL_WAITER',
+  REQUEST_CHECK: 'REQUEST_CHECK',
+  MARK_SEEN: 'MARK_SEEN',
+  MARK_AVAILABLE: 'MARK_AVAILABLE',
+  MARK_OCCUPIED: 'MARK_OCCUPIED',
+  CALL_MANAGER: 'CALL_MANAGER'  // Nuevo tipo de evento
+};
+```
+
+Actualicemos las traducciones:
+
+```javascript:src/utils/translations.js
+// ... existing code ...
+
+export const translateEvent = (eventType) => {
+  const translations = {
+    SCAN: 'Escaneo de mesa',
+    CALL_WAITER: 'Llamada al mesero',
+    REQUEST_CHECK: 'Solicitud de cuenta',
+    MARK_SEEN: 'Eventos vistos',
+    MARK_AVAILABLE: 'Mesa liberada',
+    MARK_OCCUPIED: 'Mesa ocupada',
+    CALL_MANAGER: 'Llamada al encargado'  // Nueva traducción
+  };
+  return translations[eventType] || eventType;
+};
+```
+
+Actualicemos el tema para incluir el color rojo:
+
+```javascript:src/theme.js
+export const EventColors = {
+  SCAN: '#f8f9fa',
+  CALL_WAITER: '#fff3cd',
+  REQUEST_CHECK: '#d1e7dd',
+  MARK_SEEN: '#e2e3e5',
+  MARK_AVAILABLE: '#cff4fc',
+  MARK_OCCUPIED: '#f8d7da',
+  CALL_MANAGER: '#dc3545'  // Color rojo para el nuevo evento
+};
+```
+
+Modificar el UserScreen para mostrar la información de la mesa:
+
+```javascript:src/components/UserScreen.js
+return (
+  <div className="user-screen" style={backgroundStyle}>
+    <div className="content-wrapper">
+      <div className="location-info">
+        <h1 className="company-name">{company?.name || 'Cargando...'}</h1>
+        <h2 className="branch-name">{branch?.name || ''}</h2>
+        <h3 className="table-name">Mesa {table?.tableName || ''}</h3>
+      </div>
+
+      <div className="buttons-wrapper">
+        <ButtonsGroup
+          menuLink={menuLink}
+          texts={{
+            showMenu: <><FaUtensils /> {texts.showMenu}</>,
+            callWaiter: <><FaUser /> {texts.callWaiter}</>,
+            requestCheck: <><FaFileInvoiceDollar /> {texts.requestCheck}</>,
+            showEvents: <><FaHistory /> Histórico</>,
+            callManager: <><FaUser /> Llamar Encargado</>
+          }}
+          onEventSubmit={(eventType) => handleOpenModal(eventType)}
+          onShowEvents={handleOpenEventsModal}
+        />
+      </div>
+
+      {/* ... resto del código ... */}
+    </div>
+  </div>
+);
+```
+
+Actualizar el ButtonsGroup para incluir el nuevo botón:
+
+```javascript:src/components/ButtonsGroup.js
+return (
+  <div className="buttons-group">
+    <div className="button-container">
+      <button className="user-button" onClick={handleMenuClick}>
+        {texts.showMenu}
+      </button>
+    </div>
+    <div className="button-container">
+      <button className="user-button" onClick={() => onEventSubmit('CALL_WAITER')}>
+        {texts.callWaiter}
+      </button>
+    </div>
+    <div className="button-container">
+      <button className="user-button" onClick={() => onEventSubmit('REQUEST_CHECK')}>
+        {texts.requestCheck}
+      </button>
+    </div>
+    <div className="button-container">
+      <button className="user-button" onClick={onShowEvents}>
+        {texts.showEvents}
+      </button>
+    </div>
+    <div className="button-container">
+      <button 
+        className="user-button manager-button" 
+        onClick={() => onEventSubmit('CALL_MANAGER')}
+      >
+        {texts.callManager}
+      </button>
+    </div>
+  </div>
+);
+```
+
+Y agregar los estilos necesarios:
+
+```css:src/components/UserScreen.css
+.location-info {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.company-name {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.branch-name {
+  font-size: 1.8rem;
+  margin-bottom: 0.5rem;
+}
+
+.table-name {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+}
+```
+
+```css:src/components/ButtonsGroup.css
+.manager-button {
+  background-color: #dc3545 !important;
+  color: white !important;
+}
+
+.manager-button:hover {
+  background-color: #c82333 !important;
+}
+```
+
+Estos cambios:
+1. Agregan el nuevo tipo de evento CALL_MANAGER
+2. Incluyen la traducción y el color rojo para el evento
+3. Muestran la jerarquía de ubicación (compañía, sucursal, mesa)
+4. Agregan el botón rojo de llamar al encargado al final
+5. Mantienen el estilo y formato existente
+
+---
+
+_**User**_
+
+bien, fijate que en @EventModal.js esta poniendo solicitar cuenta en el titulo en vez de llamar encargado cuando se presiona el boton de llamar encargado tambien pone que el background sea un ligth red cuando llamas al encargado 
+@EventModal.js @ButtonsGroup.js @UserScreen.js fijate desde que se define el evento modal como se esta pasando lo que eventualmente va a ser el titulo
+
+---
+
+_**Assistant**_
+
+Veo que el problema está en el UserScreen.js donde se define el título del EventModal. Vamos a modificarlo para que maneje correctamente el título según el tipo de evento:
+
+```javascript:src/components/UserScreen.js
+// ... resto del código ...
+
+<EventModal
+  show={showModal}
+  onClose={handleCloseModal}
+  onSubmit={handleModalSubmit}
+  title={
+    modalEventType === EventTypes.CALL_WAITER 
+      ? "Llamar al Mesero" 
+      : modalEventType === EventTypes.REQUEST_CHECK 
+        ? "Solicitar Cuenta"
+        : "Llamar al Encargado"
+  }
+  messagePlaceholder="Ingrese un mensaje opcional..."
+  eventType={modalEventType} // Pasamos el tipo de evento al modal
+/>
+
+// ... resto del código ...
+```
+
+Y modificamos el EventModal para manejar el color de fondo según el tipo de evento:
+
+```javascript:src/components/EventModal.js
+// src/components/EventModal.js
+
+import React, { useState } from 'react';
+import './EventModal.css';
+import { EventTypes } from '../constants';
+
+const EventModal = ({ show, onClose, onSubmit, title, messagePlaceholder, eventType }) => {
+  const [message, setMessage] = useState('');
+
+  const handleSubmit = () => {
+    onSubmit(message);
+    setMessage('');
+  };
+
+  if (!show) return null;
+
+  const modalStyle = eventType === EventTypes.CALL_MANAGER 
+    ? { backgroundColor: '#ffebee' } // Light red background for manager calls
+    : {};
+
+  return (
+    <div className="modal-overlay">
+      <div className="modal" style={modalStyle}>
+        <h2>{title}</h2>
+        <textarea
+          placeholder={messagePlaceholder}
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+        ></textarea>
+        <div className="modal-buttons">
+          <button className="app-button" onClick={handleSubmit}>Enviar</button>
+          <button className="app-button" onClick={onClose}>Cancelar</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default EventModal;
+```
+
+Estos cambios:
+1. Corrigen el título del modal para mostrar "Llamar al Encargado" cuando corresponde
+2. Agregan un fondo rojo claro cuando se está llamando al encargado
+3. Mantienen la estructura y el estilo existente del componente
+
+---
+
+_**User**_
+
+@AdminScreen.js Muy bien, hay que hacer una modificacion a la funcion que calcula el estado
+
+de la misma forma que mozo y request check tiene un texto cuando estan las dos, hay que agregar encargado
+osea que puede ser
+mozo llamado
+cuenta solicitada
+encargado llamado
+
+mozo y cuenta
+mozo y encargado
+
+cuenta y encargado
+
+mozo, cuenta y encargado
+
+si el encargado esta llamado, el color va a ser el definido para encargado, toma precedencia el color sobre los otros dos porque es mas importante y urgente
+
+
+
+---
+
+_**Assistant**_
+
+
+
+Vamos a modificar la función `getTableStateAndWaitTime` en AdminScreen.js para manejar los nuevos estados combinados:
+
+```javascript:src/components/AdminScreen.js
+const getTableStateAndWaitTime = (events, currentTime) => {
+  if (!events || events.length === 0) return { state: TableStates.AVAILABLE, waitTime: 0 };
+
+  let state = TableStates.AVAILABLE;
+  let waitTime = 0;
+  let lastOccupiedTime = null;
+  let hasUnseenWaiter = false;
+  let hasUnseenCheck = false;
+  let hasUnseenManager = false;
+
+  // Ordenar eventos por fecha, más antiguo primero
+  const sortedEvents = [...events].sort((a, b) => 
+    new Date(a.createdAt) - new Date(b.createdAt)
+  );
+
+  for (const event of sortedEvents) {
+    const eventTime = new Date(event.createdAt);
+
+    switch (event.type) {
+      case EventTypes.MARK_AVAILABLE:
+        state = TableStates.AVAILABLE;
+        lastOccupiedTime = null;
+        hasUnseenWaiter = false;
+        hasUnseenCheck = false;
+        hasUnseenManager = false;
+        waitTime = currentTime - eventTime;
+        break;
+
+      case EventTypes.SCAN:
+      case EventTypes.MARK_OCCUPIED:
+        if (state === TableStates.AVAILABLE) {
+          state = TableStates.OCCUPIED;
+          lastOccupiedTime = eventTime;
+        }
+        break;
+
+      case EventTypes.CALL_WAITER:
+        if (!event.seenAt) {
+          hasUnseenWaiter = true;
+        }
+        break;
+
+      case EventTypes.REQUEST_CHECK:
+        if (!event.seenAt) {
+          hasUnseenCheck = true;
+        }
+        break;
+
+      case EventTypes.CALL_MANAGER:
+        if (!event.seenAt) {
+          hasUnseenManager = true;
+        }
+        break;
+
+      case EventTypes.MARK_SEEN:
+        hasUnseenWaiter = false;
+        hasUnseenCheck = false;
+        hasUnseenManager = false;
+        break;
+    }
+  }
+
+  // Determinar estado final
+  if (state === TableStates.AVAILABLE) {
+    waitTime = currentTime - new Date(sortedEvents[sortedEvents.length - 1].createdAt);
+  } else {
+    // Si hay llamado al encargado, toma precedencia
+    if (hasUnseenManager) {
+      if (hasUnseenWaiter && hasUnseenCheck) {
+        state = 'MANAGER_WAITER_CHECK';
+      } else if (hasUnseenWaiter) {
+        state = 'MANAGER_WAITER';
+      } else if (hasUnseenCheck) {
+        state = 'MANAGER_CHECK';
+      } else {
+        state = TableStates.MANAGER;
+      }
+    } else if (hasUnseenWaiter && hasUnseenCheck) {
+      state = TableStates.WAITER_AND_CHECK;
+    } else if (hasUnseenWaiter) {
+      state = TableStates.WAITER;
+    } else if (hasUnseenCheck) {
+      state = TableStates.CHECK;
+    } else {
+      state = TableStates.OCCUPIED;
+    }
+    
+    // El tiempo de espera siempre es desde que la mesa se ocupó
+    if (lastOccupiedTime) {
+      waitTime = currentTime - lastOccupiedTime;
+    }
+  }
+
+  return { state, waitTime };
+};
+```
+
+Y actualizar las traducciones en translations.js:
+
+```javascript:src/utils/translations.js
+export const translateState = (state) => {
+  const stateTranslations = {
+    'AVAILABLE': 'DISPONIBLE',
+    'OCCUPIED': 'OCUPADO',
+    'WAITER': 'MOZO LLAMADO',
+    'CHECK': 'CUENTA SOLICITADA',
+    'WAITER_AND_CHECK': 'MOZO Y CUENTA',
+    'MANAGER': 'ENCARGADO LLAMADO',
+    'MANAGER_WAITER': 'ENCARGADO Y MOZO',
+    'MANAGER_CHECK': 'ENCARGADO Y CUENTA',
+    'MANAGER_WAITER_CHECK': 'ENCARGADO, MOZO Y CUENTA'
+  };
+
+  return stateTranslations[state] || state;
+};
+```
+
+Y actualizar los colores en theme.js:
+
+```javascript:src/theme.js
+// Mapeo de colores para los estados de las mesas
+export const TableColors = {
+  [TableStates.AVAILABLE]: Colors.AVAILABLE,
+  [TableStates.OCCUPIED]: Colors.OCCUPIED,
+  [TableStates.WAITER]: Colors.ATTENTION,
+  [TableStates.CHECK]: Colors.ATTENTION,
+  [TableStates.WAITER_AND_CHECK]: Colors.ATTENTION,
+  [TableStates.MANAGER]: Colors.MANAGER,
+  'MANAGER_WAITER': Colors.MANAGER,
+  'MANAGER_CHECK': Colors.MANAGER,
+  'MANAGER_WAITER_CHECK': Colors.MANAGER
+};
+```
+
+Estos cambios:
+1. Agregan detección de llamados al encargado
+2. Crean nuevos estados combinados con encargado
+3. Mantienen la precedencia del color rojo del encargado
+4. Muestran textos descriptivos para cada combinación de estados
+5. Mantienen la lógica existente para otros estados
+
+---
+
+_**User**_
+
+bien, y en el ordenamiento por prioridad tiene que estar arriba de todo si se llamo al encargado @AdminScreen.js 
+
+---
+
+_**Assistant**_
+
+Sí, hay que modificar el orden de prioridad en el sortedTables para que los estados que involucran al encargado tengan la máxima prioridad:
+
+```javascript:src/components/AdminScreen.js
+const sortedTables = useMemo(() => {
+  return [...processedTables].sort((a, b) => {
+    if (sortType === 'priority') {
+      if (a.currentState !== b.currentState) {
+        const stateOrder = {
+          [TableStates.MANAGER_WAITER_CHECK]: 0,
+          [TableStates.MANAGER_WAITER]: 1,
+          [TableStates.MANAGER_CHECK]: 2,
+          [TableStates.MANAGER]: 3,
+          [TableStates.WAITER_AND_CHECK]: 4,
+          [TableStates.WAITER]: 5,
+          [TableStates.CHECK]: 6,
+          [TableStates.OCCUPIED]: 7,
+          [TableStates.AVAILABLE]: 8
+        };
+        return stateOrder[a.currentState] - stateOrder[b.currentState];
+      }
+      return b.waitingTime - a.waitingTime;
+    } else {
+      // Ordenar por número de mesa
+      return a.id - b.id;
+    }
+  });
+}, [processedTables, sortType]);
+```
+
+Esto asegura que:
+1. Las mesas con llamado al encargado aparezcan primero
+2. Entre las mesas con encargado, primero las que tienen más solicitudes pendientes
+3. Luego siguen las mesas con llamados al mozo y/o cuenta
+4. Por último las mesas ocupadas y disponibles
+
+---
+
+_**User**_
+
+@UserScreen.js en user screen no se esta mostrando el table.tableName, y no me queda claro por que, en la base de datos esta correctamente definido, puede ser que no lo este trayendo correctamente con la consulta?
+
+---
+
+_**Assistant**_
+
+Vamos a revisar la cadena de datos desde la base hasta el UserScreen.
+
+1. Primero, veamos cómo se obtiene la tabla en el servidor:
+
+```javascript:server.js
+// Ruta para obtener una mesa específica
+app.get('/api/tables/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const table = await Table.findByPk(id, {
+      include: [{
+        model: Event,
+        attributes: ['type', 'message', 'createdAt', 'seenAt'],
+        order: [['createdAt', 'DESC']]
+      }]
+    });
+
+    if (!table) {
+      return res.status(404).json({ error: 'Table not found' });
+    }
+
+    // Formatear la respuesta incluyendo tableName
+    const formattedTable = {
+      ...table.toJSON(),
+      events: table.Events.map(event => ({
+        type: event.type,
+        message: event.message,
+        createdAt: event.createdAt,
+        seenAt: event.seenAt
+      }))
+    };
+
+    console.log('Sending table data:', formattedTable); // Debug log
+    res.json(formattedTable);
+  } catch (error) {
+    console.error('Error fetching table:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+```
+
+2. En UserScreen, agreguemos logs para ver qué datos llegan:
+
+```javascript:src/components/UserScreen.js
+useEffect(() => {
+  const loadData = async () => {
+    try {
+      const [companyData, branchData, tableData] = await Promise.all([
+        getCompany(companyId),
+        getBranch(branchId),
+        getTable(tableId)
+      ]);
+
+      console.log('Table data received:', tableData.data); // Debug log
+
+      setCompany(companyData.data);
+      setBranch(branchData.data);
+      setTable(tableData.data);
+
+      // ... resto del código ...
+    } catch (error) {
+      console.error('Error loading data:', error);
+    }
+  };
+
+  loadData();
+}, [companyId, branchId, tableId]);
+
+// ... en el render ...
+console.log('Current table state:', table); // Debug log
+```
+
+Estos logs nos ayudarán a identificar en qué punto se está perdiendo el tableName. ¿Podrías agregar estos logs y decirme qué muestran en la consola?
+
+También, para asegurarnos, verifiquemos que el servicio API está haciendo la petición correctamente:
+
+```javascript:src/services/api.js
+export const getTable = (tableId) => {
+  console.log('Fetching table:', tableId); // Debug log
+  return api.get(`/tables/${tableId}`);
+};
+```
+
+Con estos logs podremos ver:
+1. Si el tableName está presente en la respuesta del servidor
+2. Si se está recibiendo correctamente en el frontend
+3. Si se está guardando correctamente en el estado
+4. Si está disponible al momento del render
+
+---
+
+_**User**_
+
+lockdown-install.js:1 Removing unpermitted intrinsics
+api.js:11 API Base URL: http://localhost:3001/api
+UserScreen.js:129 Current table state: null
+api.js:30 Fetching table: 2
+hook.js:608 ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition. Error Component Stack
+    at BrowserRouter (index.tsx:789:1)
+    at App (<anonymous>)
+overrideMethod @ hook.js:608Understand this warningAI
+hook.js:608 ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath. Error Component Stack
+    at BrowserRouter (index.tsx:789:1)
+    at App (<anonymous>)
+overrideMethod @ hook.js:608Understand this warningAI
+index.CucWK6IV.js:1 Failed to load module script: Expected a JavaScript module script but the server responded with a MIME type of "text/html". Strict MIME type checking is enforced for module scripts per HTML spec.Understand this errorAI
+Wallet.mlGYZajl.js:1 Failed to load module script: Expected a JavaScript module script but the server responded with a MIME type of "text/html". Strict MIME type checking is enforced for module scripts per HTML spec.Understand this errorAI
+asyncToGenerator.O4pnRyQq.js:1 Failed to load module script: Expected a JavaScript module script but the server responded with a MIME type of "text/html". Strict MIME type checking is enforced for module scripts per HTML spec.Understand this errorAI
+index.umd.BXzp7Rme.js:1 Failed to load module script: Expected a JavaScript module script but the server responded with a MIME type of "text/html". Strict MIME type checking is enforced for module scripts per HTML spec.Understand this errorAI
+UserScreen.js:40 Table data received: <!doctype html><html lang="en"><head><meta charset="utf-8"/><link rel="icon" href="/favicon.ico"/><meta name="viewport" content="width=device-width,initial-scale=1"/><meta name="theme-color" content="#000000"/><meta name="description" content="Web site created using create-react-app"/><link rel="apple-touch-icon" href="/logo192.png"/><link rel="manifest" href="/manifest.json"/><title>React App</title><script defer="defer" src="/static/js/main.67cbdae6.js"></script><link href="/static/css/main.abeb6667.css" rel="stylesheet"></head><body><noscript>You need to enable JavaScript to run this app.</noscript><div id="root"></div></body></html>
+2UserScreen.js:129 Current table state: <!doctype html><html lang="en"><head><meta charset="utf-8"/><link rel="icon" href="/favicon.ico"/><meta name="viewport" content="width=device-width,initial-scale=1"/><meta name="theme-color" content="#000000"/><meta name="description" content="Web site created using create-react-app"/><link rel="apple-touch-icon" href="/logo192.png"/><link rel="manifest" href="/manifest.json"/><title>React App</title><script defer="defer" src="/static/js/main.67cbdae6.js"></script><link href="/static/css/main.abeb6667.css" rel="stylesheet"></head><body><noscript>You need to enable JavaScript to run this app.</noscript><div id="root"></div></body></html>
+
+---
+
+_**Assistant**_
+
+
+
+---
+
 
 
 ---

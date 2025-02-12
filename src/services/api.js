@@ -26,7 +26,10 @@ export const updateBranch = (branchId, data) => api.put(`/branches/${branchId}`,
 export const getTables = (branchId) => 
   api.get('/tables', { params: { branchId } });
 
-export const getTable = (tableId) => api.get(`/tables/${tableId}`);
+export const getTable = (tableId) => {
+  console.log('Fetching table:', tableId); // Debug log
+  return api.get(`/tables/${tableId}`);
+};
 
 export const createTable = (data) => api.post('/tables', data);
 

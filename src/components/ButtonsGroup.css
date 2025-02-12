@@ -44,3 +44,11 @@
     justify-content: center;
     margin-bottom: 10px; /* Añadido para dar espacio entre botones */
 }
+
+.manager-button {
+  background-color: #dc3545 !important;
+}
+
+.manager-button:hover {
+  background-color: #c82333 !important;
+}

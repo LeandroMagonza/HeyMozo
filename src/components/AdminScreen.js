@@ -32,7 +32,11 @@ const AdminScreen = () => {
     OCCUPIED: 'OCCUPIED',
     WAITER: 'WAITER',
     CHECK: 'CHECK',
-    WAITER_AND_CHECK: 'WAITER_AND_CHECK'
+    WAITER_AND_CHECK: 'WAITER_AND_CHECK',
+    MANAGER: 'MANAGER',
+    MANAGER_WAITER: 'MANAGER_WAITER',
+    MANAGER_CHECK: 'MANAGER_CHECK',
+    MANAGER_WAITER_CHECK: 'MANAGER_WAITER_CHECK'
   };
 
   const audioRef = useRef(new Audio(notificationSound));
@@ -106,6 +110,7 @@ const AdminScreen = () => {
     let lastOccupiedTime = null;
     let hasUnseenWaiter = false;
     let hasUnseenCheck = false;
+    let hasUnseenManager = false;
 
     // Ordenar eventos por fecha, más antiguo primero
     const sortedEvents = [...events].sort((a, b) => 
@@ -121,6 +126,7 @@ const AdminScreen = () => {
           lastOccupiedTime = null;
           hasUnseenWaiter = false;
           hasUnseenCheck = false;
+          hasUnseenManager = false;
           waitTime = currentTime - eventTime;
           break;
 
@@ -144,9 +150,16 @@ const AdminScreen = () => {
           }
           break;
 
+        case EventTypes.CALL_MANAGER:
+          if (!event.seenAt) {
+            hasUnseenManager = true;
+          }
+          break;
+
         case EventTypes.MARK_SEEN:
           hasUnseenWaiter = false;
           hasUnseenCheck = false;
+          hasUnseenManager = false;
           break;
       }
     }
@@ -155,7 +168,18 @@ const AdminScreen = () => {
     if (state === TableStates.AVAILABLE) {
       waitTime = currentTime - new Date(sortedEvents[sortedEvents.length - 1].createdAt);
     } else {
-      if (hasUnseenWaiter && hasUnseenCheck) {
+      // Si hay llamado al encargado, toma precedencia
+      if (hasUnseenManager) {
+        if (hasUnseenWaiter && hasUnseenCheck) {
+          state = 'MANAGER_WAITER_CHECK';
+        } else if (hasUnseenWaiter) {
+          state = 'MANAGER_WAITER';
+        } else if (hasUnseenCheck) {
+          state = 'MANAGER_CHECK';
+        } else {
+          state = TableStates.MANAGER;
+        }
+      } else if (hasUnseenWaiter && hasUnseenCheck) {
         state = TableStates.WAITER_AND_CHECK;
       } else if (hasUnseenWaiter) {
         state = TableStates.WAITER;
@@ -249,11 +273,15 @@ const AdminScreen = () => {
       if (sortType === 'priority') {
         if (a.currentState !== b.currentState) {
           const stateOrder = {
-            [TableStates.WAITER_AND_CHECK]: 0,
-            [TableStates.WAITER]: 1,
-            [TableStates.CHECK]: 2,
-            [TableStates.OCCUPIED]: 3,
-            [TableStates.AVAILABLE]: 4
+            [TableStates.MANAGER_WAITER_CHECK]: 0,
+            [TableStates.MANAGER_WAITER]: 1,
+            [TableStates.MANAGER_CHECK]: 2,
+            [TableStates.MANAGER]: 3,
+            [TableStates.WAITER_AND_CHECK]: 4,
+            [TableStates.WAITER]: 5,
+            [TableStates.CHECK]: 6,
+            [TableStates.OCCUPIED]: 7,
+            [TableStates.AVAILABLE]: 8
           };
           return stateOrder[a.currentState] - stateOrder[b.currentState];
         }

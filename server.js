@@ -20,9 +20,6 @@ console.log('Starting server setup');
 app.use(express.json());
 app.use(cors());
 
-// Serve static files from the build folder
-app.use(express.static(path.join(__dirname, 'build')));
-
 // Definir relaciones
 Company.hasMany(Branch, { foreignKey: 'companyId' });
 Branch.belongsTo(Company, { foreignKey: 'companyId' });
@@ -103,6 +100,44 @@ app.get('/api/tables', async (req, res) => {
     res.json(formattedTables);
   } catch (error) {
     console.error('Error fetching tables:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Ruta para obtener una mesa específica
+app.get('/api/tables/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    console.log('Fetching table with id:', id); // Debug log
+
+    const table = await Table.findByPk(id, {
+      attributes: ['id', 'tableName', 'branchId', 'tableDescription'], // Especificar atributos
+      include: [{
+        model: Event,
+        attributes: ['type', 'message', 'createdAt', 'seenAt'],
+        order: [['createdAt', 'DESC']]
+      }]
+    });
+
+    if (!table) {
+      console.log('Table not found:', id); // Debug log
+      return res.status(404).json({ error: 'Table not found' });
+    }
+
+    const formattedTable = {
+      ...table.toJSON(),
+      events: table.Events.map(event => ({
+        type: event.type,
+        message: event.message,
+        createdAt: event.createdAt,
+        seenAt: event.seenAt
+      }))
+    };
+
+    console.log('Sending formatted table:', formattedTable); // Debug log
+    res.json(formattedTable);
+  } catch (error) {
+    console.error('Error fetching table:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -409,7 +444,10 @@ app.post('/api/branches/:id/release-all-tables', async (req, res) => {
   }
 });
 
-// All other GET requests not handled before will return our React app
+// Servir archivos estáticos
+app.use(express.static(path.join(__dirname, 'build')));
+
+// La ruta catch-all debe ser LA ÚLTIMA
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'build', 'index.html'));
 });

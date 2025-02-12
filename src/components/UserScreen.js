@@ -37,6 +37,8 @@ const UserScreen = () => {
           getTable(tableId)
         ]);
 
+        console.log('Table data received:', tableData.data); // Debug log
+
         setCompany(companyData.data);
         setBranch(branchData.data);
         setTable(tableData.data);
@@ -124,10 +126,16 @@ const UserScreen = () => {
     backgroundRepeat: 'no-repeat',
   };
 
+  console.log('Current table state:', table); // Debug log
+
   return (
     <div className="user-screen" style={backgroundStyle}>
       <div className="content-wrapper">
-        <h1 className="restaurant-name">{branch?.name || 'Cargando...'}</h1>
+        <div className="location-info">
+          <h1 className="company-name">{company?.name || 'Cargando...'}</h1>
+          <h2 className="branch-name">{branch?.name || ''}</h2>
+          <h3 className="table-name">{table?.tableName || ''}</h3>
+        </div>
 
         <div className="buttons-wrapper">
           <ButtonsGroup
@@ -136,7 +144,8 @@ const UserScreen = () => {
               showMenu: <><FaUtensils /> {texts.showMenu}</>,
               callWaiter: <><FaUser /> {texts.callWaiter}</>,
               requestCheck: <><FaFileInvoiceDollar /> {texts.requestCheck}</>,
-              showEvents: <><FaHistory /> Histórico</>
+              showEvents: <><FaHistory /> Histórico</>,
+              callManager: <><FaUser /> Llamar Encargado</>
             }}
             onEventSubmit={(eventType) => handleOpenModal(eventType)}
             onShowEvents={handleOpenEventsModal}
@@ -147,8 +156,15 @@ const UserScreen = () => {
           show={showModal}
           onClose={handleCloseModal}
           onSubmit={handleModalSubmit}
-          title={modalEventType === EventTypes.CALL_WAITER ? "Llamar al Mesero" : "Solicitar Cuenta"}
+          title={
+            modalEventType === EventTypes.CALL_WAITER 
+              ? "Llamar al Mesero" 
+              : modalEventType === EventTypes.REQUEST_CHECK 
+                ? "Solicitar Cuenta"
+                : "Llamar al Encargado"
+          }
           messagePlaceholder="Ingrese un mensaje opcional..."
+          eventType={modalEventType}
         />
 
         <HistoryModal

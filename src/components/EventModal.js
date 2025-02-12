@@ -2,8 +2,9 @@
 
 import React, { useState } from 'react';
 import './EventModal.css';
+import { EventTypes } from '../constants';
 
-const EventModal = ({ show, onClose, onSubmit, title, messagePlaceholder }) => {
+const EventModal = ({ show, onClose, onSubmit, title, messagePlaceholder, eventType }) => {
   const [message, setMessage] = useState('');
 
   const handleSubmit = () => {
@@ -13,9 +14,13 @@ const EventModal = ({ show, onClose, onSubmit, title, messagePlaceholder }) => {
 
   if (!show) return null;
 
+  const modalStyle = eventType === EventTypes.CALL_MANAGER 
+    ? { backgroundColor: '#ffebee' } // Light red background for manager calls
+    : {};
+
   return (
     <div className="modal-overlay">
-      <div className="modal">
+      <div className="modal" style={modalStyle}>
         <h2>{title}</h2>
         <textarea
           placeholder={messagePlaceholder}

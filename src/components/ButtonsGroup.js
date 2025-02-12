@@ -30,6 +30,14 @@ const ButtonsGroup = ({ menuLink, texts, onEventSubmit, onShowEvents }) => {
           {texts.showEvents}
         </button>
       </div>
+      <div className="button-container">
+        <button 
+          className="user-button manager-button" 
+          onClick={() => onEventSubmit('CALL_MANAGER')}
+        >
+          {texts.callManager}
+        </button>
+      </div>
     </div>
   );
 };
