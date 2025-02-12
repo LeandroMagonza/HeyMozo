@@ -3329,13 +3329,193 @@ Los cambios principales son:
 
 _**User**_
 
-muy bien. casi, que el boton este verde solo cuando termino de preparar, solo cuando dice descargar
+me gustaria que revises el proceso de impresion en @QRCodeDocument.js @QRGeneratorModal.js  porque se me estan haciendo separaciones de pagina que hacen que en una pagina entren 4 qrs y en la siguiente 2
+
+hace que siempre entren 4 por pagina por favor
 
 ---
 
 _**Assistant**_
 
 
+
+Vamos a ajustar el QRCodeDocument para forzar 4 QRs por página:
+
+```javascript:src/components/QRCodeDocument.js
+// ... imports ...
+
+const styles = StyleSheet.create({
+  page: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    padding: 20,
+    justifyContent: 'space-between', // Distribuir el espacio entre los QRs
+  },
+  qrContainer: {
+    width: '48%', // Cambiar de 40% a 48% para que entren 2 por fila
+    height: '48%', // Cambiar para que entren 2 filas
+    margin: '1%', // Agregar margen para separación
+    padding: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderStyle: 'dashed',
+    borderWidth: 1,
+    borderColor: '#999999',
+    position: 'relative',
+  },
+  // ... resto de los estilos igual ...
+});
+
+const QRCodeDocument = ({ 
+  tables, 
+  companyId, 
+  branchId, 
+  branchName,
+  restaurantLogo,
+  textColor,
+  fontFamily,
+  qrBackgroundImage,
+  website
+}) => {
+  const getTableGroups = () => {
+    const groups = [];
+    // Forzar grupos de 4
+    for (let i = 0; i < tables.length; i += 4) {
+      groups.push(tables.slice(i, i + 4));
+    }
+    return groups;
+  };
+
+  // ... resto del código igual ...
+
+  return (
+    <Document>
+      {getTableGroups().map((group, pageIndex) => (
+        <Page key={pageIndex} size="A4" style={styles.page}>
+          {group.map((table) => (
+            <QRItem key={table.id} table={table} />
+          ))}
+          {/* Agregar QRs vacíos si el grupo no está completo */}
+          {[...Array(4 - group.length)].map((_, index) => (
+            <View key={`empty-${index}`} style={styles.qrContainer} />
+          ))}
+        </Page>
+      ))}
+    </Document>
+  );
+};
+
+export default QRCodeDocument;
+```
+
+Los cambios principales son:
+1. Ajustar el ancho y alto de los QRs para que entren exactamente 4 por página
+2. Forzar grupos de 4 en getTableGroups
+3. Agregar QRs vacíos para mantener el layout cuando el último grupo no está completo
+4. Mejorar la distribución del espacio en la página
+
+Esto debería hacer que siempre haya 4 QRs por página, distribuidos en una cuadrícula de 2x2, sin importar cuántos QRs haya en total.
+
+---
+
+_**User**_
+
+muy bien, ahora quiero que el logo de heymozo aparezca no solo en el pdf, si no tambien en la pestaña del navegador, en que archivo se pone eso? @App.js ?
+
+---
+
+_**Assistant**_
+
+El favicon (ícono en la pestaña del navegador) se configura en el archivo `public/index.html`. Hay dos formas de hacerlo:
+
+1. La forma simple es solo reemplazar el archivo `public/favicon.ico` con el logo de HeyMozo.
+
+2. La forma más completa es modificar el `public/index.html` para incluir varios tamaños del ícono:
+
+```html:public/index.html
+<head>
+  <meta charset="utf-8" />
+  <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
+  <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
+  <!-- Agregar más tamaños de íconos -->
+  <link rel="icon" type="image/png" sizes="32x32" href="%PUBLIC_URL%/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="%PUBLIC_URL%/favicon-16x16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="%PUBLIC_URL%/apple-touch-icon.png">
+  <!-- ... resto del head ... -->
+</head>
+```
+
+Necesitarías poner los archivos correspondientes en la carpeta `public`:
+- favicon.ico (16x16 o 32x32)
+- favicon-16x16.png
+- favicon-32x32.png
+- logo192.png (para dispositivos Apple)
+- apple-touch-icon.png (180x180)
+
+¿Quieres que te ayude a generar estos archivos a partir del logo de HeyMozo?
+
+---
+
+_**User**_
+
+tengo public/images/heymozo-logo.png
+
+@index.html @index.js puede leerlo directo de ahi?
+
+---
+
+_**Assistant**_
+
+Sí, puedes usar el logo directamente desde la carpeta public. Necesitamos hacer dos cambios:
+
+1. En el index.html, actualizar los links y el título:
+
+```html:public/index.html
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="%PUBLIC_URL%/images/heymozo-logo.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#000000" />
+    <meta
+      name="description"
+      content="HeyMozo - Sistema de gestión para restaurantes"
+    />
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/images/heymozo-logo.png" />
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    <title>HeyMozo</title>
+  </head>
+  <!-- ... resto del archivo igual ... -->
+</html>
+```
+
+2. También deberías actualizar el manifest.json para mantener consistencia:
+
+```json:public/manifest.json
+{
+  "short_name": "HeyMozo",
+  "name": "HeyMozo",
+  "icons": [
+    {
+      "src": "images/heymozo-logo.png",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/png"
+    },
+    {
+      "src": "images/heymozo-logo.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#000000",
+  "background_color": "#ffffff"
+}
+```
+
+Esto debería mostrar el logo de HeyMozo en la pestaña del navegador y en cualquier lugar donde se use el ícono de la app.
 
 ---
 

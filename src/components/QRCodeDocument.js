@@ -8,10 +8,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     padding: 20,
+    justifyContent: 'space-between',
   },
   qrContainer: {
-    width: '40%',
-    height: '50%',
+    width: '48%',
+    height: '48%',
+    margin: '1%',
     padding: 15,
     alignItems: 'center',
     justifyContent: 'center',
@@ -109,11 +111,11 @@ const QRCodeDocument = ({
     return `${window.location.origin}/user/${companyId}/${branchId}/${tableId}`;
   };
 
-  // Función para dividir las mesas en grupos de 6
+  // Función para dividir las mesas en grupos de 4
   const getTableGroups = () => {
     const groups = [];
-    for (let i = 0; i < tables.length; i += 6) {
-      groups.push(tables.slice(i, i + 6));
+    for (let i = 0; i < tables.length; i += 4) {
+      groups.push(tables.slice(i, i + 4));
     }
     return groups;
   };
@@ -204,6 +206,9 @@ const QRCodeDocument = ({
         <Page key={pageIndex} size="A4" style={styles.page}>
           {group.map((table) => (
             <QRItem key={table.id} table={table} />
+          ))}
+          {[...Array(4 - group.length)].map((_, index) => (
+            <View key={`empty-${index}`} style={styles.qrContainer} />
           ))}
         </Page>
       ))}
