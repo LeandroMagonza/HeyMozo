@@ -6,5 +6,7 @@
   "/api/tables": "/tables",
   "/api/tables/:id": "/tables/:id",
   "/api/tables/:id/events": "/tables/:id/events",
-  "/api/branches/:id/release-all-tables": "/branches/:id/release-all-tables"
+  "/api/branches/:id/release-all-tables": "/branches/:id/release-all-tables",
+  "/api/companies/:id/config": "/companies/:id/config",
+  "/api/branches/:id/config": "/branches/:id/config"
 }

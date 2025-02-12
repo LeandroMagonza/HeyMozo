@@ -12,7 +12,11 @@ const Company = sequelize.define('Company', {
     allowNull: false
   },
   website: DataTypes.STRING,
-  menu: DataTypes.STRING
+  menu: DataTypes.STRING,
+  branchIds: {
+    type: DataTypes.JSON,
+    defaultValue: []
+  }
 });
 
 module.exports = Company; 

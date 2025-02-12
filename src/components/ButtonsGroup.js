@@ -3,18 +3,29 @@
 import React from 'react';
 import './ButtonsGroup.css';
 
-const ButtonsGroup = ({ menuLink, texts, onEventSubmit, onShowEvents }) => {
+const ButtonsGroup = ({ 
+  menuLink, 
+  texts, 
+  onEventSubmit, 
+  onShowEvents,
+  showMenuButton = true // Valor por defecto true para mantener compatibilidad
+}) => {
   const handleMenuClick = () => {
     window.open(menuLink, '_blank');
   };
 
   return (
     <div className="buttons-group">
-      <div className="button-container">
-        <button className="user-button" onClick={handleMenuClick}>
-          {texts.showMenu}
-        </button>
-      </div>
+      {showMenuButton && menuLink && (
+        <div className="button-container">
+          <button 
+            className="user-button" 
+            onClick={handleMenuClick}
+          >
+            {texts.showMenu}
+          </button>
+        </div>
+      )}
       <div className="button-container">
         <button className="user-button" onClick={() => onEventSubmit('CALL_WAITER')}>
           {texts.callWaiter}

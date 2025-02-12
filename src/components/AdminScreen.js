@@ -287,8 +287,8 @@ const AdminScreen = () => {
         }
         return b.waitingTime - a.waitingTime;
       } else {
-        // Ordenar por número de mesa
-        return a.id - b.id;
+        // Ordenar por nombre de mesa
+        return (a.tableName || '').localeCompare(b.tableName || '');
       }
     });
   }, [processedTables, sortType]);
@@ -439,7 +439,7 @@ const AdminScreen = () => {
           <label htmlFor="sort-type">Ordenar por: </label>
           <select id="sort-type" value={sortType} onChange={handleSortChange}>
             <option value="priority">Prioridad de atención</option>
-            <option value="tableNumber">Número de mesa</option>
+            <option value="tableNumber">Nombre de mesa</option>
           </select>
         </div>
         <div className="controls-right">
@@ -461,7 +461,6 @@ const AdminScreen = () => {
       <table className="tables-list">
         <thead>
           <tr>
-            <th>Número</th>
             <th>Nombre</th>
             <th>Estado</th>
             <th>Tiempo de espera</th>
@@ -471,7 +470,6 @@ const AdminScreen = () => {
         <tbody>
           {sortedTables.map((table) => (
             <tr key={table.id} style={{ backgroundColor: TableColors[table.currentState] }}>
-              <td>{table.id}</td>
               <td>{table.tableName || '-'}</td>
               <td>{translateState(table.currentState)}</td>
               <td>

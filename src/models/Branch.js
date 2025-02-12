@@ -16,7 +16,15 @@ const Branch = sequelize.define('Branch', {
     allowNull: false
   },
   website: DataTypes.STRING,
-  menu: DataTypes.STRING
+  menu: DataTypes.STRING,
+  logo: DataTypes.STRING,
+  textColor: DataTypes.STRING,
+  fontFamily: DataTypes.STRING,
+  qrBackgroundImage: DataTypes.STRING,
+  tableIds: {
+    type: DataTypes.JSON,
+    defaultValue: []
+  }
 });
 
 module.exports = Branch; 

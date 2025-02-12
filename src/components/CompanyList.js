@@ -44,10 +44,13 @@ const CompanyList = () => {
     };
 
     try {
-      await createCompany(newCompany);
-      fetchCompanies();
+      const response = await createCompany(newCompany);
+      if (response.data) {
+        await fetchCompanies();
+      }
     } catch (error) {
       console.error('Error adding new company:', error);
+      alert('Error al crear la compañía');
     }
   };
 

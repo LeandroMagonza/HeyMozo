@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
-import { getBranch, getTables, updateBranch, updateTable, createTable, deleteTable } from '../services/api';
+import { getBranch, getTables, updateBranch, updateTable, createTable, deleteTable, getCompany } from '../services/api';
 import './BranchConfig.css';
+import { FaEye, FaQrcode, FaChair, FaSave, FaTrash } from 'react-icons/fa';
+import '../styles/common.css';
 
 const FONT_OPTIONS = [
   { value: 'Helvetica', label: 'Helvetica' },
@@ -24,6 +26,7 @@ const FONT_OPTIONS = [
 const BranchConfig = () => {
   const { companyId, branchId } = useParams();
   const navigate = useNavigate();
+  const [company, setCompany] = useState(null);
   const [branch, setBranch] = useState(null);
   const [editedBranch, setEditedBranch] = useState(null);
   const [tables, setTables] = useState([]);
@@ -31,11 +34,13 @@ const BranchConfig = () => {
 
   const fetchData = useCallback(async () => {
     try {
-      const [branchResponse, tablesResponse] = await Promise.all([
+      const [companyResponse, branchResponse, tablesResponse] = await Promise.all([
+        getCompany(companyId),
         getBranch(branchId),
         getTables(branchId)
       ]);
 
+      setCompany(companyResponse.data);
       setBranch(branchResponse.data);
       setEditedBranch(branchResponse.data);
       
@@ -50,7 +55,7 @@ const BranchConfig = () => {
       console.error('Error fetching data:', error);
       setLoading(false);
     }
-  }, [branchId]);
+  }, [companyId, branchId]);
 
   useEffect(() => {
     fetchData();
@@ -166,117 +171,176 @@ const BranchConfig = () => {
   }
 
   return (
-    <div className="branch-config">
-      <h2>Configuración de Sucursal</h2>
-      <div className="branch-details">
-        <input
-          type="text"
-          name="name"
-          value={editedBranch.name}
-          onChange={handleBranchInputChange}
-          placeholder="Nombre de Sucursal"
-        />
-        <input
-          type="text"
-          name="website"
-          value={editedBranch.website}
-          onChange={handleBranchInputChange}
-          placeholder="Website"
-        />
-        <input
-          type="text"
-          name="menu"
-          value={editedBranch.menu}
-          onChange={handleBranchInputChange}
-          placeholder="Menu URL"
-        />
-        <input
-          type="text"
-          name="logo"
-          value={editedBranch.logo}
-          onChange={handleBranchInputChange}
-          placeholder="URL del Logo"
-        />
-        <div className="style-controls" style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-          <input
-            type="color"
-            name="textColor"
-            value={editedBranch.textColor || "#000000"}
-            onChange={handleBranchInputChange}
-            style={{ width: '100px', height: '40px' }}
-          />
-          <select
-            name="fontFamily"
-            value={editedBranch.fontFamily || "Helvetica"}
-            onChange={handleBranchInputChange}
-            style={{ height: '40px', padding: '0 10px' }}
-          >
-            {FONT_OPTIONS.map(font => (
-              <option key={font.value} value={font.value}>
-                {font.label}
-              </option>
-            ))}
-          </select>
+    <div className="admin-container">
+      <div className="admin-content">
+        <div className="branch-config">
+          <div className="header-row">
+            <h2>Configuración de Sucursal - {company?.name || 'Cargando...'}</h2>
+            <button 
+              className="app-button"
+              onClick={() => navigate(`/admin/${companyId}/${branchId}`)}
+            >
+              <FaEye /> Ver Sucursal
+            </button>
+          </div>
+
+          <div className="branch-details">
+            <div className="input-group">
+              <label>Nombre de Sucursal</label>
+              <input
+                type="text"
+                name="name"
+                value={editedBranch.name}
+                onChange={handleBranchInputChange}
+                placeholder="Ingrese nombre de sucursal"
+              />
+            </div>
+            <div className="input-group">
+              <label>Sitio Web</label>
+              <input
+                type="text"
+                name="website"
+                value={editedBranch.website}
+                onChange={handleBranchInputChange}
+                placeholder="Ingrese URL del sitio web"
+              />
+            </div>
+            <div className="input-group">
+              <label>URL del Menú</label>
+              <input
+                type="text"
+                name="menu"
+                value={editedBranch.menu}
+                onChange={handleBranchInputChange}
+                placeholder="Ingrese URL del menú"
+              />
+            </div>
+            <div className="input-group">
+              <label>URL del Logo</label>
+              <input
+                type="text"
+                name="logo"
+                value={editedBranch.logo}
+                onChange={handleBranchInputChange}
+                placeholder="Ingrese URL del logo"
+              />
+            </div>
+            <div className="qr-and-style-group">
+              <div className="input-group qr-input">
+                <label>URL de Imagen de Fondo QR</label>
+                <input
+                  type="text"
+                  name="qrBackgroundImage"
+                  value={editedBranch.qrBackgroundImage}
+                  onChange={handleBranchInputChange}
+                  placeholder="Ingrese URL de imagen de fondo para QR"
+                />
+              </div>
+              <div className="style-controls">
+                <div className="input-group">
+                  <label>Color del Texto</label>
+                  <input
+                    type="color"
+                    name="textColor"
+                    value={editedBranch.textColor || "#000000"}
+                    onChange={handleBranchInputChange}
+                  />
+                </div>
+                <div className="input-group">
+                  <label>Fuente</label>
+                  <select
+                    name="fontFamily"
+                    value={editedBranch.fontFamily || "Helvetica"}
+                    onChange={handleBranchInputChange}
+                  >
+                    {FONT_OPTIONS.map(font => (
+                      <option key={font.value} value={font.value}>
+                        {font.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="branch-actions-row">
+            <button className="app-button" onClick={handleSaveBranch}>
+              <FaSave /> Guardar Cambios
+            </button>
+          </div>
+
+          <hr className="section-divider" />
+
+          <div className="tables-section">
+            <div className="section-header">
+              <h3>Mesas</h3>
+              <div className="section-actions">
+                <button className="app-button add-table-btn" onClick={handleAddTable}>
+                  <FaChair /> Agregar Mesa
+                </button>
+                <button className="app-button" onClick={() => navigate(`/admin/${companyId}/${branchId}/urls`)}>
+                  <FaQrcode /> Descargar URLs
+                </button>
+              </div>
+            </div>
+
+            <DragDropContext onDragEnd={onDragEnd}>
+              <Droppable droppableId="tables">
+                {(provided) => (
+                  <ul {...provided.droppableProps} ref={provided.innerRef} className="tables-list">
+                    {tables.map((table, index) => (
+                      <Draggable key={table.id} draggableId={table.id.toString()} index={index}>
+                        {(provided) => (
+                          <li
+                            ref={provided.innerRef}
+                            {...provided.draggableProps}
+                            {...provided.dragHandleProps}
+                            className="table-item"
+                          >
+                            <div className="table-info">
+                              <span className="table-number">{index + 1}</span>
+                              <input
+                                type="text"
+                                value={table.tableName}
+                                onChange={(e) => handleTableChange(table.id, 'tableName', e.target.value)}
+                                onBlur={() => handleTableBlur(table.id)}
+                                className="table-name-input"
+                              />
+                              <input
+                                type="text"
+                                value={table.tableDescription}
+                                onChange={(e) => handleTableChange(table.id, 'tableDescription', e.target.value)}
+                                onBlur={() => handleTableBlur(table.id)}
+                                className="table-description-input"
+                              />
+                            </div>
+                            <div className="table-actions">
+                              <button 
+                                className="app-button small"
+                                onClick={() => navigate(`/user/${companyId}/${branchId}/${table.id}`)}
+                              >
+                                <FaEye /> Ver
+                              </button>
+                              <button 
+                                className="app-button small delete-btn" 
+                                onClick={() => handleDeleteTable(table.id)}
+                              >
+                                <FaTrash /> Eliminar
+                              </button>
+                            </div>
+                          </li>
+                        )}
+                      </Draggable>
+                    ))}
+                    {provided.placeholder}
+                  </ul>
+                )}
+              </Droppable>
+            </DragDropContext>
+          </div>
         </div>
-        <input
-          type="text"
-          name="qrBackgroundImage"
-          value={editedBranch.qrBackgroundImage}
-          onChange={handleBranchInputChange}
-          placeholder="URL de imagen de fondo para QR"
-        />
-        <button className="app-button" onClick={handleSaveBranch}>Guardar Cambios de Sucursal</button>
       </div>
-
-      <div className="button-row">
-        <button className="app-button add-table-btn" onClick={handleAddTable}>Agregar Mesa</button>
-        <button className="app-button" onClick={() => navigate(`/admin/${companyId}/${branchId}/urls`)}>Descargar URLs</button>
-      </div>
-
-      <DragDropContext onDragEnd={onDragEnd}>
-        <Droppable droppableId="tables">
-          {(provided) => (
-            <ul {...provided.droppableProps} ref={provided.innerRef} className="tables-list">
-              {tables.map((table, index) => (
-                <Draggable key={table.id} draggableId={table.id.toString()} index={index}>
-                  {(provided) => (
-                    <li
-                      ref={provided.innerRef}
-                      {...provided.draggableProps}
-                      {...provided.dragHandleProps}
-                      className="table-item"
-                    >
-                      <span className="table-number">{index + 1}</span>
-                      <input
-                        type="text"
-                        value={table.tableName}
-                        onChange={(e) => handleTableChange(table.id, 'tableName', e.target.value)}
-                        onBlur={() => handleTableBlur(table.id)}
-                        className="table-name-input"
-                      />
-                      <input
-                        type="text"
-                        value={table.tableDescription}
-                        onChange={(e) => handleTableChange(table.id, 'tableDescription', e.target.value)}
-                        onBlur={() => handleTableBlur(table.id)}
-                        className="table-description-input"
-                      />
-                      <button 
-                        className="app-button"
-                        onClick={() => navigate(`/user/${companyId}/${branchId}/${table.id}`)}
-                      >
-                        Ver Mesa
-                      </button>
-                      <button className="app-button delete-table-btn" onClick={() => handleDeleteTable(table.id)}>Eliminar</button>
-                    </li>
-                  )}
-                </Draggable>
-              ))}
-              {provided.placeholder}
-            </ul>
-          )}
-        </Droppable>
-      </DragDropContext>
     </div>
   );
 };

@@ -37,7 +37,7 @@ const UserScreen = () => {
           getTable(tableId)
         ]);
 
-        console.log('Table data received:', tableData.data); // Debug log
+        console.log('Table data received:', tableData.data);
 
         setCompany(companyData.data);
         setBranch(branchData.data);
@@ -59,7 +59,14 @@ const UserScreen = () => {
           console.error('Error sending scan event:', error);
         }
 
-        setMenuLink(branchData.data.menu || companyData.data.menu);
+        // Solo establecer el menuLink si existe una URL en la sucursal o compañía
+        const branchMenu = branchData.data.menu;
+        const companyMenu = companyData.data.menu;
+        if (branchMenu || companyMenu) {
+          setMenuLink(branchMenu || companyMenu);
+        } else {
+          setMenuLink(''); // Asegurarnos que sea vacío si no hay menú
+        }
       } catch (error) {
         console.error('Error loading data:', error);
       }
@@ -149,6 +156,7 @@ const UserScreen = () => {
             }}
             onEventSubmit={(eventType) => handleOpenModal(eventType)}
             onShowEvents={handleOpenEventsModal}
+            showMenuButton={!!menuLink}
           />
         </div>
 

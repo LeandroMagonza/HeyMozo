@@ -2634,6 +2634,1921 @@ _**Assistant**_
 
 
 
+Veo el problema. El servidor está devolviendo HTML en lugar de los datos de la tabla. Esto suele ocurrir cuando la ruta no está siendo manejada correctamente por el servidor.
+
+En server.js, el orden de las rutas es importante. La ruta catch-all para servir el index.html debe ir después de todas las rutas de la API. Vamos a reorganizar las rutas:
+
+```javascript:server.js
+// Primero todas las rutas de la API
+app.get('/api/companies', /* ... */);
+app.get('/api/branches', /* ... */);
+app.get('/api/tables', /* ... */);
+app.get('/api/tables/:id', /* ... */);
+// ... otras rutas de la API ...
+
+// Servir archivos estáticos
+app.use(express.static(path.join(__dirname, 'build')));
+
+// La ruta catch-all debe ser LA ÚLTIMA
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'build', 'index.html'));
+});
+```
+
+
+También, asegurémonos de que la ruta `/api/tables/:id` esté devolviendo los datos correctamente:
+
+```javascript:server.js
+app.get('/api/tables/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    console.log('Fetching table with id:', id); // Debug log
+
+    const table = await Table.findByPk(id, {
+      attributes: ['id', 'tableName', 'branchId', 'tableDescription'], // Especificar atributos
+      include: [{
+        model: Event,
+        attributes: ['type', 'message', 'createdAt', 'seenAt'],
+        order: [['createdAt', 'DESC']]
+      }]
+    });
+
+    if (!table) {
+      console.log('Table not found:', id); // Debug log
+      return res.status(404).json({ error: 'Table not found' });
+    }
+
+    const formattedTable = {
+      ...table.toJSON(),
+      events: table.Events.map(event => ({
+        type: event.type,
+        message: event.message,
+        createdAt: event.createdAt,
+        seenAt: event.seenAt
+      }))
+    };
+
+    console.log('Sending formatted table:', formattedTable); // Debug log
+    res.json(formattedTable);
+  } catch (error) {
+    console.error('Error fetching table:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+```
+
+
+Y en routes.json, asegurémonos de que la ruta esté correctamente definida:
+
+```json:routes.json
+{
+  "/api/companies": "/companies",
+  "/api/companies/:id": "/companies/:id",
+  "/api/branches": "/branches",
+  "/api/branches/:id": "/branches/:id",
+  "/api/tables": "/tables",
+  "/api/tables/:id": "/tables/:id",
+  "/api/tables/:id/events": "/tables/:id/events",
+  "/api/branches/:id/release-all-tables": "/branches/:id/release-all-tables"
+}
+```
+
+
+Estos cambios deberían asegurar que:
+1. Las rutas de la API se manejen antes que la ruta catch-all
+2. La ruta `/api/tables/:id` devuelva todos los campos necesarios de la tabla
+3. Los datos se formateen correctamente antes de enviarlos al cliente
+
+¿Podrías probar estos cambios y decirme qué muestran los logs ahora?
+
+---
+
+_**User**_
+
+bien, ya esta todo eso funcionando, ahora vamos a pasar a corregir errores en las pantallas de configuracion de sucursales y companias
+
+@BranchConfig.js @BranchConfig.js 
+
+Ambas estan teniendo problemas con las llamadas a la api, fijate si hacen referencia a un puerto anterior, si falta el endpoint, o que puede estar causandolo
+los datos los traen correctamente, pero cuando quiero hacer el guardar cambios de company o branch @CompanyList.js @Company.js @Branch.js tira error
+
+Error updating company: AxiosError
+overrideMethod @ hook.js:608Understand this errorAI
+:3001/api/branches:1 
+        
+        
+       Failed to load resource: the server responded with a status of 404 (Not Found)Understand this errorAI
+hook.js:608 Error adding new branch: AxiosError
+overrideMethod @ hook.js:608Understand this errorAI
+
+tambien cuando quiero agregar una nueva branch o una nueva table
+
+---
+
+_**Assistant**_
+
+Veo que faltan algunas rutas en el servidor y hay que ajustar algunos endpoints. Vamos a corregirlo:
+
+1. Primero, agreguemos las rutas faltantes en server.js:
+
+```javascript:server.js
+// Rutas para Company
+app.put('/api/companies/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const company = await Company.findByPk(id);
+    if (!company) {
+      return res.status(404).json({ error: 'Company not found' });
+    }
+    await company.update(req.body);
+    res.json(company);
+  } catch (error) {
+    console.error('Error updating company:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Rutas para Branch
+app.post('/api/branches', async (req, res) => {
+  try {
+    const branch = await Branch.create(req.body);
+    res.status(201).json(branch);
+  } catch (error) {
+    console.error('Error creating branch:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.put('/api/branches/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const branch = await Branch.findByPk(id);
+    if (!branch) {
+      return res.status(404).json({ error: 'Branch not found' });
+    }
+    await branch.update(req.body);
+    res.json(branch);
+  } catch (error) {
+    console.error('Error updating branch:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.delete('/api/branches/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const branch = await Branch.findByPk(id);
+    if (!branch) {
+      return res.status(404).json({ error: 'Branch not found' });
+    }
+    await branch.destroy();
+    res.status(204).send();
+  } catch (error) {
+    console.error('Error deleting branch:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Ruta para crear una nueva mesa
+app.post('/api/tables', async (req, res) => {
+  try {
+    const table = await Table.create(req.body);
+    
+    // Si hay eventos iniciales, crearlos
+    if (req.body.events && req.body.events.length > 0) {
+      await Event.bulkCreate(
+        req.body.events.map(event => ({
+          ...event,
+          tableId: table.id
+        }))
+      );
+    }
+
+    // Devolver la mesa con sus eventos
+    const tableWithEvents = await Table.findByPk(table.id, {
+      include: [{
+        model: Event,
+        attributes: ['type', 'message', 'createdAt', 'seenAt']
+      }]
+    });
+
+    res.status(201).json(tableWithEvents);
+  } catch (error) {
+    console.error('Error creating table:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+```
+
+2. Actualicemos el routes.json para incluir todas las rutas:
+
+```json:routes.json
+{
+  "/api/companies": "/companies",
+  "/api/companies/:id": "/companies/:id",
+  "/api/branches": "/branches",
+  "/api/branches/:id": "/branches/:id",
+  "/api/tables": "/tables",
+  "/api/tables/:id": "/tables/:id",
+  "/api/tables/:id/events": "/tables/:id/events",
+  "/api/branches/:id/release-all-tables": "/branches/:id/release-all-tables",
+  "/api/companies/:id/config": "/companies/:id/config",
+  "/api/branches/:id/config": "/branches/:id/config"
+}
+```
+
+3. Asegurémonos de que los modelos tengan todos los campos necesarios:
+
+```javascript:src/models/Branch.js
+const Branch = sequelize.define('Branch', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true
+  },
+  name: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
+  companyId: {
+    type: DataTypes.INTEGER,
+    allowNull: false
+  },
+  website: DataTypes.STRING,
+  menu: DataTypes.STRING,
+  logo: DataTypes.STRING,
+  textColor: DataTypes.STRING,
+  fontFamily: DataTypes.STRING,
+  qrBackgroundImage: DataTypes.STRING,
+  tableIds: {
+    type: DataTypes.JSON,
+    defaultValue: []
+  }
+});
+```
+
+4. Y en el modelo Company:
+
+```javascript:src/models/Company.js
+const Company = sequelize.define('Company', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true
+  },
+  name: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
+  website: DataTypes.STRING,
+  menu: DataTypes.STRING,
+  branchIds: {
+    type: DataTypes.JSON,
+    defaultValue: []
+  }
+});
+```
+
+Estos cambios deberían:
+1. Agregar todas las rutas necesarias para CRUD de compañías, sucursales y mesas
+2. Asegurar que los modelos tengan todos los campos necesarios
+3. Manejar correctamente la creación de mesas con eventos iniciales
+4. Proporcionar respuestas adecuadas para cada operación
+
+¿Quieres que revise algún otro aspecto específico de la configuración?
+
+---
+
+_**User**_
+
+API Base URL: http://localhost:3001/api
+hook.js:608 ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition. Error Component Stack
+    at BrowserRouter (index.tsx:789:1)
+    at App (<anonymous>)
+overrideMethod @ hook.js:608Understand this warningAI
+hook.js:608 ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath. Error Component Stack
+    at BrowserRouter (index.tsx:789:1)
+    at App (<anonymous>)
+overrideMethod @ hook.js:608Understand this warningAI
+index.CucWK6IV.js:1 Failed to load module script: Expected a JavaScript module script but the server responded with a MIME type of "text/html". Strict MIME type checking is enforced for module scripts per HTML spec.Understand this errorAI
+Wallet.mlGYZajl.js:1 Failed to load module script: Expected a JavaScript module script but the server responded with a MIME type of "text/html". Strict MIME type checking is enforced for module scripts per HTML spec.Understand this errorAI
+asyncToGenerator.O4pnRyQq.js:1 Failed to load module script: Expected a JavaScript module script but the server responded with a MIME type of "text/html". Strict MIME type checking is enforced for module scripts per HTML spec.Understand this errorAI
+:3001/api/companies/1:1 
+        
+        
+       Failed to load resource: the server responded with a status of 500 (Internal Server Error)Understand this errorAI
+hook.js:608 Error fetching data: AxiosError
+overrideMethod @ hook.js:608Understand this errorAI
+2CompanyConfig.js:104 Uncaught TypeError: Cannot read properties of null (reading 'name')
+    at CompanyConfig (CompanyConfig.js:104:1)
+    at renderWithHooks (react-dom.development.js:15486:1)
+    at updateFunctionComponent (react-dom.development.js:19617:1)
+    at beginWork (react-dom.development.js:21640:1)
+    at HTMLUnknownElement.callCallback (react-dom.development.js:4164:1)
+    at Object.invokeGuardedCallbackDev (react-dom.development.js:4213:1)
+    at invokeGuardedCallback (react-dom.development.js:4277:1)
+    at beginWork$1 (react-dom.development.js:27490:1)
+    at performUnitOfWork (react-dom.development.js:26596:1)
+    at workLoopSync (react-dom.development.js:26505:1)Understand this errorAI
+hook.js:608 The above error occurred in the <CompanyConfig> component:
+
+    at CompanyConfig (http://localhost:3000/static/js/bundle.js:1758:66)
+    at RenderedRoute (http://localhost:3000/static/js/bundle.js:67756:5)
+    at Routes (http://localhost:3000/static/js/bundle.js:68490:5)
+    at Router (http://localhost:3000/static/js/bundle.js:68424:15)
+    at BrowserRouter (http://localhost:3000/static/js/bundle.js:66324:5)
+    at App
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+overrideMethod @ hook.js:608Understand this errorAI
+react-dom.development.js:26962 Uncaught TypeError: Cannot read properties of null (reading 'name')
+    at CompanyConfig (CompanyConfig.js:104:1)
+    at renderWithHooks (react-dom.development.js:15486:1)
+    at updateFunctionComponent (react-dom.development.js:19617:1)
+    at beginWork (react-dom.development.js:21640:1)
+    at beginWork$1 (react-dom.development.js:27465:1)
+    at performUnitOfWork (react-dom.development.js:26596:1)
+    at workLoopSync (react-dom.development.js:26505:1)
+    at renderRootSync (react-dom.development.js:26473:1)
+    at recoverFromConcurrentError (react-dom.development.js:25889:1)
+    at performConcurrentWorkOnRoot (react-dom.development.js:25789:1)Understand this errorAI
+:3001/api/branches?companyId=1:1 
+        
+        
+       Failed to load resource: the server responded with a status of 500 (Internal Server Error)Understand this errorAI
+index.umd.BXzp7Rme.js:1 Failed to load module script: Expected a JavaScript module script but the server responded with a MIME type of "text/html". Strict MIME type checking is enforced for module scripts per HTML spec.
+
+---
+
+_**Assistant**_
+
+Veo varios errores. El principal parece ser que hay un problema con la base de datos y las migraciones después de agregar los nuevos campos. Vamos a solucionarlo:
+
+1. Primero, necesitamos actualizar la base de datos con los nuevos campos. En server.js, modifica la sincronización:
+
+```javascript:server.js
+// Inicializar base de datos y servidor
+sequelize.sync({ alter: true }) // Cambiado de sync() a sync({ alter: true })
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`Server running on http://localhost:${PORT}`);
+    });
+  })
+  .catch(error => {
+    console.error('Unable to connect to the database:', error);
+  });
+```
+
+2. En CompanyConfig.js, necesitamos manejar el estado inicial nulo:
+
+```javascript:src/components/CompanyConfig.js
+const CompanyConfig = () => {
+  const { companyId } = useParams();
+  const [company, setCompany] = useState(null);
+  const [editedCompany, setEditedCompany] = useState({
+    name: '',
+    website: '',
+    menu: '',
+    branchIds: []
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await getCompany(companyId);
+        setCompany(response.data);
+        setEditedCompany(response.data);
+        setLoading(false);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [companyId]);
+
+  if (loading) {
+    return <div>Cargando...</div>;
+  }
+
+  // Resto del código...
+```
+
+3. En el servidor, asegurémonos de que la ruta GET de company devuelva los datos correctos:
+
+```javascript:server.js
+// Obtener una compañía específica
+app.get('/api/companies/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const company = await Company.findByPk(id, {
+      include: [{
+        model: Branch,
+        attributes: ['id']
+      }]
+    });
+
+    if (!company) {
+      return res.status(404).json({ error: 'Company not found' });
+    }
+
+    const formattedCompany = {
+      ...company.toJSON(),
+      branchIds: company.Branches.map(branch => branch.id)
+    };
+
+    res.json(formattedCompany);
+  } catch (error) {
+    console.error('Error fetching company:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+```
+
+4. Y lo mismo para la ruta GET de branch:
+
+```javascript:server.js
+app.get('/api/branches/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const branch = await Branch.findByPk(id, {
+      include: [{
+        model: Table,
+        attributes: ['id']
+      }]
+    });
+
+    if (!branch) {
+      return res.status(404).json({ error: 'Branch not found' });
+    }
+
+    const formattedBranch = {
+      ...branch.toJSON(),
+      tableIds: branch.Tables.map(table => table.id)
+    };
+
+    res.json(formattedBranch);
+  } catch (error) {
+    console.error('Error fetching branch:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+```
+
+5. Asegúrate de que la base de datos esté limpia:
+   - Detén el servidor
+   - Elimina el archivo de base de datos SQLite (si estás usando SQLite)
+   - Reinicia el servidor con `sync({ alter: true })`
+
+Estos cambios deberían:
+1. Actualizar la estructura de la base de datos con los nuevos campos
+2. Manejar correctamente los estados iniciales nulos
+3. Asegurar que las rutas GET devuelvan los datos en el formato correcto
+4. Evitar errores de propiedades nulas
+
+¿Quieres que revise algo más específico?
+
+---
+
+_**User**_
+
+quiero modificar en @AdminScreen.js que el metodo de ordenamiento ya no sea por table number, si no por tablename
+
+---
+
+_**Assistant**_
+
+
+
+Vamos a modificar el ordenamiento en AdminScreen.js para que use tableName en lugar de id:
+
+```javascript:src/components/AdminScreen.js
+// Modificar la lógica de ordenamiento en sortedTables
+const sortedTables = useMemo(() => {
+  return [...processedTables].sort((a, b) => {
+    if (sortType === 'priority') {
+      if (a.currentState !== b.currentState) {
+        const stateOrder = {
+          [TableStates.MANAGER_WAITER_CHECK]: 0,
+          [TableStates.MANAGER_WAITER]: 1,
+          [TableStates.MANAGER_CHECK]: 2,
+          [TableStates.MANAGER]: 3,
+          [TableStates.WAITER_AND_CHECK]: 4,
+          [TableStates.WAITER]: 5,
+          [TableStates.CHECK]: 6,
+          [TableStates.OCCUPIED]: 7,
+          [TableStates.AVAILABLE]: 8
+        };
+        return stateOrder[a.currentState] - stateOrder[b.currentState];
+      }
+      return b.waitingTime - a.waitingTime;
+    } else {
+      // Ordenar por nombre de mesa
+      return (a.tableName || '').localeCompare(b.tableName || '');
+    }
+  });
+}, [processedTables, sortType]);
+
+// Y actualizar el texto del selector
+return (
+  // ... resto del código ...
+  <select id="sort-type" value={sortType} onChange={handleSortChange}>
+    <option value="priority">Prioridad de atención</option>
+    <option value="tableNumber">Nombre de mesa</option>
+  </select>
+  // ... resto del código ...
+);
+```
+
+Este cambio:
+1. Modifica el ordenamiento para usar `tableName` en lugar de `id`
+2. Usa `localeCompare` para ordenar alfabéticamente los nombres de mesa
+3. Maneja el caso donde `tableName` podría ser null o undefined
+4. Actualiza el texto del selector para reflejar que ahora ordena por nombre
+
+---
+
+_**User**_
+
+branch config funciona, pero @CompanyConfig.js  tira este error
+
+Uncaught runtime errors:
+×
+ERROR
+Cannot read properties of undefined (reading 'map')
+TypeError: Cannot read properties of undefined (reading 'map')
+    at CompanyConfig (http://localhost:3000/static/js/bundle.js:1911:28)
+    at renderWithHooks (http://localhost:3000/static/js/bundle.js:50161:22)
+    at updateFunctionComponent (http://localhost:3000/static/js/bundle.js:53728:24)
+    at beginWork (http://localhost:3000/static/js/bundle.js:55447:20)
+    at HTMLUnknownElement.callCallback (http://localhost:3000/static/js/bundle.js:40417:18)
+    at Object.invokeGuardedCallbackDev (http://localhost:3000/static/js/bundle.js:40461:20)
+    at invokeGuardedCallback (http://localhost:3000/static/js/bundle.js:40518:35)
+    at beginWork$1 (http://localhost:3000/static/js/bundle.js:60416:11)
+    at performUnitOfWork (http://localhost:3000/static/js/bundle.js:59664:16)
+    at workLoopSync (http://localhost:3000/static/js/bundle.js:59587:9)
+ERROR
+Cannot read properties of undefined (reading 'map')
+TypeError: Cannot read properties of undefined (reading 'map')
+    at CompanyConfig (http://localhost:3000/static/js/bundle.js:1911:28)
+    at renderWithHooks (http://localhost:3000/static/js/bundle.js:50161:22)
+    at updateFunctionComponent (http://localhost:3000/static/js/bundle.js:53728:24)
+    at beginWork (http://localhost:3000/static/js/bundle.js:55447:20)
+    at HTMLUnknownElement.callCallback (http://localhost:3000/static/js/bundle.js:40417:18)
+    at Object.invokeGuardedCallbackDev (http://localhost:3000/static/js/bundle.js:40461:20)
+    at invokeGuardedCallback (http://localhost:3000/static/js/bundle.js:40518:35)
+    at beginWork$1 (http://localhost:3000/static/js/bundle.js:60416:11)
+    at performUnitOfWork (http://localhost:3000/static/js/bundle.js:59664:16)
+    at workLoopSync (http://localhost:3000/static/js/bundle.js:59587:9)
+ERROR
+Cannot read properties of undefined (reading 'map')
+TypeError: Cannot read properties of undefined (reading 'map')
+    at CompanyConfig (http://localhost:3000/static/js/bundle.js:1911:28)
+    at renderWithHooks (http://localhost:3000/static/js/bundle.js:50161:22)
+    at updateFunctionComponent (http://localhost:3000/static/js/bundle.js:53728:24)
+    at beginWork (http://localhost:3000/static/js/bundle.js:55447:20)
+    at beginWork$1 (http://localhost:3000/static/js/bundle.js:60394:18)
+    at performUnitOfWork (http://localhost:3000/static/js/bundle.js:59664:16)
+    at workLoopSync (http://localhost:3000/static/js/bundle.js:59587:9)
+    at renderRootSync (http://localhost:3000/static/js/bundle.js:59560:11)
+    at recoverFromConcurrentError (http://localhost:3000/static/js/bundle.js:59052:24)
+    at performConcurrentWorkOnRoot (http://localhost:3000/static/js/bundle.js
+
+y el boton de agregar compania de  @CompanyList.js no funciona
+
+---
+
+_**Assistant**_
+
+
+
+Vamos a corregir ambos problemas:
+
+1. Para el error en CompanyConfig.js, el problema es que estamos intentando acceder a `response.data.branches` que no existe. Necesitamos mantener la llamada separada a getBranches:
+
+```javascript:src/components/CompanyConfig.js
+useEffect(() => {
+  const fetchData = async () => {
+    try {
+      const [companyResponse, branchesResponse] = await Promise.all([
+        getCompany(companyId),
+        getBranches(companyId)
+      ]);
+
+      setCompany(companyResponse.data);
+      setEditedCompany(companyResponse.data);
+      setBranches(branchesResponse.data || []); // Aseguramos que siempre sea un array
+      setLoading(false);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      setLoading(false);
+    }
+  };
+
+  fetchData();
+}, [companyId]);
+
+// También asegurémonos de que branches tenga un valor por defecto
+const [branches, setBranches] = useState([]);
+```
+
+2. Para el problema del botón de agregar compañía en CompanyList.js, necesitamos asegurarnos de que la ruta POST esté correctamente implementada en el servidor:
+
+```javascript:server.js
+// Ruta para crear una nueva compañía
+app.post('/api/companies', async (req, res) => {
+  try {
+    const company = await Company.create({
+      ...req.body,
+      branchIds: req.body.branchIds || [] // Aseguramos que branchIds esté definido
+    });
+    
+    const formattedCompany = {
+      ...company.toJSON(),
+      branches: [] // Inicialmente sin sucursales
+    };
+
+    res.status(201).json(formattedCompany);
+  } catch (error) {
+    console.error('Error creating company:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+```
+
+3. Y actualicemos el CompanyList.js para manejar mejor la creación:
+
+```javascript:src/components/CompanyList.js
+const handleAddCompany = async () => {
+  const newCompany = {
+    name: `Nueva Compañía ${companies.length + 1}`,
+    website: '',
+    menu: '',
+    branchIds: []
+  };
+
+  try {
+    const response = await createCompany(newCompany);
+    if (response.data) {
+      await fetchCompanies(); // Recargar la lista completa
+    }
+  } catch (error) {
+    console.error('Error adding new company:', error);
+    alert('Error al crear la compañía');
+  }
+};
+```
+
+4. Y asegurémonos de que la ruta esté en routes.json:
+
+```json:routes.json
+{
+  "/api/companies": "/companies",
+  "/api/companies/:id": "/companies/:id",
+  "POST /api/companies": "/companies",
+  // ... resto de las rutas ...
+}
+```
+
+Estos cambios deberían:
+1. Resolver el error de map undefined en CompanyConfig
+2. Permitir la creación correcta de nuevas compañías
+3. Manejar mejor los casos de error y estados iniciales
+4. Asegurar que todas las rutas necesarias estén disponibles
+
+---
+
+_**User**_
+
+muy bien, ahora quiero agregar en @BranchConfig.js  al lado del texto de configuracion de sucursal, un boton con un ojo que diga ver sucursal
+y al boton de ver sucursal de @CompanyConfig.js agregale el ojo tambien
+al boton de descargar urls de branch config agregale un icono de qr
+y si tenes agregale un icono de mesa al boton de agregar mesa
+agregale un icono de save al guardar cambios de sucursal
+
+---
+
+_**Assistant**_
+
+Vamos a agregar los íconos usando react-icons. Primero en BranchConfig.js:
+
+```javascript:src/components/BranchConfig.js
+import { FaEye, FaQrcode, FaChair, FaSave } from 'react-icons/fa'; // Agregar imports
+
+// ... resto del código ...
+
+return (
+  <div className="branch-config">
+    <div className="header-row">
+      <h2>Configuración de Sucursal</h2>
+      <button 
+        className="app-button"
+        onClick={() => navigate(`/admin/${companyId}/${branchId}`)}
+      >
+        <FaEye /> Ver Sucursal
+      </button>
+    </div>
+
+    <div className="branch-details">
+      {/* ... otros inputs ... */}
+      <button className="app-button" onClick={handleSaveBranch}>
+        <FaSave /> Guardar Cambios de Sucursal
+      </button>
+    </div>
+
+    <div className="button-row">
+      <button className="app-button add-table-btn" onClick={handleAddTable}>
+        <FaChair /> Agregar Mesa
+      </button>
+      <button className="app-button" onClick={() => navigate(`/admin/${companyId}/${branchId}/urls`)}>
+        <FaQrcode /> Descargar URLs
+      </button>
+    </div>
+
+    {/* ... resto del código ... */}
+  </div>
+);
+```
+
+Y en CompanyConfig.js:
+
+```javascript:src/components/CompanyConfig.js
+import { FaEye } from 'react-icons/fa'; // Agregar import
+
+// ... resto del código ...
+
+<button 
+  className="app-button" 
+  onClick={() => navigate(`/admin/${companyId}/${branch.id}`)}
+>
+  <FaEye /> Ver Sucursal
+</button>
+```
+
+También podemos agregar un poco de CSS para mejorar el alineamiento de los íconos:
+
+```css:src/components/BranchConfig.css
+.header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.app-button svg {
+  margin-right: 8px;
+  vertical-align: middle;
+}
+```
+
+Estos cambios:
+1. Agregan el ícono de ojo a los botones de "Ver Sucursal"
+2. Agregan el ícono de QR al botón de "Descargar URLs"
+3. Agregan el ícono de silla al botón de "Agregar Mesa"
+4. Agregan el ícono de guardar al botón de "Guardar Cambios"
+5. Mejoran el alineamiento de los íconos con el texto
+
+---
+
+_**User**_
+
+bien, hace que en @UserScreen.js si en el branch no hay configurada una url de menu, ni se muestre el boton de mostrar menu
+
+---
+
+_**Assistant**_
+
+Vamos a modificar el UserScreen.js para ocultar el botón de menú cuando no hay URL configurada:
+
+```javascript:src/components/UserScreen.js
+// ... resto del código ...
+
+// En el useEffect donde se cargan los datos
+useEffect(() => {
+  const loadData = async () => {
+    try {
+      const [companyData, branchData, tableData] = await Promise.all([
+        getCompany(companyId),
+        getBranch(branchId),
+        getTable(tableId)
+      ]);
+
+      console.log('Table data received:', tableData.data);
+
+      setCompany(companyData.data);
+      setBranch(branchData.data);
+      setTable(tableData.data);
+
+      // Solo establecer el menuLink si existe una URL en la sucursal o compañía
+      const branchMenu = branchData.data.menu;
+      const companyMenu = companyData.data.menu;
+      if (branchMenu || companyMenu) {
+        setMenuLink(branchMenu || companyMenu);
+      } else {
+        setMenuLink(''); // Asegurarnos que sea vacío si no hay menú
+      }
+
+      // ... resto del código del useEffect ...
+    } catch (error) {
+      console.error('Error loading data:', error);
+    }
+  };
+
+  loadData();
+}, [companyId, branchId, tableId]);
+
+// ... en el render ...
+
+return (
+  <div className="user-screen" style={backgroundStyle}>
+    <div className="content-wrapper">
+      <div className="location-info">
+        <h1 className="company-name">{company?.name || 'Cargando...'}</h1>
+        <h2 className="branch-name">{branch?.name || ''}</h2>
+        <h3 className="table-name">{table?.tableName || ''}</h3>
+      </div>
+
+      <div className="buttons-wrapper">
+        <ButtonsGroup
+          menuLink={menuLink}
+          texts={{
+            showMenu: <><FaUtensils /> {texts.showMenu}</>,
+            callWaiter: <><FaUser /> {texts.callWaiter}</>,
+            requestCheck: <><FaFileInvoiceDollar /> {texts.requestCheck}</>,
+            showEvents: <><FaHistory /> Histórico</>,
+            callManager: <><FaUser /> Llamar Encargado</>
+          }}
+          onEventSubmit={(eventType) => handleOpenModal(eventType)}
+          onShowEvents={handleOpenEventsModal}
+          showMenuButton={!!menuLink} // Nueva prop para controlar la visibilidad del botón
+        />
+      </div>
+
+      {/* ... resto del código ... */}
+    </div>
+  </div>
+);
+```
+
+Y en ButtonsGroup.js necesitamos modificar para usar la nueva prop:
+
+```javascript:src/components/ButtonsGroup.js
+const ButtonsGroup = ({ 
+  menuLink, 
+  texts, 
+  onEventSubmit, 
+  onShowEvents,
+  showMenuButton = true // Valor por defecto true para mantener compatibilidad
+}) => {
+  const handleMenuClick = () => {
+    window.open(menuLink, '_blank');
+  };
+
+  return (
+    <div className="buttons-group">
+      {showMenuButton && menuLink && (
+        <div className="button-container">
+          <button 
+            className="user-button" 
+            onClick={handleMenuClick}
+          >
+            {texts.showMenu}
+          </button>
+        </div>
+      )}
+      
+      {/* ... resto de los botones ... */}
+    </div>
+  );
+};
+```
+
+Estos cambios:
+1. Solo establecen menuLink si existe una URL válida
+2. Pasan una prop showMenuButton basada en la existencia de menuLink
+3. Solo muestran el botón de menú si showMenuButton es true y existe menuLink
+4. Mantienen la compatibilidad con código existente usando un valor por defecto para showMenuButton
+
+---
+
+_**User**_
+
+@BranchConfig.js esta todo adentro de un container o por algun motivo no llega a los bordes
+@CompanyConfig.js no tiene eso y quiero que lo tenga tambien, para que se vean mas similares
+
+tambien en branch config, el titulo dice configuracion de sucursale, agregale - nombre de compania
+
+---
+
+_**Assistant**_
+
+Vamos a hacer estos cambios:
+
+1. Primero, vamos a ajustar el CSS para que ambos componentes tengan el mismo estilo de contenedor:
+
+```css:src/components/BranchConfig.css
+.branch-config {
+  padding: 20px;
+  max-width: 1200px; /* Aumentado de 800px para dar más espacio */
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+```
+
+2. Crear un nuevo archivo CompanyConfig.css:
+
+```css:src/components/CompanyConfig.css
+.company-config {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.company-details {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 20px;
+  max-width: 100%;
+}
+
+.company-details input {
+  padding: 8px;
+  font-size: 14px;
+  flex: 1;
+  min-width: 200px;
+}
+
+.header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+```
+
+3. Modificar BranchConfig.js para incluir el nombre de la compañía:
+
+```javascript:src/components/BranchConfig.js
+const BranchConfig = () => {
+  const { companyId, branchId } = useParams();
+  const navigate = useNavigate();
+  const [company, setCompany] = useState(null);
+  // ... resto de los estados ...
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [companyResponse, branchResponse, tablesResponse] = await Promise.all([
+          getCompany(companyId),
+          getBranch(branchId),
+          getTables(branchId)
+        ]);
+
+        setCompany(companyResponse.data);
+        setBranch(branchResponse.data);
+        setEditedBranch(branchResponse.data);
+        // ... resto del código ...
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [companyId, branchId]);
+
+  return (
+    <div className="branch-config">
+      <div className="header-row">
+        <h2>Configuración de Sucursal - {company?.name || 'Cargando...'}</h2>
+        <button 
+          className="app-button"
+          onClick={() => navigate(`/admin/${companyId}/${branchId}`)}
+        >
+          <FaEye /> Ver Sucursal
+        </button>
+      </div>
+      {/* ... resto del código ... */}
+    </div>
+  );
+};
+```
+
+4. Y actualizar CompanyConfig.js para usar la nueva estructura:
+
+```javascript:src/components/CompanyConfig.js
+import './CompanyConfig.css'; // Agregar import del CSS
+
+const CompanyConfig = () => {
+  // ... código existente ...
+
+  return (
+    <div className="company-config">
+      <div className="header-row">
+        <h2>Configuración de Compañía</h2>
+      </div>
+      <div className="company-details">
+        <input
+          type="text"
+          name="name"
+          value={editedCompany.name}
+          onChange={handleInputChange}
+          placeholder="Company Name"
+        />
+        {/* ... resto de los inputs ... */}
+      </div>
+      {/* ... resto del código ... */}
+    </div>
+  );
+};
+```
+
+Estos cambios:
+1. Unifican el estilo de contenedor entre ambos componentes
+2. Agregan el nombre de la compañía al título de BranchConfig
+3. Mejoran la estructura y organización del CSS
+4. Mantienen la consistencia visual entre ambas pantallas de configuración
+
+---
+
+_**User**_
+
+bien, ahora quiero que los dos esten adentro de un container o lo que sea para que este separado de los bordes un poco y se vea mas elegante
+
+---
+
+_**Assistant**_
+
+
+
+Vamos a crear un contenedor exterior para ambos componentes. Primero, creemos un nuevo archivo CSS compartido:
+
+```css:src/styles/common.css
+.admin-container {
+  background-color: #f8f9fa;
+  min-height: 100vh;
+  padding: 2rem;
+}
+
+.admin-content {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  padding: 2rem;
+  margin: 0 auto;
+  max-width: 1400px;
+}
+
+.admin-content h2 {
+  color: #2c3e50;
+  margin-top: 0;
+}
+```
+
+Ahora modificamos BranchConfig.js:
+
+```javascript:src/components/BranchConfig.js
+import '../styles/common.css'; // Agregar este import
+
+// ... resto de imports ...
+
+return (
+  <div className="admin-container">
+    <div className="admin-content">
+      <div className="branch-config">
+        {/* ... resto del contenido ... */}
+      </div>
+    </div>
+  </div>
+);
+```
+
+Y CompanyConfig.js:
+
+```javascript:src/components/CompanyConfig.js
+import '../styles/common.css'; // Agregar este import
+
+// ... resto de imports ...
+
+return (
+  <div className="admin-container">
+    <div className="admin-content">
+      <div className="company-config">
+        {/* ... resto del contenido ... */}
+      </div>
+    </div>
+  </div>
+);
+```
+
+También ajustemos los CSS existentes para que funcionen bien con el nuevo contenedor:
+
+```css:src/components/BranchConfig.css
+.branch-config {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* ... resto del CSS ... */
+```
+
+```css:src/components/CompanyConfig.css
+.company-config {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* ... resto del CSS ... */
+```
+
+Estos cambios:
+1. Crean un contenedor exterior con fondo gris claro
+2. Agregan un contenedor interior blanco con sombra y bordes redondeados
+3. Mantienen el contenido centrado y con márgenes apropiados
+4. Dan un aspecto más elegante y profesional a las pantallas de administración
+
+---
+
+_**User**_
+
+bien, ahora quiero que en @BranchConfig.js  el boton de ver mesa tenga un icono de ojo, el de eliminar este en rojo y tenga un tacho
+en @CompanyConfig.js los inputs de texto estan muy grandes, que sean como los de branch config. tambien me gustaria que todos los inputs de texto tenga un label para indicar que dato son.
+despues, en @CompanyConfig.js que el boton de guardar cambios tenga el icono de guardado
+que el de agregar nueva sucursal tenga un icono de tienda o casa 
+que el de configurar sucursal tenga un engranaje
+que el de eliminar sucursal este en rojo y tenga un tacho
+
+tambien dale mejor estilo a la lista con las sucursales, que los botones estan muy grandes y ocupan mucho de la linea
+
+---
+
+_**Assistant**_
+
+Voy a hacer todos estos cambios:
+
+1. Primero en BranchConfig.js:
+
+```javascript:src/components/BranchConfig.js
+import { FaEye, FaQrcode, FaChair, FaSave, FaTrash } from 'react-icons/fa'; // Agregar FaTrash
+
+// ... en la parte de la lista de mesas ...
+<button 
+  className="app-button"
+  onClick={() => navigate(`/user/${companyId}/${branchId}/${table.id}`)}
+>
+  <FaEye /> Ver Mesa
+</button>
+<button 
+  className="app-button delete-btn" 
+  onClick={() => handleDeleteTable(table.id)}
+>
+  <FaTrash /> Eliminar
+</button>
+```
+
+2. En CompanyConfig.js:
+
+```javascript:src/components/CompanyConfig.js
+import { FaEye, FaSave, FaStore, FaCog, FaTrash } from 'react-icons/fa';
+
+// ... en la sección de inputs ...
+<div className="company-details">
+  <div className="input-group">
+    <label>Nombre de Compañía</label>
+    <input
+      type="text"
+      name="name"
+      value={editedCompany.name}
+      onChange={handleInputChange}
+      placeholder="Ingrese nombre de compañía"
+    />
+  </div>
+  <div className="input-group">
+    <label>Sitio Web</label>
+    <input
+      type="text"
+      name="website"
+      value={editedCompany.website}
+      onChange={handleInputChange}
+      placeholder="Ingrese URL del sitio web"
+    />
+  </div>
+  <div className="input-group">
+    <label>URL del Menú</label>
+    <input
+      type="text"
+      name="menu"
+      value={editedCompany.menu}
+      onChange={handleInputChange}
+      placeholder="Ingrese URL del menú"
+    />
+  </div>
+  <button className="app-button" onClick={handleSave}>
+    <FaSave /> Guardar Cambios
+  </button>
+</div>
+
+<div className="branches-section">
+  <div className="branches-header">
+    <h3>Sucursales</h3>
+    <button className="app-button" onClick={handleAddBranch}>
+      <FaStore /> Agregar Nueva Sucursal
+    </button>
+  </div>
+  <table className="branches-table">
+    <tbody>
+      {branches.map((branch, index) => (
+        <tr key={branch.id} className="branch-row">
+          <td>{index + 1}. {branch.name}</td>
+          <td className="branch-actions">
+            <button 
+              className="app-button small"
+              onClick={() => navigate(`/admin/${companyId}/${branch.id}`)}
+            >
+              <FaEye /> Ver
+            </button>
+            <button 
+              className="app-button small"
+              onClick={() => navigate(`/admin/${companyId}/${branch.id}/config`)}
+            >
+              <FaCog /> Configurar
+            </button>
+            <button 
+              className="app-button small delete-btn"
+              onClick={() => handleDeleteBranch(branch.id)}
+            >
+              <FaTrash /> Eliminar
+            </button>
+          </td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+</div>
+```
+
+3. Actualizar CompanyConfig.css:
+
+```css:src/components/CompanyConfig.css
+.input-group {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 200px;
+}
+
+.input-group label {
+  font-size: 0.9rem;
+  color: #666;
+  margin-bottom: 4px;
+}
+
+.input-group input {
+  padding: 8px;
+  font-size: 14px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.branches-section {
+  margin-top: 2rem;
+}
+
+.branches-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.branch-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.app-button.small {
+  padding: 6px 12px;
+  font-size: 0.9rem;
+}
+
+.delete-btn {
+  background-color: #dc3545 !important;
+}
+
+.delete-btn:hover {
+  background-color: #c82333 !important;
+}
+
+.branches-table {
+  width: 100%;
+}
+
+.branch-row td {
+  padding: 8px;
+  vertical-align: middle;
+}
+
+.branch-row td:first-child {
+  width: 30%;
+}
+```
+
+4. Y actualizar BranchConfig.css para el botón de eliminar:
+
+```css:src/components/BranchConfig.css
+.delete-btn {
+  background-color: #dc3545 !important;
+}
+
+.delete-btn:hover {
+  background-color: #c82333 !important;
+}
+```
+
+Estos cambios:
+1. Agregan íconos a todos los botones solicitados
+2. Mejoran el estilo de los inputs con labels
+3. Reducen el tamaño de los botones en la lista de sucursales
+4. Agregan color rojo a los botones de eliminar
+5. Mejoran la organización general de la interfaz
+
+---
+
+_**User**_
+
+agrega en @BranchConfig.js tambien los labels, y hace que el boton de guardar cambios este a la derecha en vez de ocupar todo el ancho de la pantalla
+y pone un separador debajo, ya que hasta ahi son datos del header de la branch, y son datos de las mesas
+
+---
+
+_**Assistant**_
+
+
+
+Vamos a modificar BranchConfig.js y su CSS:
+
+```javascript:src/components/BranchConfig.js
+<div className="branch-details">
+  <div className="input-group">
+    <label>Nombre de Sucursal</label>
+    <input
+      type="text"
+      name="name"
+      value={editedBranch.name}
+      onChange={handleBranchInputChange}
+      placeholder="Ingrese nombre de sucursal"
+    />
+  </div>
+  <div className="input-group">
+    <label>Sitio Web</label>
+    <input
+      type="text"
+      name="website"
+      value={editedBranch.website}
+      onChange={handleBranchInputChange}
+      placeholder="Ingrese URL del sitio web"
+    />
+  </div>
+  <div className="input-group">
+    <label>URL del Menú</label>
+    <input
+      type="text"
+      name="menu"
+      value={editedBranch.menu}
+      onChange={handleBranchInputChange}
+      placeholder="Ingrese URL del menú"
+    />
+  </div>
+  <div className="input-group">
+    <label>URL del Logo</label>
+    <input
+      type="text"
+      name="logo"
+      value={editedBranch.logo}
+      onChange={handleBranchInputChange}
+      placeholder="Ingrese URL del logo"
+    />
+  </div>
+  <div className="input-group">
+    <label>URL de Imagen de Fondo QR</label>
+    <input
+      type="text"
+      name="qrBackgroundImage"
+      value={editedBranch.qrBackgroundImage}
+      onChange={handleBranchInputChange}
+      placeholder="Ingrese URL de imagen de fondo para QR"
+    />
+  </div>
+  <div className="style-controls">
+    <div className="input-group">
+      <label>Color del Texto</label>
+      <input
+        type="color"
+        name="textColor"
+        value={editedBranch.textColor || "#000000"}
+        onChange={handleBranchInputChange}
+      />
+    </div>
+    <div className="input-group">
+      <label>Fuente</label>
+      <select
+        name="fontFamily"
+        value={editedBranch.fontFamily || "Helvetica"}
+        onChange={handleBranchInputChange}
+      >
+        {FONT_OPTIONS.map(font => (
+          <option key={font.value} value={font.value}>
+            {font.label}
+          </option>
+        ))}
+      </select>
+    </div>
+  </div>
+</div>
+
+<div className="branch-actions-row">
+  <button className="app-button" onClick={handleSaveBranch}>
+    <FaSave /> Guardar Cambios de Sucursal
+  </button>
+</div>
+
+<hr className="section-divider" />
+
+<div className="tables-section">
+  <div className="button-row">
+    {/* ... resto del código de las mesas ... */}
+  </div>
+</div>
+```
+
+
+Y actualizar el CSS en BranchConfig.css:
+
+```css:src/components/BranchConfig.css
+.branch-details {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 20px;
+  margin-bottom: 20px;
+  max-width: 100%;
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 200px;
+}
+
+.input-group label {
+  font-size: 0.9rem;
+  color: #666;
+  margin-bottom: 4px;
+}
+
+.input-group input,
+.input-group select {
+  padding: 8px;
+  font-size: 14px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.style-controls {
+  display: flex;
+  gap: 20px;
+  width: 100%;
+}
+
+.style-controls .input-group {
+  min-width: 150px;
+}
+
+.style-controls input[type="color"] {
+  height: 40px;
+  padding: 2px;
+}
+
+.branch-actions-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 20px;
+}
+
+.section-divider {
+  margin: 30px 0;
+  border: none;
+  border-top: 1px solid #e0e0e0;
+}
+
+.tables-section {
+  margin-top: 30px;
+}
+```
+
+Estos cambios:
+1. Agregan labels a todos los campos
+2. Reorganizan los controles de estilo (color y fuente)
+3. Mueven el botón de guardar a la derecha
+4. Agregan un separador visual entre la sección de datos de la sucursal y la sección de mesas
+5. Mejoran el espaciado y la organización general del formulario
+
+---
+
+_**User**_
+
+muy bien, quier que el input de url del qr sea mas corto para que entre el color de texto y selector de fuente en un solo renglon
+
+---
+
+_**Assistant**_
+
+
+
+Vamos a ajustar el ancho del input de QR y reorganizar los controles de estilo. Modificaremos el CSS de BranchConfig:
+
+```css:src/components/BranchConfig.css
+.style-controls-row {
+  display: flex;
+  gap: 20px;
+  width: 100%;
+  align-items: flex-start;
+}
+
+.qr-and-style-group {
+  display: flex;
+  gap: 20px;
+  width: 100%;
+}
+
+.input-group.qr-input {
+  max-width: 400px; /* o el ancho que prefieras */
+}
+
+.style-controls {
+  display: flex;
+  gap: 20px;
+  flex: 1;
+}
+
+.style-controls .input-group {
+  min-width: 120px;
+  flex: 1;
+}
+
+.style-controls input[type="color"] {
+  height: 38px;
+  padding: 2px;
+  width: 100%;
+}
+```
+
+Y modificamos la estructura en BranchConfig.js:
+
+```javascript:src/components/BranchConfig.js
+{/* ... otros inputs ... */}
+
+<div className="qr-and-style-group">
+  <div className="input-group qr-input">
+    <label>URL de Imagen de Fondo QR</label>
+    <input
+      type="text"
+      name="qrBackgroundImage"
+      value={editedBranch.qrBackgroundImage}
+      onChange={handleBranchInputChange}
+      placeholder="Ingrese URL de imagen de fondo para QR"
+    />
+  </div>
+  <div className="style-controls">
+    <div className="input-group">
+      <label>Color del Texto</label>
+      <input
+        type="color"
+        name="textColor"
+        value={editedBranch.textColor || "#000000"}
+        onChange={handleBranchInputChange}
+      />
+    </div>
+    <div className="input-group">
+      <label>Fuente</label>
+      <select
+        name="fontFamily"
+        value={editedBranch.fontFamily || "Helvetica"}
+        onChange={handleBranchInputChange}
+      >
+        {FONT_OPTIONS.map(font => (
+          <option key={font.value} value={font.value}>
+            {font.label}
+          </option>
+        ))}
+      </select>
+    </div>
+  </div>
+</div>
+```
+
+Estos cambios:
+1. Limitan el ancho del input de QR
+2. Organizan los controles de estilo en una fila
+3. Mantienen el espaciado y alineación consistentes
+4. Permiten que los tres elementos (QR, color y fuente) queden en la misma línea
+
+---
+
+_**User**_
+
+pone en @BranchConfig.js en la parte de mesas un titulo que diga mesas y el boton de agregar mesa y descargar urls en la misma linea que el titulo hacia la derecha, similar a como esta en company config que esta el titulo de sucursales y a la derecha el boton de agregar
+
+---
+
+_**Assistant**_
+
+
+
+Vamos a modificar la sección de mesas en BranchConfig.js para que tenga el mismo estilo que la sección de sucursales en CompanyConfig:
+
+```javascript:src/components/BranchConfig.js
+<div className="tables-section">
+  <div className="section-header">
+    <h3>Mesas</h3>
+    <div className="section-actions">
+      <button className="app-button add-table-btn" onClick={handleAddTable}>
+        <FaChair /> Agregar Mesa
+      </button>
+      <button className="app-button" onClick={() => navigate(`/admin/${companyId}/${branchId}/urls`)}>
+        <FaQrcode /> Descargar URLs
+      </button>
+    </div>
+  </div>
+
+  <DragDropContext onDragEnd={onDragEnd}>
+    {/* ... resto del código ... */}
+  </DragDropContext>
+</div>
+```
+
+Y agregamos los estilos correspondientes en BranchConfig.css:
+
+```css:src/components/BranchConfig.css
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.section-header h3 {
+  margin: 0;
+  color: #2c3e50;
+}
+
+.section-actions {
+  display: flex;
+  gap: 10px;
+}
+
+/* Eliminar estos estilos ya que no los necesitamos más */
+.button-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+```
+
+Estos cambios:
+1. Crean un encabezado de sección con título y botones alineados
+2. Mantienen la consistencia visual con CompanyConfig
+3. Mejoran la organización de los elementos
+4. Mantienen el espaciado y alineación correctos
+
+---
+
+_**User**_
+
+hace que los bottones de la tabla de mesas tengan el mismo tamaño que los de la tabla de sucursales, y hace que los botones de ambas tablas se tiren hacial la derecha, al fin de la fila, y los datos como nombre y descripcon se mantenga a la izquieda
+
+---
+
+_**Assistant**_
+
+
+
+Vamos a modificar los estilos para alinear los botones de ambas tablas de manera similar:
+
+```css:src/components/BranchConfig.css
+/* Estilo para las filas de las tablas */
+.table-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+  padding: 10px;
+  background-color: #f9f9f9;
+  border-radius: 4px;
+}
+
+/* Contenedor para los datos de la mesa (número, nombre, descripción) */
+.table-info {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  gap: 10px;
+}
+
+/* Contenedor para los botones de acción */
+.table-actions {
+  display: flex;
+  gap: 8px;
+  margin-left: auto; /* Empuja los botones hacia la derecha */
+}
+
+/* Ajustar tamaño de los botones */
+.table-actions .app-button {
+  padding: 6px 12px;
+  font-size: 0.9rem;
+}
+
+/* Ajustar inputs */
+.table-name-input {
+  width: 150px;
+  margin: 0;
+}
+
+.table-description-input {
+  width: 200px;
+  margin: 0;
+}
+
+/* Eliminar estilos anteriores que puedan interferir */
+.button-row .app-button {
+  flex: initial;
+  margin-right: 0;
+}
+```
+
+Y modificamos la estructura en BranchConfig.js:
+
+```javascript:src/components/BranchConfig.js
+<li
+  ref={provided.innerRef}
+  {...provided.draggableProps}
+  {...provided.dragHandleProps}
+  className="table-item"
+>
+  <div className="table-info">
+    <span className="table-number">{index + 1}</span>
+    <input
+      type="text"
+      value={table.tableName}
+      onChange={(e) => handleTableChange(table.id, 'tableName', e.target.value)}
+      onBlur={() => handleTableBlur(table.id)}
+      className="table-name-input"
+    />
+    <input
+      type="text"
+      value={table.tableDescription}
+      onChange={(e) => handleTableChange(table.id, 'tableDescription', e.target.value)}
+      onBlur={() => handleTableBlur(table.id)}
+      className="table-description-input"
+    />
+  </div>
+  <div className="table-actions">
+    <button 
+      className="app-button small"
+      onClick={() => navigate(`/user/${companyId}/${branchId}/${table.id}`)}
+    >
+      <FaEye /> Ver
+    </button>
+    <button 
+      className="app-button small delete-btn" 
+      onClick={() => handleDeleteTable(table.id)}
+    >
+      <FaTrash /> Eliminar
+    </button>
+  </div>
+</li>
+```
+
+Estos cambios:
+1. Agrupan los datos de la mesa en un contenedor
+2. Agrupan los botones en un contenedor separado
+3. Alinean los botones a la derecha
+4. Unifican el tamaño de los botones con los de la tabla de sucursales
+5. Mantienen un espaciado consistente
+
+---
+
+_**User**_
+
+agregale mas estilo al input de texto que esta en la tabla de mesas en @BranchConfig.js 
+
+---
+
+_**Assistant**_
+
+
+
+Vamos a mejorar el estilo de los inputs en la tabla de mesas. Actualizamos BranchConfig.css:
+
+```css:src/components/BranchConfig.css
+/* Estilos para los inputs de la tabla */
+.table-name-input,
+.table-description-input {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+  background-color: white;
+}
+
+.table-name-input:hover,
+.table-description-input:hover {
+  border-color: #b3b3b3;
+}
+
+.table-name-input:focus,
+.table-description-input:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0,123,255,0.1);
+}
+
+/* Ajustar tamaños específicos */
+.table-name-input {
+  width: 150px;
+}
+
+.table-description-input {
+  width: 300px;
+}
+
+/* Estilo para el número de la mesa */
+.table-number {
+  font-weight: 500;
+  color: #495057;
+  min-width: 30px;
+  text-align: center;
+}
+
+/* Mejorar el estilo del contenedor de la mesa */
+.table-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  background-color: white;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  transition: all 0.2s ease;
+}
+
+.table-item:hover {
+  background-color: #f8f9fa;
+  border-color: #dee2e6;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+/* Ajustar el espaciado del contenedor de información */
+.table-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+}
+```
+
+Estos cambios:
+1. Mejoran la apariencia de los inputs con bordes más suaves
+2. Agregan efectos de hover y focus
+3. Mejoran el espaciado y la alineación
+4. Agregan sombras y transiciones suaves
+5. Hacen que el diseño sea más moderno y profesional
+6. Mejoran la legibilidad del número de mesa
+7. Dan un aspecto más pulido a toda la fila de la tabla
+
+---
+
+_**User**_
+
+ya esta todo muy bien, ahora quiero que en @CompanyConfig.js los botones de la tabla de sucursales se vayan hacia la derecha, y a la iziquieda quede el titulo y numero de sucursal
+
+---
+
+_**Assistant**_
+
+
+
+Vamos a modificar el
+
 ---
 
 

@@ -15,7 +15,7 @@ const AdminHistoryModal = ({
     <div className="modal-overlay">
       <div className="modal">
         <div className="modal-header">
-          <h2>Historial de Eventos - Mesa {selectedTable.tableName}</h2>
+          <h2>Historial de Eventos - {selectedTable.tableName}</h2>
           <button className="app-button close-button" onClick={onClose}>
             <FaTimes />
           </button>

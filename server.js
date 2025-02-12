@@ -281,6 +281,7 @@ app.put('/api/tables/:id/mark-seen', async (req, res) => {
   }
 });
 
+// Obtener una compañía específica
 app.get('/api/companies/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -290,7 +291,7 @@ app.get('/api/companies/:id', async (req, res) => {
         attributes: ['id']
       }]
     });
-    
+
     if (!company) {
       return res.status(404).json({ error: 'Company not found' });
     }
@@ -299,7 +300,7 @@ app.get('/api/companies/:id', async (req, res) => {
       ...company.toJSON(),
       branchIds: company.Branches.map(branch => branch.id)
     };
-    
+
     res.json(formattedCompany);
   } catch (error) {
     console.error('Error fetching company:', error);
@@ -444,6 +445,113 @@ app.post('/api/branches/:id/release-all-tables', async (req, res) => {
   }
 });
 
+// Ruta para crear una nueva compañía
+app.post('/api/companies', async (req, res) => {
+  try {
+    const company = await Company.create({
+      ...req.body,
+      branchIds: req.body.branchIds || [] // Aseguramos que branchIds esté definido
+    });
+    
+    const formattedCompany = {
+      ...company.toJSON(),
+      branches: [] // Inicialmente sin sucursales
+    };
+
+    res.status(201).json(formattedCompany);
+  } catch (error) {
+    console.error('Error creating company:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Rutas para Company
+app.put('/api/companies/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const company = await Company.findByPk(id);
+    if (!company) {
+      return res.status(404).json({ error: 'Company not found' });
+    }
+    await company.update(req.body);
+    res.json(company);
+  } catch (error) {
+    console.error('Error updating company:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Rutas para Branch
+app.post('/api/branches', async (req, res) => {
+  try {
+    const branch = await Branch.create(req.body);
+    res.status(201).json(branch);
+  } catch (error) {
+    console.error('Error creating branch:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.put('/api/branches/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const branch = await Branch.findByPk(id);
+    if (!branch) {
+      return res.status(404).json({ error: 'Branch not found' });
+    }
+    await branch.update(req.body);
+    res.json(branch);
+  } catch (error) {
+    console.error('Error updating branch:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.delete('/api/branches/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const branch = await Branch.findByPk(id);
+    if (!branch) {
+      return res.status(404).json({ error: 'Branch not found' });
+    }
+    await branch.destroy();
+    res.status(204).send();
+  } catch (error) {
+    console.error('Error deleting branch:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Ruta para crear una nueva mesa
+app.post('/api/tables', async (req, res) => {
+  try {
+    const table = await Table.create(req.body);
+    
+    // Si hay eventos iniciales, crearlos
+    if (req.body.events && req.body.events.length > 0) {
+      await Event.bulkCreate(
+        req.body.events.map(event => ({
+          ...event,
+          tableId: table.id
+        }))
+      );
+    }
+
+    // Devolver la mesa con sus eventos
+    const tableWithEvents = await Table.findByPk(table.id, {
+      include: [{
+        model: Event,
+        attributes: ['type', 'message', 'createdAt', 'seenAt']
+      }]
+    });
+
+    res.status(201).json(tableWithEvents);
+  } catch (error) {
+    console.error('Error creating table:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Servir archivos estáticos
 app.use(express.static(path.join(__dirname, 'build')));
 
@@ -453,7 +561,7 @@ app.get('*', (req, res) => {
 });
 
 // Inicializar base de datos y servidor
-sequelize.sync()
+sequelize.sync({ alter: true })
   .then(() => {
     app.listen(PORT, () => {
       console.log(`Server running on http://localhost:${PORT}`);

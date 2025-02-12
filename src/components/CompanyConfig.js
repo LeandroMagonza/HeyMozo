@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getCompany, updateCompany, createBranch, deleteBranch, getBranches } from '../services/api';
 import './CompanyConfig.css';
+import { FaEye, FaSave, FaStore, FaCog, FaTrash } from 'react-icons/fa';
+import '../styles/common.css';
 
 const CompanyConfig = () => {
   const { companyId } = useParams();
@@ -9,7 +11,12 @@ const CompanyConfig = () => {
   const [company, setCompany] = useState(null);
   const [branches, setBranches] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [editedCompany, setEditedCompany] = useState(null);
+  const [editedCompany, setEditedCompany] = useState({
+    name: '',
+    website: '',
+    menu: '',
+    branchIds: []
+  });
 
   useEffect(() => {
     const fetchData = async () => {
@@ -18,9 +25,10 @@ const CompanyConfig = () => {
           getCompany(companyId),
           getBranches(companyId)
         ]);
+
         setCompany(companyResponse.data);
         setEditedCompany(companyResponse.data);
-        setBranches(branchesResponse.data);
+        setBranches(branchesResponse.data || []);
         setLoading(false);
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -95,57 +103,87 @@ const CompanyConfig = () => {
   }
 
   return (
-    <div className="company-config">
-      <h2>Configuración de Compañía</h2>
-      <div className="company-details">
-        <input
-          type="text"
-          name="name"
-          value={editedCompany.name}
-          onChange={handleInputChange}
-          placeholder="Company Name"
-        />
-        <input
-          type="text"
-          name="website"
-          value={editedCompany.website}
-          onChange={handleInputChange}
-          placeholder="Website"
-        />
-        <input
-          type="text"
-          name="menu"
-          value={editedCompany.menu}
-          onChange={handleInputChange}
-          placeholder="Menu URL"
-        />
-        <button className="app-button" onClick={handleSave}>Guardar Cambios</button>
-      </div>
+    <div className="admin-container">
+      <div className="admin-content">
+        <div className="company-config">
+          <div className="header-row">
+            <h2>Configuración de Compañía</h2>
+          </div>
+          <div className="company-details">
+            <div className="input-group">
+              <label>Nombre de Compañía</label>
+              <input
+                type="text"
+                name="name"
+                value={editedCompany.name}
+                onChange={handleInputChange}
+                placeholder="Ingrese nombre de compañía"
+              />
+            </div>
+            <div className="input-group">
+              <label>Sitio Web</label>
+              <input
+                type="text"
+                name="website"
+                value={editedCompany.website}
+                onChange={handleInputChange}
+                placeholder="Ingrese URL del sitio web"
+              />
+            </div>
+            <div className="input-group">
+              <label>URL del Menú</label>
+              <input
+                type="text"
+                name="menu"
+                value={editedCompany.menu}
+                onChange={handleInputChange}
+                placeholder="Ingrese URL del menú"
+              />
+            </div>
+            <button className="app-button" onClick={handleSave}>
+              <FaSave /> Guardar Cambios
+            </button>
+          </div>
 
-      <h3>Sucursales</h3>
-      <button className="app-button" onClick={handleAddBranch}>Agregar Nueva Sucursal</button>
-      <table className="branches-table">
-        <tbody>
-          {branches.map((branch, index) => (
-            <tr key={branch.id} className="branch-row">
-              <td>{index + 1}. {branch.name}</td>
-              <td>
-                <button className="app-button" onClick={() => navigate(`/admin/${companyId}/${branch.id}`)}>
-                  Ver Sucursal
-                </button>
-              </td>
-              <td>
-                <button className="app-button" onClick={() => navigate(`/admin/${companyId}/${branch.id}/config`)}>
-                  Configurar Sucursal
-                </button>
-              </td>
-              <td>
-                <button className="app-button" onClick={() => handleDeleteBranch(branch.id)}>Eliminar Sucursal</button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+          <div className="branches-section">
+            <div className="branches-header">
+              <h3>Sucursales</h3>
+              <button className="app-button" onClick={handleAddBranch}>
+                <FaStore /> Agregar Nueva Sucursal
+              </button>
+            </div>
+            <table className="branches-table">
+              <tbody>
+                {branches.map((branch, index) => (
+                  <tr key={branch.id} className="branch-row">
+                    <td>{index + 1}. {branch.name}</td>
+                    <td className="branch-actions">
+                      <button 
+                        className="app-button small"
+                        onClick={() => navigate(`/admin/${companyId}/${branch.id}`)}
+                      >
+                        <FaEye /> Ver
+                      </button>
+                      <button 
+                        className="app-button small"
+                        onClick={() => navigate(`/admin/${companyId}/${branch.id}/config`)}
+                      >
+                        <FaCog /> Configurar
+                      </button>
+                      <button 
+                        className="app-button small delete-btn"
+                        onClick={() => handleDeleteBranch(branch.id)}
+                      >
+                        <FaTrash /> Eliminar
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
