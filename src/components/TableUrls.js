@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { getBranch, getTables } from '../services/api';
-import QRCodeDocument from './QRCodeDocument';
-import { PDFDownloadLink } from '@react-pdf/renderer';
+import QRGeneratorModal from './QRGeneratorModal';
 import './TableUrls.css';
 
 const TableUrls = () => {
@@ -10,6 +9,7 @@ const TableUrls = () => {
   const [branch, setBranch] = useState(null);
   const [tables, setTables] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -39,25 +39,22 @@ const TableUrls = () => {
       <h2>URLs de Mesas - {branch.name}</h2>
       
       <div className="actions">
-        <PDFDownloadLink
-          document={
-            <QRCodeDocument 
-              tables={tables} 
-              companyId={companyId} 
-              branchId={branchId}
-              branchName={branch.name}
-              restaurantLogo={branch.logo}
-              textColor={branch.textColor || "#000000"}
-              fontFamily={branch.fontFamily || "Helvetica"}
-              qrBackgroundImage={branch.qrBackgroundImage}
-              website={branch.website}
-            />
-          }
-          fileName={`qr-codes-${branch.name}.pdf`}
+        <button 
+          className="generate-qr-button"
+          onClick={() => setShowModal(true)}
         >
-          {({ loading }) => (loading ? 'Generando PDF...' : 'Descargar PDF con códigos QR')}
-        </PDFDownloadLink>
+          Generar códigos QR
+        </button>
       </div>
+
+      <QRGeneratorModal
+        show={showModal}
+        onClose={() => setShowModal(false)}
+        tables={tables}
+        companyId={companyId}
+        branchId={branchId}
+        branch={branch}
+      />
 
       <table>
         <thead>

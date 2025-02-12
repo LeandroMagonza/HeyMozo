@@ -2561,6 +2561,784 @@ Esto debería hacer que el footer sea legible en cualquier fondo y tenga mejor s
 
 ---
 
+_**User**_
+
+ok, vamos con otra cosa, esto quedo bien ya
+
+
+en @TableUrls.js @TableUrls.js @QRCodeDocument.js 
+el usuario tiene los links a la lista de mesas y aprieta el botn de generar urls, que le abre un pdf
+
+en @BranchConfig.js configuraba url de las imagenes, tanto logo como background, pero estoy teniendo problema con las imagenes estas que suelen no aparecer, entonces quiero que el usuario pueda subirlas en vez de poner el link
+
+podria guardarse la imagen en nuestro servidor, o si es mas facil, que el usuario la suba en el mismo proceso, quizas cuando aprieta el boton de descargar se le aparece un modal para subir estas dos imagenes,y despues de eso se envia la solicitud de generar el documento, con estas dos imagenes como parte del post o lo que sea, para no tener que almacenarlas, meterlas en el pdf y devolverselo para que lo descargue, sin almacenar nada, que te parece?
+
+---
+
+_**Assistant**_
+
+Me parece una excelente solución usar un modal para subir las imágenes justo antes de generar el PDF, así evitamos problemas de URLs rotas y no necesitamos almacenar las imágenes. Vamos a implementarlo:
+
+1. Primero creamos un nuevo componente QRGeneratorModal:
+
+```javascript:src/components/QRGeneratorModal.js
+import React, { useState } from 'react';
+import { PDFDownloadLink } from '@react-pdf/renderer';
+import QRCodeDocument from './QRCodeDocument';
+import './QRGeneratorModal.css';
+import { FaTimes, FaUpload } from 'react-icons/fa';
+
+const QRGeneratorModal = ({ show, onClose, tables, companyId, branchId, branch }) => {
+  const [logo, setLogo] = useState(null);
+  const [background, setBackground] = useState(null);
+  const [logoPreview, setLogoPreview] = useState(null);
+  const [backgroundPreview, setBackgroundPreview] = useState(null);
+  const [isReady, setIsReady] = useState(false);
+
+  const handleImageUpload = (e, type) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (type === 'logo') {
+          setLogo(reader.result);
+          setLogoPreview(URL.createObjectURL(file));
+        } else {
+          setBackground(reader.result);
+          setBackgroundPreview(URL.createObjectURL(file));
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleGeneratePDF = () => {
+    if (logo && background) {
+      setIsReady(true);
+    }
+  };
+
+  if (!show) return null;
+
+  return (
+    <div className="modal-overlay">
+      <div className="qr-generator-modal">
+        <div className="modal-header">
+          <h2>Generar Códigos QR</h2>
+          <button className="close-button" onClick={onClose}>
+            <FaTimes />
+          </button>
+        </div>
+
+        <div className="modal-content">
+          <div className="image-upload-section">
+            <div className="upload-container">
+              <label>Logo del Restaurante</label>
+              <div className="upload-area">
+                {logoPreview ? (
+                  <img src={logoPreview} alt="Logo preview" />
+                ) : (
+                  <div className="upload-placeholder">
+                    <FaUpload />
+                    <span>Subir Logo</span>
+                  </div>
+                )}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handleImageUpload(e, 'logo')}
+                />
+              </div>
+            </div>
+
+            <div className="upload-container">
+              <label>Fondo para QR</label>
+              <div className="upload-area">
+                {backgroundPreview ? (
+                  <img src={backgroundPreview} alt="Background preview" />
+                ) : (
+                  <div className="upload-placeholder">
+                    <FaUpload />
+                    <span>Subir Fondo</span>
+                  </div>
+                )}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handleImageUpload(e, 'background')}
+                />
+              </div>
+            </div>
+          </div>
+
+          {!isReady ? (
+            <button 
+              className="generate-button"
+              onClick={handleGeneratePDF}
+              disabled={!logo || !background}
+            >
+              Generar PDF
+            </button>
+          ) : (
+            <PDFDownloadLink
+              document={
+                <QRCodeDocument 
+                  tables={tables} 
+                  companyId={companyId} 
+                  branchId={branchId}
+                  branchName={branch.name}
+                  restaurantLogo={logo}
+                  textColor={branch.textColor || "#000000"}
+                  fontFamily={branch.fontFamily || "Helvetica"}
+                  qrBackgroundImage={background}
+                  website={branch.website}
+                />
+              }
+              fileName={`qr-codes-${branch.name}.pdf`}
+              className="download-link"
+            >
+              {({ loading }) => (loading ? 'Preparando PDF...' : 'Descargar PDF')}
+            </PDFDownloadLink>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default QRGeneratorModal;
+```
+
+2. Agregamos los estilos:
+
+```css:src/components/QRGeneratorModal.css
+.qr-generator-modal {
+  background: white;
+  border-radius: 10px;
+  width: 85%;
+  max-width: 800px;
+  padding: 20px;
+  position: relative;
+}
+
+.image-upload-section {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.upload-container {
+  flex: 1;
+}
+
+.upload-container label {
+  display: block;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+
+.upload-area {
+  border: 2px dashed #ccc;
+  border-radius: 8px;
+  padding: 20px;
+  text-align: center;
+  cursor: pointer;
+  position: relative;
+  height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.upload-area:hover {
+  border-color: #007bff;
+}
+
+.upload-area input[type="file"] {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.upload-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  color: #666;
+}
+
+.upload-placeholder svg {
+  font-size: 2em;
+}
+
+.upload-area img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.generate-button, .download-link {
+  display: block;
+  width: 100%;
+  padding: 12px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  cursor: pointer;
+  text-align: center;
+  text-decoration: none;
+}
+
+.generate-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.generate-button:hover:not(:disabled),
+.download-link:hover {
+  background-color: #0056b3;
+}
+```
+
+3. Modificamos TableUrls.js para usar el nuevo modal:
+
+```javascript:src/components/TableUrls.js
+import React, { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
+import { getBranch, getTables } from '../services/api';
+import QRGeneratorModal from './QRGeneratorModal';
+import './TableUrls.css';
+
+const TableUrls = () => {
+  const { companyId, branchId } = useParams();
+  const [branch, setBranch] = useState(null);
+  const [tables, setTables] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false);
+
+  // ... resto del código igual hasta el return ...
+
+  return (
+    <div className="table-urls">
+      <h2>URLs de Mesas - {branch.name}</h2>
+      
+      <div className="actions">
+        <button 
+          className="generate-qr-button"
+          onClick={() => setShowModal(true)}
+        >
+          Generar códigos QR
+        </button>
+      </div>
+
+      <QRGeneratorModal
+        show={showModal}
+        onClose={() => setShowModal(false)}
+        tables={tables}
+        companyId={companyId}
+        branchId={branchId}
+        branch={branch}
+      />
+
+      {/* ... resto del código igual ... */}
+    </div>
+  );
+};
+
+export default TableUrls;
+```
+
+Los cambios principales son:
+1. Crear un modal dedicado para la generación de QR
+2. Permitir la carga de imágenes con preview
+3. Convertir las imágenes a base64 para incluirlas directamente en el PDF
+4. Mostrar el botón de descarga solo cuando las imágenes están listas
+5. Mantener una interfaz amigable con previsualizaciones y feedback visual
+
+¿Qué te parece esta implementación? Podemos ajustar cualquier aspecto que consideres necesario.
+
+---
+
+_**User**_
+
+naaa sos un capo
+
+ahora saca del @BranchConfig.js el font color y font tipo, y ponelos en ese modal directamente, y pone tambien un input de texto para que puedan poner el texto que va al lado de su logo, y por defecto cargalo con la url del website que ya teniamos
+
+---
+
+_**Assistant**_
+
+¡Gracias! Dale, vamos a mover esas opciones al modal y agregar el input para el texto:
+
+```javascript:src/components/QRGeneratorModal.js
+import React, { useState } from 'react';
+import { PDFDownloadLink } from '@react-pdf/renderer';
+import QRCodeDocument from './QRCodeDocument';
+import './QRGeneratorModal.css';
+import { FaTimes, FaUpload } from 'react-icons/fa';
+
+const FONT_OPTIONS = [
+  { value: 'Helvetica', label: 'Helvetica' },
+  { value: 'Helvetica-Bold', label: 'Helvetica Bold' },
+  { value: 'Times-Roman', label: 'Times Roman' },
+  { value: 'Times-Bold', label: 'Times Bold' },
+  { value: 'Courier', label: 'Courier' },
+  { value: 'Courier-Bold', label: 'Courier Bold' }
+];
+
+const QRGeneratorModal = ({ show, onClose, tables, companyId, branchId, branch }) => {
+  const [logo, setLogo] = useState(null);
+  const [background, setBackground] = useState(null);
+  const [logoPreview, setLogoPreview] = useState(null);
+  const [backgroundPreview, setBackgroundPreview] = useState(null);
+  const [isReady, setIsReady] = useState(false);
+  const [textColor, setTextColor] = useState("#000000");
+  const [fontFamily, setFontFamily] = useState("Helvetica");
+  const [websiteText, setWebsiteText] = useState(branch.website || "");
+
+  const handleImageUpload = (e, type) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (type === 'logo') {
+          setLogo(reader.result);
+          setLogoPreview(URL.createObjectURL(file));
+        } else {
+          setBackground(reader.result);
+          setBackgroundPreview(URL.createObjectURL(file));
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleGeneratePDF = () => {
+    if (logo && background) {
+      setIsReady(true);
+    }
+  };
+
+  if (!show) return null;
+
+  return (
+    <div className="modal-overlay">
+      <div className="qr-generator-modal">
+        <div className="modal-header">
+          <h2>Generar Códigos QR</h2>
+          <button className="close-button" onClick={onClose}>
+            <FaTimes />
+          </button>
+        </div>
+
+        <div className="modal-content">
+          <div className="image-upload-section">
+            <div className="upload-container">
+              <label>Logo del Restaurante</label>
+              <div className="upload-area">
+                {logoPreview ? (
+                  <img src={logoPreview} alt="Logo preview" />
+                ) : (
+                  <div className="upload-placeholder">
+                    <FaUpload />
+                    <span>Subir Logo</span>
+                  </div>
+                )}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handleImageUpload(e, 'logo')}
+                />
+              </div>
+            </div>
+
+            <div className="upload-container">
+              <label>Fondo para QR</label>
+              <div className="upload-area">
+                {backgroundPreview ? (
+                  <img src={backgroundPreview} alt="Background preview" />
+                ) : (
+                  <div className="upload-placeholder">
+                    <FaUpload />
+                    <span>Subir Fondo</span>
+                  </div>
+                )}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handleImageUpload(e, 'background')}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="style-options">
+            <div className="input-group">
+              <label>Texto junto al logo</label>
+              <input
+                type="text"
+                value={websiteText}
+                onChange={(e) => setWebsiteText(e.target.value)}
+                placeholder="Ingrese el texto que aparecerá junto al logo"
+                className="text-input"
+              />
+            </div>
+
+            <div className="style-controls">
+              <div className="input-group">
+                <label>Color del Texto</label>
+                <input
+                  type="color"
+                  value={textColor}
+                  onChange={(e) => setTextColor(e.target.value)}
+                  className="color-input"
+                />
+              </div>
+              
+              <div className="input-group">
+                <label>Fuente</label>
+                <select
+                  value={fontFamily}
+                  onChange={(e) => setFontFamily(e.target.value)}
+                  className="font-select"
+                >
+                  {FONT_OPTIONS.map(font => (
+                    <option key={font.value} value={font.value}>
+                      {font.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {!isReady ? (
+            <button 
+              className="generate-button"
+              onClick={handleGeneratePDF}
+              disabled={!logo || !background}
+            >
+              Generar PDF
+            </button>
+          ) : (
+            <PDFDownloadLink
+              document={
+                <QRCodeDocument 
+                  tables={tables} 
+                  companyId={companyId} 
+                  branchId={branchId}
+                  branchName={branch.name}
+                  restaurantLogo={logo}
+                  textColor={textColor}
+                  fontFamily={fontFamily}
+                  qrBackgroundImage={background}
+                  website={websiteText}
+                />
+              }
+              fileName={`qr-codes-${branch.name}.pdf`}
+              className="download-link"
+            >
+              {({ loading }) => (loading ? 'Preparando PDF...' : 'Descargar PDF')}
+            </PDFDownloadLink>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default QRGeneratorModal;
+```
+
+Y actualizamos los estilos:
+
+```css:src/components/QRGeneratorModal.css
+/* ... estilos anteriores ... */
+
+.style-options {
+  margin-top: 20px;
+  border-top: 1px solid #eee;
+  padding-top: 20px;
+}
+
+.style-controls {
+  display: flex;
+  gap: 20px;
+  margin-top: 15px;
+}
+
+.input-group {
+  flex: 1;
+  margin-bottom: 15px;
+}
+
+.input-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.text-input {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.color-input {
+  width: 100%;
+  height: 40px;
+  padding: 0;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.font-select {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 1rem;
+  background-color: white;
+}
+
+/* ... resto de los estilos igual ... */
+```
+
+También necesitamos eliminar esas opciones del BranchConfig.js:
+
+```javascript:src/components/BranchConfig.js
+// Eliminar el array FONT_OPTIONS
+// Eliminar los campos textColor y fontFamily del formulario
+// Eliminar qrBackgroundImage del formulario
+
+// En la sección de estilos QR, eliminar:
+<div className="qr-and-style-group">
+  <div className="input-group qr-input">
+    <label>URL de Imagen de Fondo QR</label>
+    <input
+      type="text"
+      name="qrBackgroundImage"
+      value={editedBranch.qrBackgroundImage}
+      onChange={handleBranchInputChange}
+      placeholder="Ingrese URL de imagen de fondo para QR"
+    />
+  </div>
+  <div className="style-controls">
+    <div className="input-group">
+      <label>Color del Texto</label>
+      <input
+        type="color"
+        name="textColor"
+        value={editedBranch.textColor || "#000000"}
+        onChange={handleBranchInputChange}
+      />
+    </div>
+    <div className="input-group">
+      <label>Fuente</label>
+      <select
+        name="fontFamily"
+        value={editedBranch.fontFamily || "Helvetica"}
+        onChange={handleBranchInputChange}
+      >
+        {FONT_OPTIONS.map(font => (
+          <option key={font.value} value={font.value}>
+            {font.label}
+          </option>
+        ))}
+      </select>
+    </div>
+  </div>
+</div>
+```
+
+Los cambios principales son:
+1. Mover las opciones de estilo al modal
+2. Agregar input para el texto personalizado
+3. Simplificar las opciones de fuente
+4. Mejorar la organización visual de las opciones
+5. Eliminar las opciones redundantes del BranchConfig
+
+---
+
+_**User**_
+
+te falto incluir fuentes que antes estaban
+
+const FONT_OPTIONS = [
+  { value: 'Helvetica', label: 'Helvetica' },
+  { value: 'Helvetica-Bold', label: 'Helvetica Bold' },
+  { value: 'Helvetica-Oblique', label: 'Helvetica Oblique' },
+  { value: 'Helvetica-BoldOblique', label: 'Helvetica Bold Oblique' },
+  { value: 'Times-Roman', label: 'Times Roman' },
+  { value: 'Times-Bold', label: 'Times Bold' },
+  { value: 'Times-Italic', label: 'Times Italic' },
+  { value: 'Times-BoldItalic', label: 'Times Bold Italic' },
+  { value: 'Courier', label: 'Courier' },
+  { value: 'Courier-Bold', label: 'Courier Bold' },
+  { value: 'Courier-Oblique', label: 'Courier Oblique' },
+  { value: 'Courier-BoldOblique', label: 'Courier Bold Oblique' },
+  { value: 'Symbol', label: 'Symbol' },
+  { value: 'ZapfDingbats', label: 'ZapfDingbats' }
+];
+
+
+
+y hace que el modal tenga scroll y ocupe 90% del alto de la pantalla
+
+y hace que cuando el boton este listo ya para descargar, que se ponga en verde, porque ahora ni se nota que esta procesando, o si no que descargue directamente cuando esta listo
+
+---
+
+_**Assistant**_
+
+
+
+Vamos a hacer todos esos cambios:
+
+```javascript:src/components/QRGeneratorModal.js
+// Actualizar el array de fuentes
+const FONT_OPTIONS = [
+  { value: 'Helvetica', label: 'Helvetica' },
+  { value: 'Helvetica-Bold', label: 'Helvetica Bold' },
+  { value: 'Helvetica-Oblique', label: 'Helvetica Oblique' },
+  { value: 'Helvetica-BoldOblique', label: 'Helvetica Bold Oblique' },
+  { value: 'Times-Roman', label: 'Times Roman' },
+  { value: 'Times-Bold', label: 'Times Bold' },
+  { value: 'Times-Italic', label: 'Times Italic' },
+  { value: 'Times-BoldItalic', label: 'Times Bold Italic' },
+  { value: 'Courier', label: 'Courier' },
+  { value: 'Courier-Bold', label: 'Courier Bold' },
+  { value: 'Courier-Oblique', label: 'Courier Oblique' },
+  { value: 'Courier-BoldOblique', label: 'Courier Bold Oblique' },
+  { value: 'Symbol', label: 'Symbol' },
+  { value: 'ZapfDingbats', label: 'ZapfDingbats' }
+];
+
+// Modificar el handleGeneratePDF para descargar directamente
+const handleGeneratePDF = () => {
+  if (logo && background) {
+    setIsReady(true);
+    // Simular click en el link de descarga
+    document.querySelector('.download-link')?.click();
+  }
+};
+```
+
+```css:src/components/QRGeneratorModal.css
+.qr-generator-modal {
+  background: white;
+  border-radius: 10px;
+  width: 85%;
+  max-width: 800px;
+  height: 90vh;
+  padding: 20px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-content {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 10px; /* Para el scroll */
+}
+
+/* ... resto de los estilos ... */
+
+.generate-button, .download-link {
+  display: block;
+  width: 100%;
+  padding: 12px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  cursor: pointer;
+  text-align: center;
+  text-decoration: none;
+  margin-top: 20px;
+  transition: background-color 0.3s;
+}
+
+.generate-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.generate-button:hover:not(:disabled) {
+  background-color: #0056b3;
+}
+
+.download-link {
+  background-color: #28a745; /* Verde para indicar que está listo */
+}
+
+.download-link:hover {
+  background-color: #218838;
+}
+
+/* Estilo para cuando está procesando */
+.download-link.processing {
+  background-color: #ffc107;
+  cursor: wait;
+}
+```
+
+Y en el JSX del botón de descarga:
+
+```javascript:src/components/QRGeneratorModal.js
+<PDFDownloadLink
+  document={
+    <QRCodeDocument 
+      // ... props ...
+    />
+  }
+  fileName={`qr-codes-${branch.name}.pdf`}
+  className="download-link"
+>
+  {({ loading, error }) => (
+    <span className={loading ? 'processing' : ''}>
+      {loading ? 'Preparando PDF...' : error ? 'Error al generar PDF' : 'Descargar PDF'}
+    </span>
+  )}
+</PDFDownloadLink>
+```
+
+Los cambios principales son:
+1. Agregar todas las fuentes que faltaban
+2. Hacer que el modal ocupe 90vh y tenga scroll en el contenido
+3. Hacer que el botón de descarga sea verde para indicar que está listo
+4. Agregar estado "processing" con color amarillo
+5. Hacer que la descarga comience automáticamente cuando está listo
+6. Mejorar el feedback visual del estado del proceso
+
+---
+
+_**User**_
+
+muy bien. casi, que el boton este verde solo cuando termino de preparar, solo cuando dice descargar
+
+---
+
+_**Assistant**_
+
+
+
+---
+
 
 
 ---

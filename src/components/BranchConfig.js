@@ -6,23 +6,6 @@ import './BranchConfig.css';
 import { FaEye, FaQrcode, FaChair, FaSave, FaTrash } from 'react-icons/fa';
 import '../styles/common.css';
 
-const FONT_OPTIONS = [
-  { value: 'Helvetica', label: 'Helvetica' },
-  { value: 'Helvetica-Bold', label: 'Helvetica Bold' },
-  { value: 'Helvetica-Oblique', label: 'Helvetica Oblique' },
-  { value: 'Helvetica-BoldOblique', label: 'Helvetica Bold Oblique' },
-  { value: 'Times-Roman', label: 'Times Roman' },
-  { value: 'Times-Bold', label: 'Times Bold' },
-  { value: 'Times-Italic', label: 'Times Italic' },
-  { value: 'Times-BoldItalic', label: 'Times Bold Italic' },
-  { value: 'Courier', label: 'Courier' },
-  { value: 'Courier-Bold', label: 'Courier Bold' },
-  { value: 'Courier-Oblique', label: 'Courier Oblique' },
-  { value: 'Courier-BoldOblique', label: 'Courier Bold Oblique' },
-  { value: 'Symbol', label: 'Symbol' },
-  { value: 'ZapfDingbats', label: 'ZapfDingbats' }
-];
-
 const BranchConfig = () => {
   const { companyId, branchId } = useParams();
   const navigate = useNavigate();
@@ -224,43 +207,6 @@ const BranchConfig = () => {
                 onChange={handleBranchInputChange}
                 placeholder="Ingrese URL del logo"
               />
-            </div>
-            <div className="qr-and-style-group">
-              <div className="input-group qr-input">
-                <label>URL de Imagen de Fondo QR</label>
-                <input
-                  type="text"
-                  name="qrBackgroundImage"
-                  value={editedBranch.qrBackgroundImage}
-                  onChange={handleBranchInputChange}
-                  placeholder="Ingrese URL de imagen de fondo para QR"
-                />
-              </div>
-              <div className="style-controls">
-                <div className="input-group">
-                  <label>Color del Texto</label>
-                  <input
-                    type="color"
-                    name="textColor"
-                    value={editedBranch.textColor || "#000000"}
-                    onChange={handleBranchInputChange}
-                  />
-                </div>
-                <div className="input-group">
-                  <label>Fuente</label>
-                  <select
-                    name="fontFamily"
-                    value={editedBranch.fontFamily || "Helvetica"}
-                    onChange={handleBranchInputChange}
-                  >
-                    {FONT_OPTIONS.map(font => (
-                      <option key={font.value} value={font.value}>
-                        {font.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
             </div>
           </div>
 
