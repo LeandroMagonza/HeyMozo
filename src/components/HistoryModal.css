@@ -14,9 +14,10 @@
 .history-modal {
   background-color: white;
   border-radius: 10px;
-  width: 80%;
-  max-width: 500px;
-  height: 80vh;
+  width: 85%;
+  max-width: 800px;
+  height: 85vh;
+  max-height: 90vh;
   display: flex;
   flex-direction: column;
 }
@@ -84,4 +85,11 @@
 .event-time {
   color: #999;
   font-size: 0.9em;
+}
+
+@media (max-width: 768px) {
+  .history-modal {
+    width: 85%;
+    height: 90vh;
+  }
 }

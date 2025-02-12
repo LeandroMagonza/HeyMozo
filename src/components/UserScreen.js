@@ -160,6 +160,12 @@ const UserScreen = () => {
           />
         </div>
 
+        {/* Nuevo footer */}
+        <div className="heymozo-footer">
+          <img src="/images/heymozo-logo.png" alt="HeyMozo Logo" />
+          <span>Generado por HeyMozo</span>
+        </div>
+
         <EventModal
           show={showModal}
           onClose={handleCloseModal}

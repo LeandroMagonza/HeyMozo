@@ -10,6 +10,8 @@ import { translateState, translateEvent } from '../utils/translations';
 import { EventTypes } from '../constants';
 import AdminHistoryModal from './AdminHistoryModal';
 import notificationSound from '../sounds/notification.mp3';
+import TablesList from './TablesList';
+import SoundToggleButton from './SoundToggleButton';
 
 const AdminScreen = () => {
   const { companyId, branchId } = useParams();
@@ -111,33 +113,34 @@ const AdminScreen = () => {
     let hasUnseenWaiter = false;
     let hasUnseenCheck = false;
     let hasUnseenManager = false;
+    let lastAvailableIndex = -1;
 
     // Ordenar eventos por fecha, más antiguo primero
     const sortedEvents = [...events].sort((a, b) => 
       new Date(a.createdAt) - new Date(b.createdAt)
     );
 
-    for (const event of sortedEvents) {
+    // Encontrar el último evento MARK_AVAILABLE
+    lastAvailableIndex = sortedEvents.findLastIndex(event => event.type === EventTypes.MARK_AVAILABLE);
+
+    // Si no hay MARK_AVAILABLE o hay eventos después de él, la mesa está ocupada
+    const eventsAfterLastAvailable = lastAvailableIndex === -1 ? 
+      sortedEvents : 
+      sortedEvents.slice(lastAvailableIndex + 1);
+
+    if (lastAvailableIndex === -1 || eventsAfterLastAvailable.length > 0) {
+      state = TableStates.OCCUPIED;
+      // Usar el primer evento como tiempo de ocupación si no hay MARK_AVAILABLE
+      lastOccupiedTime = lastAvailableIndex === -1 ? 
+        new Date(sortedEvents[0].createdAt) : 
+        new Date(sortedEvents[lastAvailableIndex + 1].createdAt);
+    }
+
+    // Procesar eventos después del último MARK_AVAILABLE
+    for (const event of eventsAfterLastAvailable) {
       const eventTime = new Date(event.createdAt);
 
       switch (event.type) {
-        case EventTypes.MARK_AVAILABLE:
-          state = TableStates.AVAILABLE;
-          lastOccupiedTime = null;
-          hasUnseenWaiter = false;
-          hasUnseenCheck = false;
-          hasUnseenManager = false;
-          waitTime = currentTime - eventTime;
-          break;
-
-        case EventTypes.SCAN:
-        case EventTypes.MARK_OCCUPIED:
-          if (state === TableStates.AVAILABLE) {
-            state = TableStates.OCCUPIED;
-            lastOccupiedTime = eventTime;
-          }
-          break;
-
         case EventTypes.CALL_WAITER:
           if (!event.seenAt) {
             hasUnseenWaiter = true;
@@ -157,25 +160,27 @@ const AdminScreen = () => {
           break;
 
         case EventTypes.MARK_SEEN:
-          hasUnseenWaiter = false;
-          hasUnseenCheck = false;
-          hasUnseenManager = false;
+          // Solo resetear los estados si el MARK_SEEN es después del último evento de cada tipo
+          const lastWaiterCall = eventsAfterLastAvailable.findLast(e => e.type === EventTypes.CALL_WAITER);
+          const lastCheckRequest = eventsAfterLastAvailable.findLast(e => e.type === EventTypes.REQUEST_CHECK);
+          const lastManagerCall = eventsAfterLastAvailable.findLast(e => e.type === EventTypes.CALL_MANAGER);
+
+          if (!lastWaiterCall || eventTime > new Date(lastWaiterCall.createdAt)) hasUnseenWaiter = false;
+          if (!lastCheckRequest || eventTime > new Date(lastCheckRequest.createdAt)) hasUnseenCheck = false;
+          if (!lastManagerCall || eventTime > new Date(lastManagerCall.createdAt)) hasUnseenManager = false;
           break;
       }
     }
 
     // Determinar estado final
-    if (state === TableStates.AVAILABLE) {
-      waitTime = currentTime - new Date(sortedEvents[sortedEvents.length - 1].createdAt);
-    } else {
-      // Si hay llamado al encargado, toma precedencia
+    if (state !== TableStates.AVAILABLE) {
       if (hasUnseenManager) {
         if (hasUnseenWaiter && hasUnseenCheck) {
-          state = 'MANAGER_WAITER_CHECK';
+          state = TableStates.MANAGER_WAITER_CHECK;
         } else if (hasUnseenWaiter) {
-          state = 'MANAGER_WAITER';
+          state = TableStates.MANAGER_WAITER;
         } else if (hasUnseenCheck) {
-          state = 'MANAGER_CHECK';
+          state = TableStates.MANAGER_CHECK;
         } else {
           state = TableStates.MANAGER;
         }
@@ -185,14 +190,15 @@ const AdminScreen = () => {
         state = TableStates.WAITER;
       } else if (hasUnseenCheck) {
         state = TableStates.CHECK;
-      } else {
-        state = TableStates.OCCUPIED;
       }
-      
-      // El tiempo de espera siempre es desde que la mesa se ocupó
-      if (lastOccupiedTime) {
-        waitTime = currentTime - lastOccupiedTime;
-      }
+    }
+
+    // Calcular tiempo de espera
+    if (state === TableStates.AVAILABLE) {
+      const lastEvent = sortedEvents[sortedEvents.length - 1];
+      waitTime = currentTime - new Date(lastEvent.createdAt);
+    } else if (lastOccupiedTime) {
+      waitTime = currentTime - lastOccupiedTime;
     }
 
     return { state, waitTime };
@@ -267,6 +273,15 @@ const AdminScreen = () => {
     setSortType(event.target.value);
   };
 
+  // Función auxiliar para ordenamiento natural de strings con números
+  const naturalSort = (a, b) => {
+    const collator = new Intl.Collator(undefined, {
+      numeric: true,
+      sensitivity: 'base'
+    });
+    return collator.compare(a, b);
+  };
+
   // Modificar la lógica de ordenamiento en sortedTables
   const sortedTables = useMemo(() => {
     return [...processedTables].sort((a, b) => {
@@ -287,15 +302,15 @@ const AdminScreen = () => {
         }
         return b.waitingTime - a.waitingTime;
       } else {
-        // Ordenar por nombre de mesa
-        return (a.tableName || '').localeCompare(b.tableName || '');
+        // Ordenar por nombre de mesa usando ordenamiento natural
+        return naturalSort(a.tableName || '', b.tableName || '');
       }
     });
   }, [processedTables, sortType]);
 
   // Función para ver el historial de eventos
   const viewEventHistory = (tableId) => {
-    const table = tables.find((t) => t.id === tableId);
+    const table = sortedTables.find((t) => t.id === tableId);
     if (!table) return;
 
     setSelectedTable(table);
@@ -350,7 +365,17 @@ const AdminScreen = () => {
       await updateTable(tableId, updatedTable);
       const tablesResponse = await getTables(branchId);
       setTables(tablesResponse.data);
-      console.log('Mesa marcada como disponible:', tableId);
+      
+      // Actualizar la mesa seleccionada si está abierta en el modal
+      if (selectedTable?.id === tableId) {
+        const updatedSelectedTable = processedTables.find(t => t.id === tableId);
+        if (updatedSelectedTable) {
+          setSelectedTable({
+            ...updatedSelectedTable,
+            currentState: 'AVAILABLE'
+          });
+        }
+      }
     } catch (error) {
       console.error('Error al marcar la mesa como disponible:', error);
     }
@@ -376,7 +401,17 @@ const AdminScreen = () => {
       await updateTable(tableId, updatedTable);
       const tablesResponse = await getTables(branchId);
       setTables(tablesResponse.data);
-      console.log('Mesa marcada como ocupada:', tableId);
+      
+      // Actualizar la mesa seleccionada si está abierta en el modal
+      if (selectedTable?.id === tableId) {
+        const updatedSelectedTable = processedTables.find(t => t.id === tableId);
+        if (updatedSelectedTable) {
+          setSelectedTable({
+            ...updatedSelectedTable,
+            currentState: 'OCCUPIED'
+          });
+        }
+      }
     } catch (error) {
       console.error('Error al marcar la mesa como ocupada:', error);
     }
@@ -443,13 +478,10 @@ const AdminScreen = () => {
           </select>
         </div>
         <div className="controls-right">
-          <button 
-            className="sound-toggle-button app-button"
+          <SoundToggleButton 
+            isSoundEnabled={isSoundEnabled}
             onClick={() => setIsSoundEnabled(!isSoundEnabled)}
-            title={isSoundEnabled ? "Silenciar notificaciones" : "Activar notificaciones"}
-          >
-            {isSoundEnabled ? <FaVolumeUp />: <FaVolumeMute />}
-          </button>
+          />
           <button 
             className="release-all-button app-button"
             onClick={handleReleaseAllTables}
@@ -458,51 +490,22 @@ const AdminScreen = () => {
           </button>
         </div>
       </div>
-      <table className="tables-list">
-        <thead>
-          <tr>
-            <th>Nombre</th>
-            <th>Estado</th>
-            <th>Tiempo de espera</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          {sortedTables.map((table) => (
-            <tr key={table.id} style={{ backgroundColor: TableColors[table.currentState] }}>
-              <td>{table.tableName || '-'}</td>
-              <td>{translateState(table.currentState)}</td>
-              <td>
-                {msToMinutes(table.waitingTime)} min
-              </td>
-              <td>
-                <div className="table-actions">
-                  <button className="app-button" onClick={() => viewEventHistory(table.id)}>
-                    <FaHistory /> Historial
-                    {table.unseenCount > 0 && <span className="unseen-count">{table.unseenCount}</span>}
-                  </button>
-                  {table.currentState === TableStates.AVAILABLE && (
-                    <button className="app-button" onClick={() => markAsOccupied(table.id)}>
-                      <FaSignInAlt /> Ocupar
-                    </button>
-                  )}
-                  {table.currentState !== TableStates.AVAILABLE && (
-                    <button className="app-button" onClick={() => markAsAvailable(table.id)}>
-                      <FaSignOutAlt /> Liberar
-                    </button>
-                  )}
-                </div>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+
+      <TablesList 
+        tables={sortedTables}
+        onTableClick={(table) => viewEventHistory(table.id)}
+        msToMinutes={msToMinutes}
+        onMarkAsAvailable={markAsAvailable}
+        onMarkAsOccupied={markAsOccupied}
+      />
 
       <AdminHistoryModal
         show={showEventsModal}
         onClose={closeEventsModal}
         selectedTable={selectedTable}
         onMarkSeen={markEventsAsSeen}
+        onMarkAsAvailable={markAsAvailable}
+        onMarkAsOccupied={markAsOccupied}
       />
     </div>
   );

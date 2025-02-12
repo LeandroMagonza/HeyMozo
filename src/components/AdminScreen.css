@@ -1,7 +1,11 @@
 .admin-screen {
-    padding: 20px;
+    padding: 20px 20px 0 20px;
     max-width: 100%;
-    overflow-x: auto;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-sizing: border-box;
   }
   
   .admin-screen h1 {
@@ -82,6 +86,10 @@
 
   .app-button {
     position: relative;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
   }
 
   .events-list li {
@@ -106,47 +114,73 @@
   }
 
   .sort-selector {
-    margin-bottom: 0;
-  }
-
-  .sort-selector label {
-    margin-right: 10px;
-  }
-
-  .sort-selector select {
-    padding: 5px;
-    font-size: 16px;
-    border-radius: 4px;
-    border: 1px solid #ccc;
-  }
-
-  .branch-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    width: 100%;
-    margin-bottom: 20px;
-  }
-
-  .branch-title {
-    flex: 1;
-  }
-
-  .release-all-button {
-    background-color: #dc3545;
-    color: white;
-    padding: 10px 20px;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
     display: flex;
     align-items: center;
     gap: 8px;
-    transition: background-color 0.3s;
+  }
+
+  .sort-selector label {
+    white-space: nowrap;
+  }
+
+  .sort-selector select {
+    padding: 8px;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+    font-size: 14px;
+    flex: 1;
+  }
+
+  .controls-right {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .sound-toggle-button {
+    background-color: #6c757d;
+    color: white;
+    padding: 0;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s;
+    width: 36px;
+    height: 36px;
+    position: relative;
+    line-height: 1;
+  }
+
+  .sound-toggle-button:hover {
+    background-color: #5a6268;
+  }
+
+  .sound-toggle-button svg {
+    display: block;
+    fill: currentColor;
+    width: 18px;
+    height: 18px;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  .release-all-button.app-button {
+    background-color: #dc3545;
+    color: white;
+    padding: 8px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 36px;
     margin-left: auto;
   }
 
-  .release-all-button:hover {
+  .release-all-button.app-button:hover {
     background-color: #c82333;
   }
 
@@ -155,34 +189,98 @@
   }
 
   .controls-row {
+    flex-shrink: 0;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
     margin-bottom: 20px;
   }
 
-  .controls-right {
-    display: flex;
-    gap: 10px;
-    align-items: center;
+  .branch-info {
+    flex-shrink: 0;
+    text-align: center;
+    margin-bottom: 20px;
   }
 
-  .sound-toggle-button {
-    background-color: #6c757d;
-    color: white;
-    padding: 10px;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    transition: background-color 0.3s;
+  .branch-info h1 {
+    margin: 0;
+    font-size: 1.8em;
   }
 
-  .sound-toggle-button:hover {
-    background-color: #5a6268;
+  .branch-info h2 {
+    margin: 5px 0;
+    font-size: 1.4em;
+    color: #666;
   }
 
-  .sound-toggle-button svg {
-    font-size: 1.2em;
+  .refresh-timer {
+    flex-shrink: 0;
+    text-align: center;
+    color: #666;
+    margin-bottom: 20px;
+  }
+
+  /* Media queries para móvil */
+  @media (max-width: 768px) {
+    .admin-screen {
+      padding: 12px 12px 0 12px;
+    }
+
+    .branch-info h1 {
+      font-size: 1.5em;
+    }
+
+    .branch-info h2 {
+      font-size: 1.2em;
+    }
+
+    .controls-row {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 12px;
+    }
+
+    .sort-selector {
+      flex-direction: row;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .sort-selector label {
+      margin: 0;
+      min-width: auto;
+    }
+
+    .sort-selector select {
+      flex: 1;
+    }
+
+    .controls-right {
+      flex-direction: row;
+      justify-content: space-between;
+      width: 100%;
+      gap: 8px;
+    }
+
+    .sound-toggle-button {
+      width: 36px;
+      height: 36px;
+      padding: 8px;
+    }
+
+    .release-all-button {
+      flex: 1;
+      margin-top: 0;
+      white-space: nowrap;
+    }
+  }
+
+  /* El contenedor de las tablas con scroll */
+  .tables-list-component {
+    flex: 1;
+    overflow: hidden;
+    min-height: 0;
+    margin-bottom: 20px;
   }

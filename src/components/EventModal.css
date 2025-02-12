@@ -5,10 +5,14 @@
 /* Estilos específicos para EventModal */
 
 .modal {
-    max-width: 90vw; /* Ajustar el ancho del modal para la pantalla de usuario */
-    padding: 20px; /* Añadido para crear espacio interno entre el contenido y los bordes */
-    box-sizing: border-box; /* Asegura que el padding se incluya en el ancho total */
-  }
+  border-radius: 10px;
+  width: 85%;
+  max-width: 800px;
+  height: auto; /* Cambiado para ajustarse al contenido */
+  min-height: 200px; /* Altura mínima razonable */
+  padding: 20px;
+  box-sizing: border-box;
+}
 
 .modal textarea {
     width: 100%; /* Ocupa todo el ancho disponible dentro del modal */
@@ -32,6 +36,13 @@
 
 .modal-buttons button {
   flex: 1;
+}
+
+@media (max-width: 768px) {
+  .modal {
+    width: 85%; /* Mantener el mismo ancho que en desktop */
+    height: auto;
+  }
 }
 
 

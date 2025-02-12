@@ -4,53 +4,216 @@
 
 /* Estilos específicos para el modal en AdminScreen */
 
+/* Base styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
 .modal {
-  max-width: 800px; /* Ancho mayor para mostrar más información */
-  max-height: 80vh; /* Altura máxima del modal */
+  background: white;
+  border-radius: 10px;
+  width: 85%;
+  max-width: 800px;
+  height: 85vh;
+  max-height: 90vh;
   display: flex;
   flex-direction: column;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
 }
 
 .modal-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  padding-bottom: 10px;
-  border-bottom: 1px solid #ccc;
+  align-items: flex-start;
+  padding: 16px;
+  border-bottom: 1px solid #eee;
 }
 
-.modal-header h2 {
+.modal-title h2 {
   margin: 0;
+  font-size: 1.5em;
+  color: #333;
 }
 
-.close-button {
-  background-color: #dc3545; /* Color rojo para el botón de cerrar */
-  border: none;
-  color: #fff;
-  padding: 10px 20px;
-  cursor: pointer;
-}
-
-.close-button:hover {
-  background-color: #c82333;
+.modal-title h3 {
+  margin: 4px 0 0 0;
+  font-size: 1.2em;
+  color: #666;
 }
 
 .modal-content {
   flex: 1;
   display: flex;
   flex-direction: column;
-  overflow: hidden; /* Cambiamos de overflow-y: auto a overflow: hidden */
-  padding-top: 10px;
+  padding: 16px;
+  overflow: hidden;
+  min-height: 0;
 }
 
 .modal-actions {
-  margin-bottom: 10px; /* Espacio entre el botón y la lista de eventos */
+  flex-shrink: 0;
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
 }
 
-/* Asegúrate de que estos estilos estén aplicados correctamente a tu EventsList */
+.modal-actions .app-button {
+  flex: 1;
+  min-width: 120px;
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: none;
+  border-radius: 4px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.modal-actions .app-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.modal-actions .app-button svg {
+  font-size: 1.2em;
+}
+
+.close-button {
+  background-color: #6c757d;
+  color: white;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+  width: 36px;
+  height: 36px;
+  position: relative;
+  line-height: 1;
+}
+
+.close-button:hover {
+  background-color: #5a6268;
+}
+
+.close-button svg {
+  display: block;
+  fill: currentColor;
+  width: 18px;
+  height: 18px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.release-button {
+  background-color: #dc3545;
+  color: white;
+}
+
+.release-button:hover {
+  background-color: #c82333;
+}
+
+.occupy-button {
+  background-color: #28a745;
+  color: white;
+}
+
+.occupy-button:hover {
+  background-color: #218838;
+}
+
 .events-list-container {
   flex: 1;
-  overflow-y: auto; /* Mantenemos el scroll vertical solo en la lista de eventos */
+  display: flex;
+  flex-direction: column;
+  margin: 0 -16px;
+  padding: 0 16px;
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* Media queries para móvil */
+@media (max-width: 768px) {
+  .modal {
+    width: 85%;
+    height: 90vh;
+    border-radius: 10px;
+  }
+
+  .modal-header {
+    padding: 12px;
+  }
+
+  .modal-header h2 {
+    font-size: 1.2em;
+  }
+
+  .modal-content {
+    padding: 12px;
+  }
+
+  .modal-actions {
+    flex-direction: row;
+    margin-bottom: 12px;
+  }
+
+  .modal-actions .app-button {
+    padding: 12px;
+    font-size: 0.9em;
+  }
+
+  .events-list-container {
+    margin: 0 -12px;
+    padding: 0 12px;
+  }
+}
+
+.modal-actions .app-button.release-button {
+  background-color: #dc3545;
+  color: white;
+}
+
+.modal-actions .app-button.release-button:hover {
+  background-color: #c82333;
+}
+
+.modal-actions .app-button.occupy-button {
+  background-color: #28a745;
+  color: white;
+}
+
+.modal-actions .app-button.occupy-button:hover {
+  background-color: #218838;
+}
+
+.action-buttons-row {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.action-buttons-row .app-button {
+  flex: 1;
 }
 
 

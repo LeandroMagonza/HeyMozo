@@ -1,1 +1,175 @@
- 
+.tables-list-component {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Estilos para escritorio */
+.desktop-view.tables-list {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+
+/* Contenedor de la tabla con scroll */
+.desktop-view.tables-list table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.desktop-view.tables-list thead {
+  position: sticky;
+  top: 0;
+  background-color: white;
+  z-index: 1;
+}
+
+.desktop-view.tables-list th,
+.desktop-view.tables-list td {
+  border: 1px solid #ddd;
+  padding: 12px;
+  text-align: center;
+}
+
+.desktop-view.tables-list th {
+  background-color: #f8f9fa;
+  font-weight: 600;
+}
+
+.desktop-view.tables-list tr:hover {
+  opacity: 0.95;
+}
+
+.desktop-view.tables-list .table-actions {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+.desktop-view.tables-list .table-actions .app-button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+}
+
+.desktop-view.tables-list .table-actions .release-button {
+  background-color: #dc3545;
+  color: white;
+}
+
+.desktop-view.tables-list .table-actions .release-button:hover {
+  background-color: #c82333;
+}
+
+.desktop-view.tables-list .table-actions .occupy-button {
+  background-color: #28a745;
+  color: white;
+}
+
+.desktop-view.tables-list .table-actions .occupy-button:hover {
+  background-color: #218838;
+}
+
+/* Estilos para móvil */
+.mobile-view {
+  display: none;
+  flex-direction: column;
+  gap: 8px;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.chat-like-item {
+  padding: 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.chat-like-item:hover {
+  opacity: 0.9;
+}
+
+.chat-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.table-name {
+  font-weight: bold;
+  font-size: 1.1em;
+}
+
+.waiting-time {
+  font-size: 0.9em;
+  color: #666;
+}
+
+.chat-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.last-message {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.9em;
+  color: #666;
+  margin-right: 8px;
+}
+
+/* Estilo específico para el badge en la vista desktop */
+.desktop-view.tables-list .unseen-count {
+  background-color: #ff4444;
+  color: white;
+  border-radius: 50%;
+  width: 20px; /* Volver a width fijo */
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  padding: 0;
+  line-height: 1;
+  margin-left: 4px;
+  font-weight: bold;
+}
+
+/* Estilo específico para el badge en móvil (mantener como estaba) */
+.mobile-unseen-count {
+  background-color: #ff4444;
+  color: white;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8em;
+  padding: 0;
+  line-height: 1;
+  margin-left: 5px;
+}
+
+/* Media queries */
+@media (max-width: 768px) {
+  .desktop-view.tables-list {
+    display: none !important; /* Forzar ocultamiento */
+  }
+  
+  .mobile-view {
+    display: flex !important; /* Forzar visualización */
+  }
+} 

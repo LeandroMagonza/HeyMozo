@@ -2,22 +2,25 @@
 
 .user-screen {
     min-height: 100vh;
+    height: 100vh; /* Forzar altura completa */
     display: flex;
     flex-direction: column;
     box-sizing: border-box;
     padding: 0;
     margin: 0;
+    overflow: hidden; /* Evitar scroll */
 }
 
 .content-wrapper {
     display: flex;
     flex-direction: column;
-    height: 100vh;
+    height: 100%;
     width: 100%;
     max-width: 800px;
     margin: 0 auto;
     padding: 20px;
     box-sizing: border-box;
+    position: relative; /* Para posicionar el footer */
 }
 
 .restaurant-name {
@@ -31,10 +34,10 @@
 }
 
 .buttons-wrapper {
-    height: 45vh; /* 15% * 3 botones */
+    flex: 1; /* Tomar el espacio restante */
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
+    margin-bottom: 8vh; /* Aumentado para dejar espacio al footer */
 }
 
 .events-list-wrapper {
@@ -43,23 +46,47 @@
 }
 
 .location-info {
-  text-align: center;
-  margin-bottom: 2rem;
+    flex-shrink: 0; /* No permitir que se encoja */
+    text-align: center;
+    margin: 5vh 0; /* Reducido de 10vh a 5vh */
 }
 
 .company-name {
-  font-size: 2.5rem;
-  margin-bottom: 0.5rem;
+    font-size: 2.6rem; /* Aumentado */
+    margin: 0;
+    font-weight: bold;
 }
 
 .branch-name {
-  font-size: 1.5rem;
-  margin-bottom: 0rem;
-  margin-top: 0rem;
+    font-size: 1.3rem; /* Reducido un poco */
+    margin: 0.3rem 0; /* Reducido el espacio */
 }
 
 .table-name {
-  font-size: 1.15rem;
-  margin-bottom: 0rem;
-  margin-top: 0rem;
+    font-size: 1.1rem;
+    margin: 0;
+}
+
+/* Nuevo footer */
+.heymozo-footer {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+    gap: 8px;
+}
+
+.heymozo-footer img {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+}
+
+.heymozo-footer span {
+    color: #666666;
+    font-size: 0.9rem;
 }
