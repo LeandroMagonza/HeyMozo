@@ -10,6 +10,7 @@ const Table = require('./src/models/Table');
 const Event = require('./src/models/Event');
 const { Op } = require('sequelize');
 const { EventTypes } = require('./src/constants');
+const MailingList = require('./src/models/MailingList');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -577,6 +578,31 @@ app.delete('/api/tables/:id', async (req, res) => {
   } catch (error) {
     console.error('Error deleting table:', error);
     res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Ruta para el mailing list
+app.post('/api/mailing-list', async (req, res) => {
+  try {
+    const { name, email, message } = req.body;
+    
+    const newEntry = await MailingList.create({
+      name,
+      email,
+      message,
+      createdAt: new Date()
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Registro creado exitosamente'
+    });
+  } catch (error) {
+    console.error('Error creating mailing list entry:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Error al procesar la solicitud'
+    });
   }
 });
 

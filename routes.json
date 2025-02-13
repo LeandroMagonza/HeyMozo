@@ -9,5 +9,6 @@
   "/api/branches/:id/release-all-tables": "/branches/:id/release-all-tables",
   "/api/companies/:id/config": "/companies/:id/config",
   "/api/branches/:id/config": "/branches/:id/config",
-  "DELETE /api/tables/:id": "/tables/:id"
+  "DELETE /api/tables/:id": "/tables/:id",
+  "/api/mailing-list": "/mailing-list"
 }
