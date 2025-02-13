@@ -615,15 +615,26 @@ app.get('*', (req, res) => {
 });
 
 // Inicializar base de datos y servidor
-sequelize.sync({ alter: true })
-  .then(() => {
+async function startServer() {
+  try {
+    if (process.env.NODE_ENV === 'production') {
+      // En producción, solo sincronizar sin forzar
+      await sequelize.sync();
+    } else {
+      // En desarrollo, podemos forzar la sincronización
+      await sequelize.sync({ alter: true });
+    }
+
     app.listen(PORT, () => {
       console.log(`Server running on http://localhost:${PORT}`);
     });
-  })
-  .catch(error => {
+  } catch (error) {
     console.error('Unable to connect to the database:', error);
-  });
+    process.exit(1);
+  }
+}
+
+startServer();
 
 // Handle uncaught exceptions
 process.on('uncaughtException', (error) => {

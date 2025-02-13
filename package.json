@@ -35,7 +35,7 @@
   },
   "scripts": {
     "start": "node server.js",
-    "build": "react-scripts build && npm run migrate",
+    "build": "react-scripts build",
     "server": "node server.js",
     "seed": "node src/database/seeder.js",
     "migrate": "node src/database/migrate.js",

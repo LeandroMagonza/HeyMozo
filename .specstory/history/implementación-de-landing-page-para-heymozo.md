@@ -1096,6 +1096,422 @@ bien, me gustaria que incluyas mas la informacion que te di de la descripcion, l
 
 _**Assistant**_
 
+Voy a mejorar el contenido de la landing page para incluir más detalles sobre los beneficios tanto para los clientes como para los restaurantes:
+
+```javascript:src/App.js
+// ... imports y código inicial igual ...
+
+function LandingPage() {
+  // ... código del estado y heroStyle igual ...
+
+  return (
+    <div className="landing-page">
+      <header className="landing-header">
+        <img src="/images/heymozo-logo.png" alt="HeyMozo Logo" className="landing-logo" />
+        <h1>HeyMozo</h1>
+        <p className="tagline">Revoluciona la experiencia en tu restaurante</p>
+      </header>
+
+      <section className="hero-section" style={heroStyle}>
+        <div className="hero-content">
+          <h2>Mejora el servicio de tu local con tecnología simple y efectiva</h2>
+          <p>Sistema de gestión inteligente que optimiza la comunicación entre tus clientes y el personal</p>
+        </div>
+      </section>
+
+      <section className="features-section">
+        <h2>Beneficios para tu Restaurante</h2>
+        <div className="features-grid">
+          <div className="feature-card">
+            <h3>Eficiencia Operativa</h3>
+            <p>Reduce los viajes innecesarios de tus mozos y optimiza el tiempo de atención con un sistema de notificaciones inteligente</p>
+          </div>
+          <div className="feature-card">
+            <h3>Mejor Organización</h3>
+            <p>Visualiza en tiempo real las necesidades de cada mesa y coordina mejor el trabajo de tu personal</p>
+          </div>
+          <div className="feature-card">
+            <h3>Fácil Implementación</h3>
+            <p>Sistema intuitivo que requiere mínima configuración. Solo genera los códigos QR y colócalos en tus mesas</p>
+          </div>
+          <div className="feature-card">
+            <h3>Gestión de Espacios</h3>
+            <p>Ideal para locales con áreas separadas, subsuelos, patios exteriores o espacios detrás de paredes</p>
+          </div>
+        </div>
+      </section>
+
+      <section className="features-section customer-benefits">
+        <h2>Experiencia del Cliente</h2>
+        <div className="features-grid">
+          <div className="feature-card">
+            <h3>Atención sin Interrupciones</h3>
+            <p>Los clientes pueden disfrutar de su experiencia sin necesidad de estar buscando contacto visual con el mozo</p>
+          </div>
+          <div className="feature-card">
+            <h3>Servicio Inmediato</h3>
+            <p>Solicitudes directas para llamar al mozo, pedir la cuenta o contactar al encargado con un simple toque</p>
+          </div>
+          <div className="feature-card">
+            <h3>Menú Digital</h3>
+            <p>Acceso inmediato al menú actualizado escaneando el código QR de la mesa</p>
+          </div>
+          <div className="feature-card">
+            <h3>Pago Eficiente</h3>
+            <p>Posibilidad de especificar el método de pago al solicitar la cuenta, agilizando el proceso</p>
+          </div>
+        </div>
+      </section>
+
+      <section className="how-it-works">
+        <h2>¿Cómo Funciona?</h2>
+        <div className="steps-grid">
+          <div className="step-card">
+            <div className="step-number">1</div>
+            <h3>Implementación Simple</h3>
+            <p>Generamos códigos QR únicos para cada mesa de tu local</p>
+          </div>
+          <div className="step-card">
+            <div className="step-number">2</div>
+            <h3>Escaneo del Cliente</h3>
+            <p>Los clientes escanean el código y acceden a todas las funcionalidades</p>
+          </div>
+          <div className="step-card">
+            <div className="step-number">3</div>
+            <h3>Gestión en Tiempo Real</h3>
+            <p>Tu personal recibe las solicitudes y puede atenderlas eficientemente</p>
+          </div>
+          <div className="step-card">
+            <div className="step-number">4</div>
+            <h3>Mejor Servicio</h3>
+            <p>Optimiza tiempos de atención y mejora la experiencia del cliente</p>
+          </div>
+        </div>
+      </section>
+
+      <section className="contact-section">
+        <h2>¿Te interesa implementar HeyMozo en tu negocio?</h2>
+        <p className="contact-intro">Mejora la eficiencia de tu servicio y la satisfacción de tus clientes con nuestra solución</p>
+        {/* ... formulario igual ... */}
+      </section>
+
+      <footer className="landing-footer">
+        <p>© 2024 HeyMozo - Transformando la experiencia gastronómica</p>
+      </footer>
+    </div>
+  );
+}
+
+// ... resto del código igual ...
+```
+
+Y agregaremos los estilos correspondientes:
+
+```css:src/App.css
+/* ... estilos existentes ... */
+
+.customer-benefits {
+  background: linear-gradient(135deg, #f0f0f0 0%, #ffffff 100%);
+}
+
+.how-it-works {
+  padding: 6rem 2rem;
+  background: linear-gradient(135deg, #ffffff 0%, #f9f9f9 100%);
+  text-align: center;
+}
+
+.how-it-works h2 {
+  font-size: 2.5rem;
+  margin-bottom: 3rem;
+  color: #1a1a1a;
+  font-weight: 600;
+}
+
+.steps-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.step-card {
+  background: white;
+  padding: 2rem;
+  border-radius: 15px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+  position: relative;
+  transition: transform 0.3s ease;
+}
+
+.step-card:hover {
+  transform: translateY(-5px);
+}
+
+.step-number {
+  width: 40px;
+  height: 40px;
+  background: #ffd700;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin: 0 auto 1.5rem;
+  color: #1a1a1a;
+}
+
+.contact-intro {
+  text-align: center;
+  font-size: 1.2rem;
+  color: #666;
+  max-width: 800px;
+  margin: 0 auto 3rem;
+}
+
+/* Ajustar responsive */
+@media (max-width: 768px) {
+  .steps-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .step-card {
+    margin: 0 1rem;
+  }
+}
+```
+
+Estos cambios:
+1. Agregan una sección detallada de beneficios para restaurantes
+2. Incluyen una sección específica de beneficios para clientes
+3. Agregan una sección "Cómo Funciona" con pasos claros
+4. Mejoran la descripción de las características
+5. Mantienen el diseño atractivo y responsivo
+6. Incluyen más detalles sobre la optimización del servicio
+7. Destacan los beneficios para espacios con diferentes configuraciones
+8. Enfatizan la facilidad de implementación
+
+¿Quieres que ajuste o agregue algo más?
+
+---
+
+_**User**_
+
+por algun motivo tiro error el deploy, fijate que puede ser
+
+==> Cloning from https://github.com/LeandroMagonza/HeyMozo
+==> Checking out commit 973b1d84fbef60cecd1b852a07521c7bb0ec755c in branch master
+==> Downloading cache...
+==> Transferred 250MB in 8s. Extraction took 8s.
+==> Requesting Node.js version 18.x
+==> Using Node.js version 18.20.6 via /opt/render/project/src/.node-version
+==> Docs on specifying a Node.js version: https://render.com/docs/node-version
+==> Using Bun version 1.1.0 (default)
+==> Docs on specifying a bun version: https://render.com/docs/bun-version
+==> Running build command 'npm install && npm run build'...
+up to date, audited 1687 packages in 4s
+279 packages are looking for funding
+  run `npm fund` for details
+10 vulnerabilities (4 moderate, 6 high)
+To address all issues possible (including breaking changes), run:
+  npm audit fix --force
+Some issues need review, and may require choosing
+a different dependency.
+Run `npm audit` for details.
+> heymozo@0.1.0 build
+> react-scripts build && npm run migrate
+Creating an optimized production build...
+One of your dependencies, babel-preset-react-app, is importing the
+"@babel/plugin-proposal-private-property-in-object" package without
+declaring it in its dependencies. This is currently working because
+"@babel/plugin-proposal-private-property-in-object" is already in your
+node_modules folder for unrelated reasons, but it may break at any time.
+babel-preset-react-app is part of the create-react-app project, which
+is not maintianed anymore. It is thus unlikely that this bug will
+ever be fixed. Add "@babel/plugin-proposal-private-property-in-object" to
+your devDependencies to work around this error. This will make this message
+go away.
+  
+Compiled with warnings.
+[eslint] 
+src/components/AdminScreen.js
+  Line 6:8:    'EventsList' is defined but never used                                                                                                                                                                                                                                                                                                                 no-unused-vars
+  Line 7:10:   'TableStates' is defined but never used                                                                                                                                                                                                                                                                                                                no-unused-vars
+  Line 7:23:   'TableColors' is defined but never used                                                                                                                                                                                                                                                                                                                no-unused-vars
+  Line 8:10:   'FaHistory' is defined but never used                                                                                                                                                                                                                                                                                                                  no-unused-vars
+  Line 8:21:   'FaCheckCircle' is defined but never used                                                                                                                                                                                                                                                                                                              no-unused-vars
+  Line 8:50:   'FaSignInAlt' is defined but never used                                                                                                                                                                                                                                                                                                                no-unused-vars
+  Line 8:63:   'FaUser' is defined but never used                                                                                                                                                                                                                                                                                                                     no-unused-vars
+  Line 8:71:   'FaFileInvoiceDollar' is defined but never used                                                                                                                                                                                                                                                                                                        no-unused-vars
+  Line 8:92:   'FaTimes' is defined but never used                                                                                                                                                                                                                                                                                                                    no-unused-vars
+  Line 8:101:  'FaVolumeMute' is defined but never used                                                                                                                                                                                                                                                                                                               no-unused-vars
+  Line 8:115:  'FaVolumeUp' is defined but never used                                                                                                                                                                                                                                                                                                                 no-unused-vars
+  Line 9:10:   'translateState' is defined but never used                                                                                                                                                                                                                                                                                                             no-unused-vars
+  Line 9:26:   'translateEvent' is defined but never used                                                                                                                                                                                                                                                                                                             no-unused-vars
+  Line 21:10:  'currentTime' is assigned a value but never used                                                                                                                                                                                                                                                                                                       no-unused-vars
+  Line 143:7:  Expected a default case                                                                                                                                                                                                                                                                                                                                default-case
+  Line 269:6:  React Hook useMemo has a missing dependency: 'getTableStateAndWaitTime'. Either include it or remove the dependency array                                                                                                                                                                                                                              react-hooks/exhaustive-deps
+  Line 309:6:  React Hook useMemo has missing dependencies: 'TableStates.AVAILABLE', 'TableStates.CHECK', 'TableStates.MANAGER', 'TableStates.MANAGER_CHECK', 'TableStates.MANAGER_WAITER', 'TableStates.MANAGER_WAITER_CHECK', 'TableStates.OCCUPIED', 'TableStates.WAITER', and 'TableStates.WAITER_AND_CHECK'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+src/components/UserScreen.js
+  Line 21:17:  'setTexts' is assigned a value but never used           no-unused-vars
+  Line 26:9:   'pageLoadTime' is assigned a value but never used       no-unused-vars
+  Line 55:17:  'response' is assigned a value but never used           no-unused-vars
+  Line 97:13:  'response' is assigned a value but never used           no-unused-vars
+  Line 107:9:  'handleDirectEvent' is assigned a value but never used  no-unused-vars
+Search for the keywords to learn more about each warning.
+To ignore, add // eslint-disable-next-line to the line before.
+File sizes after gzip:
+  579.86 kB  build/static/js/main.41a537f4.js
+  5.49 kB    build/static/css/main.eb929577.css
+  1.77 kB    build/static/js/453.f320df48.chunk.js
+The bundle size is significantly larger than recommended.
+Consider reducing it with code splitting: https://goo.gl/9VhYWB
+You can also analyze the project dependencies: https://goo.gl/LeUzfb
+The project was built assuming it is hosted at /.
+You can control this with the homepage field in your package.json.
+The build folder is ready to be deployed.
+You may serve it with a static server:
+  npm install -g serve
+  serve -s build
+Find out more about deployment here:
+  https://cra.link/deployment
+> heymozo@0.1.0 migrate
+> node src/database/migrate.js
+Error creating database tables: ConnectionRefusedError [SequelizeConnectionRefusedError]: connect ECONNREFUSED ::1:5432
+    at Client._connectionCallback (/opt/render/project/src/node_modules/sequelize/lib/dialects/postgres/connection-manager.js:133:24)
+    at Client._handleErrorWhileConnecting (/opt/render/project/src/node_modules/pg/lib/client.js:326:19)
+    at Client._handleErrorEvent (/opt/render/project/src/node_modules/pg/lib/client.js:336:19)
+    at Connection.emit (node:events:517:28)
+    at Socket.reportStreamError (/opt/render/project/src/node_modules/pg/lib/connection.js:57:12)
+    at Socket.emit (node:events:517:28)
+    at emitErrorNT (node:internal/streams/destroy:151:8)
+    at emitErrorCloseNT (node:internal/streams/destroy:116:3)
+    at process.processTicksAndRejections (node:internal/process/task_queues:82:21) {
+  parent: Error: connect ECONNREFUSED ::1:5432
+      at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1555:16) {
+    errno: -111,
+    code: 'ECONNREFUSED',
+    syscall: 'connect',
+    address: '::1',
+    port: 5432
+  },
+  original: Error: connect ECONNREFUSED ::1:5432
+      at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1555:16) {
+    errno: -111,
+    code: 'ECONNREFUSED',
+    syscall: 'connect',
+    address: '::1',
+    port: 5432
+  }
+}
+==> Build failed 😞
+==> Common ways to troubleshoot your deploy: https://render.com/docs/troublesho
+
+---
+
+_**Assistant**_
+
+El error principal es que no puede conectarse a la base de datos PostgreSQL durante el despliegue. Esto ocurre porque:
+
+1. La migración está intentando ejecutarse durante el build (`npm run build && npm run migrate`)
+2. No hay una base de datos configurada en el entorno de producción
+
+Vamos a hacer algunos cambios:
+
+1. Primero, modificar el `package.json` para quitar la migración del build:
+
+```json:package.json
+{
+  // ... resto del archivo ...
+  "scripts": {
+    "start": "node server.js",
+    "build": "react-scripts build",
+    "server": "node server.js",
+    "seed": "node src/database/seeder.js",
+    "migrate": "node src/database/migrate.js",
+    "dev": "concurrently \"react-scripts start\" \"npm run server\"",
+    "render-start": "node server.js",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
+  },
+  // ... resto del archivo ...
+}
+```
+
+2. Modificar el archivo de configuración de la base de datos para usar variables de entorno:
+
+```javascript:src/config/database.js
+const { Sequelize } = require('sequelize');
+
+const sequelize = new Sequelize(
+  process.env.DATABASE_URL || 'postgres://localhost:5432/heymozo',
+  {
+    dialect: 'postgres',
+    dialectOptions: {
+      ssl: process.env.NODE_ENV === 'production' ? {
+        require: true,
+        rejectUnauthorized: false
+      } : false
+    }
+  }
+);
+
+module.exports = sequelize;
+```
+
+3. Modificar el `server.js` para manejar la migración al iniciar:
+
+```javascript:server.js
+// ... imports existentes ...
+
+// Inicializar base de datos y servidor
+async function startServer() {
+  try {
+    if (process.env.NODE_ENV === 'production') {
+      // En producción, solo sincronizar sin forzar
+      await sequelize.sync();
+    } else {
+      // En desarrollo, podemos forzar la sincronización
+      await sequelize.sync({ alter: true });
+    }
+
+    app.listen(PORT, () => {
+      console.log(`Server running on http://localhost:${PORT}`);
+    });
+  } catch (error) {
+    console.error('Unable to connect to the database:', error);
+    process.exit(1);
+  }
+}
+
+startServer();
+
+// ... resto del archivo ...
+```
+
+Estos cambios:
+1. Eliminan la migración del proceso de build
+2. Configuran la base de datos para usar SSL en producción
+3. Manejan la migración de forma más segura al iniciar el servidor
+4. Usan variables de entorno para la configuración de la base de datos
+
+También necesitarás configurar la variable de entorno `DATABASE_URL` en tu plataforma de despliegue (Render) con la URL de conexión a tu base de datos PostgreSQL.
+
+¿Quieres que implemente estos cambios?
+
+---
+
+_**User**_
+
+postgresql://admin:EJm2AWqXhY7wojsvaiYyjQTr1Smy9xNv@dpg-culqollds78s73d9oo50-a.oregon-postgres.render.com/general_fn23
+
+cual es el value de DATABASE_URL
+
+---
+
+_**Assistant**_
+
 
 
 ---
