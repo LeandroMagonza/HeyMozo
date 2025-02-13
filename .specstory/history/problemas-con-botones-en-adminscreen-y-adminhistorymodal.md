@@ -3519,6 +3519,130 @@ Esto debería mostrar el logo de HeyMozo en la pestaña del navegador y en cualq
 
 ---
 
+_**User**_
+
+@BranchConfig.js no esta funcionando el delete de mesas aca
+
+---
+
+_**Assistant**_
+
+Vamos a revisar la función de borrado de mesas en BranchConfig.js. El problema puede estar en que necesitamos actualizar tanto el estado local como el tableIds del branch:
+
+```javascript:src/components/BranchConfig.js
+const handleDeleteTable = async (id) => {
+  try {
+    // Primero confirmar con el usuario
+    if (!window.confirm('¿Está seguro que desea eliminar esta mesa?')) {
+      return;
+    }
+
+    // Eliminar la mesa de la API
+    await deleteTable(id);
+
+    // Actualizar el estado local de las mesas
+    setTables(prevTables => prevTables.filter(table => table.id !== id));
+    
+    // Actualizar el branch quitando el id de la mesa de tableIds
+    const updatedBranch = {
+      ...branch,
+      tableIds: branch.tableIds.filter(tableId => tableId !== id)
+    };
+
+    // Actualizar el branch en la API
+    await updateBranch(branchId, updatedBranch);
+
+    // Actualizar los estados locales del branch
+    setBranch(updatedBranch);
+    setEditedBranch(updatedBranch);
+
+    // Opcional: Mostrar mensaje de éxito
+    alert('Mesa eliminada correctamente');
+
+  } catch (error) {
+    console.error('Error al eliminar la mesa:', error);
+    alert('Error al eliminar la mesa');
+  }
+};
+```
+
+Los cambios principales son:
+1. Agregar confirmación antes de borrar
+2. Asegurarnos de actualizar tableIds en el branch
+3. Actualizar tanto el branch como el editedBranch
+4. Agregar manejo de errores y feedback al usuario
+5. Mantener la sincronización entre el estado local y la API
+
+¿Quieres que revise también la API para asegurar que el endpoint de deleteTable está funcionando correctamente?
+
+---
+
+_**User**_
+
+hay que hacer alguna modificacion en @server.js o @routes.json ?
+
+---
+
+_**Assistant**_
+
+Sí, veo que falta la ruta para eliminar mesas en el servidor. Hay que agregar el endpoint DELETE para tables en ambos archivos:
+
+```javascript:server.js
+// Agregar esta ruta en server.js
+app.delete('/api/tables/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Primero verificar que la mesa existe
+    const table = await Table.findByPk(id);
+    if (!table) {
+      return res.status(404).json({ error: 'Table not found' });
+    }
+
+    // Eliminar todos los eventos asociados primero
+    await Event.destroy({
+      where: {
+        tableId: id
+      }
+    });
+
+    // Luego eliminar la mesa
+    await table.destroy();
+    
+    res.status(204).send();
+  } catch (error) {
+    console.error('Error deleting table:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+```
+
+```json:routes.json
+{
+  "/api/companies": "/companies",
+  "/api/companies/:id": "/companies/:id",
+  "/api/branches": "/branches",
+  "/api/branches/:id": "/branches/:id",
+  "/api/tables": "/tables",
+  "/api/tables/:id": "/tables/:id",
+  "/api/tables/:id/events": "/tables/:id/events",
+  "/api/branches/:id/release-all-tables": "/branches/:id/release-all-tables",
+  "/api/companies/:id/config": "/companies/:id/config",
+  "/api/branches/:id/config": "/branches/:id/config",
+  "DELETE /api/tables/:id": "/tables/:id"
+}
+```
+
+Los cambios principales son:
+1. Agregar el endpoint DELETE para tables
+2. Asegurar que se eliminen también los eventos asociados a la mesa
+3. Agregar la ruta en routes.json
+4. Manejar casos de error y respuestas apropiadas
+
+Esto debería hacer que el borrado de mesas funcione correctamente.
+
+---
+
 
 
 ---

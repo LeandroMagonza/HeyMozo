@@ -552,6 +552,34 @@ app.post('/api/tables', async (req, res) => {
   }
 });
 
+// Ruta para eliminar una mesa
+app.delete('/api/tables/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Primero verificar que la mesa existe
+    const table = await Table.findByPk(id);
+    if (!table) {
+      return res.status(404).json({ error: 'Table not found' });
+    }
+
+    // Eliminar todos los eventos asociados primero
+    await Event.destroy({
+      where: {
+        tableId: id
+      }
+    });
+
+    // Luego eliminar la mesa
+    await table.destroy();
+    
+    res.status(204).send();
+  } catch (error) {
+    console.error('Error deleting table:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Servir archivos estáticos
 app.use(express.static(path.join(__dirname, 'build')));
 

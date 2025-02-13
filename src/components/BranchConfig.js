@@ -111,17 +111,36 @@ const BranchConfig = () => {
 
   const handleDeleteTable = async (id) => {
     try {
+      // Primero confirmar con el usuario
+      if (!window.confirm('¿Está seguro que desea eliminar esta mesa?')) {
+        return;
+      }
+
+      // Eliminar la mesa de la API
       await deleteTable(id);
+
+      // Actualizar el estado local de las mesas
       setTables(prevTables => prevTables.filter(table => table.id !== id));
       
-      const updatedBranch = { ...branch, tableIds: branch.tableIds.filter(tableId => tableId !== id) };
+      // Actualizar el branch quitando el id de la mesa de tableIds
+      const updatedBranch = {
+        ...branch,
+        tableIds: branch.tableIds.filter(tableId => tableId !== id)
+      };
+
+      // Actualizar el branch en la API
       await updateBranch(branchId, updatedBranch);
+
+      // Actualizar los estados locales del branch
       setBranch(updatedBranch);
       setEditedBranch(updatedBranch);
-      
-      console.log('Table deleted:', id);
+
+      // Opcional: Mostrar mensaje de éxito
+      alert('Mesa eliminada correctamente');
+
     } catch (error) {
-      console.error('Error deleting table:', error);
+      console.error('Error al eliminar la mesa:', error);
+      alert('Error al eliminar la mesa');
     }
   };
 
