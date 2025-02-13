@@ -100,16 +100,16 @@ body {
 
 .features-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 2.5rem;
-  max-width: 1200px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.5rem;
+  max-width: 1300px;
   margin: 0 auto;
-  padding: 0 1rem;
+  padding: 0 0.5rem;
 }
 
 .feature-card {
   background: white;
-  padding: 2.5rem;
+  padding: 1.5rem;
   border-radius: 15px;
   box-shadow: 0 10px 30px rgba(0,0,0,0.1);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
@@ -123,14 +123,15 @@ body {
 
 .feature-card h3 {
   color: #1a1a1a;
-  font-size: 1.5rem;
-  margin-bottom: 1rem;
+  font-size: 1.3rem;
+  margin-bottom: 0.8rem;
   font-weight: 600;
 }
 
 .feature-card p {
   color: #666;
-  font-size: 1.1rem;
+  font-size: 0.95rem;
+  line-height: 1.4;
 }
 
 .contact-section {
@@ -354,15 +355,16 @@ body {
 
 .steps-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 2rem;
-  max-width: 1200px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.5rem;
+  max-width: 1300px;
   margin: 0 auto;
+  padding: 0 0.5rem;
 }
 
 .step-card {
   background: white;
-  padding: 2rem;
+  padding: 1.5rem;
   border-radius: 15px;
   box-shadow: 0 10px 30px rgba(0,0,0,0.1);
   position: relative;
@@ -396,7 +398,15 @@ body {
 }
 
 /* Ajustar responsive */
+@media (max-width: 1024px) {
+  .features-grid,
+  .steps-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
 @media (max-width: 768px) {
+  .features-grid,
   .steps-grid {
     grid-template-columns: 1fr;
   }
