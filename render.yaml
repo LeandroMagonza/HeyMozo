@@ -2,8 +2,19 @@ services:
   - type: web
     name: heymozo
     env: node
-    buildCommand: npm install && npm run build
-    startCommand: npm run render-start
+    buildCommand: |
+      npm ci
+      npm run build
+    startCommand: npm start
     envVars:
       - key: NODE_ENV
         value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: heymozo-db
+          property: connectionString
+
+databases:
+  - name: heymozo-db
+    databaseName: general_fn23
+    user: admin

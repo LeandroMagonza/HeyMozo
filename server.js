@@ -11,6 +11,7 @@ const Event = require('./src/models/Event');
 const { Op } = require('sequelize');
 const { EventTypes } = require('./src/constants');
 const MailingList = require('./src/models/MailingList');
+const { Client } = require('pg');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -28,6 +29,12 @@ Branch.hasMany(Table, { foreignKey: 'branchId' });
 Table.belongsTo(Branch, { foreignKey: 'branchId' });
 Table.hasMany(Event, { foreignKey: 'tableId' });
 Event.belongsTo(Table, { foreignKey: 'tableId' });
+
+// Agregar esto después de la configuración de middleware
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.url}`);
+  next();
+});
 
 // API Routes
 app.get('/api/companies', async (req, res) => {
@@ -614,22 +621,66 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'build', 'index.html'));
 });
 
-// Inicializar base de datos y servidor
+// Función para crear la base de datos si no existe
+async function createDatabaseIfNotExists() {
+  const client = new Client({
+    host: process.env.DB_HOST || 'localhost',
+    port: process.env.DB_PORT || 5432,
+    user: process.env.DB_USER || 'postgres',
+    password: process.env.DB_PASSWORD || '1Q.2w.3e.4r.',
+    database: 'postgres' // Conectamos a la base de datos por defecto
+  });
+
+  try {
+    await client.connect();
+    // Verificar si la base de datos existe
+    const result = await client.query(
+      "SELECT 1 FROM pg_database WHERE datname = 'heymozo'"
+    );
+
+    if (result.rows.length === 0) {
+      // La base de datos no existe, la creamos
+      await client.query('CREATE DATABASE heymozo');
+      console.log('Database created successfully');
+    }
+  } catch (error) {
+    console.error('Error creating database:', error);
+    throw error;
+  } finally {
+    await client.end();
+  }
+}
+
+// Modificar la función startServer
 async function startServer() {
   try {
-    if (process.env.NODE_ENV === 'production') {
-      // En producción, solo sincronizar sin forzar
-      await sequelize.sync();
-    } else {
-      // En desarrollo, podemos forzar la sincronización
-      await sequelize.sync({ alter: true });
+    // Crear base de datos si no existe
+    if (process.env.NODE_ENV !== 'production') {
+      try {
+        await createDatabaseIfNotExists();
+      } catch (error) {
+        console.error('Error creating database:', error);
+        // Continuamos incluso si hay error al crear la base de datos
+      }
     }
 
+    try {
+      if (process.env.NODE_ENV === 'production') {
+        await sequelize.sync();
+      } else {
+        await sequelize.sync({ alter: true });
+      }
+    } catch (error) {
+      console.error('Error syncing database:', error);
+      // Continuamos incluso si hay error en la sincronización
+    }
+
+    // Iniciamos el servidor de todas formas
     app.listen(PORT, () => {
       console.log(`Server running on http://localhost:${PORT}`);
     });
   } catch (error) {
-    console.error('Unable to connect to the database:', error);
+    console.error('Unable to start server:', error);
     process.exit(1);
   }
 }

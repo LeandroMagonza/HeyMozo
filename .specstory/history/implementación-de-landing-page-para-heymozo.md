@@ -1371,7 +1371,1018 @@ Voy a ajustar los estilos de las cards para que sean más compactas lateralmente
 .features-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 1.5rem; /* Reduci
+  gap: 1.5rem; /* Reducido de 2.5rem */
+  max-width: 1300px; /* Aumentado ligeramente para compensar */
+  margin: 0 auto;
+  padding: 0 0.5rem; /* Reducido de 1rem */
+}
+
+.feature-card {
+  background: white;
+  padding: 1.5rem; /* Reducido de 2.5rem */
+  border-radius: 15px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  text-align: center;
+}
+
+.feature-card h3 {
+  color: #1a1a1a;
+  font-size: 1.3rem; /* Reducido de 1.5rem */
+  margin-bottom: 0.8rem; /* Reducido de 1rem */
+  font-weight: 600;
+}
+
+.feature-card p {
+  color: #666;
+  font-size: 0.95rem; /* Reducido de 1.1rem */
+  line-height: 1.4; /* Añadido para mejor legibilidad */
+}
+
+/* Aplicar los mismos cambios a la sección de pasos */
+.steps-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.5rem; /* Reducido de 2rem */
+  max-width: 1300px;
+  margin: 0 auto;
+  padding: 0 0.5rem;
+}
+
+.step-card {
+  background: white;
+  padding: 1.5rem; /* Reducido de 2rem */
+  border-radius: 15px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+  position: relative;
+  transition: transform 0.3s ease;
+}
+
+.step-card h3 {
+  font-size: 1.3rem;
+  margin-bottom: 0.8rem;
+}
+
+.step-card p {
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+```
+
+Estos cambios:
+1. Reducen el padding lateral de las cards
+2. Reducen el espacio entre cards
+3. Reducen el tamaño de la fuente en títulos y descripciones
+4. Ajustan el ancho máximo del contenedor
+5. Mantienen la legibilidad con un line-height adecuado
+
+¿Quieres que haga algún otro ajuste?
+
+---
+
+_**User**_
+
+no entiendo que esta pasando, me aparece este error de base de datos en pgadmin
+
+quise bajar la base de datos de render y ponerlo en local para trabajar sobre un bug, asi que hice cambios de nombre en la bd
+
+
+---
+
+_**Assistant**_
+
+El error que estás viendo es porque hay un problema con la autenticación de PostgreSQL. El mensaje específico "client password must be a string" sugiere que hay un problema con la configuración de la conexión a la base de datos.
+
+Vamos a revisar y ajustar la configuración de la base de datos:
+
+1. Primero, vamos a ver cómo debería estar configurado tu archivo de conexión:
+
+```javascript:src/config/database.js
+const { Sequelize } = require('sequelize');
+
+const sequelize = new Sequelize({
+  dialect: 'postgres',
+  host: process.env.DB_HOST || 'localhost',
+  port: process.env.DB_PORT || 5432,
+  database: process.env.DB_NAME || 'heymozo',
+  username: process.env.DB_USER || 'postgres',
+  password: process.env.DB_PASSWORD || 'tu_contraseña',
+  logging: false,
+  dialectOptions: {
+    ssl: process.env.NODE_ENV === 'production' ? {
+      require: true,
+      rejectUnauthorized: false
+    } : false
+  }
+});
+
+module.exports = sequelize;
+```
+
+2. Luego, necesitas configurar tu archivo `.env` en la raíz del proyecto:
+
+```env:.env
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=heymozo
+DB_USER=postgres
+DB_PASSWORD=tu_contraseña_real
+```
+
+3. Asegúrate de que:
+- La base de datos 'heymozo' existe en tu PostgreSQL local
+- El usuario y contraseña coinciden con los que configuraste en pgAdmin
+- El puerto es el correcto (normalmente 5432)
+
+4. Para crear la base de datos en pgAdmin si aún no existe:
+- Abre pgAdmin
+- Click derecho en "Databases"
+- Create > Database
+- Nombre: heymozo
+- Click en Save
+
+5. Si necesitas reiniciar la secuencia:
+```sql
+-- Ejecuta esto en pgAdmin si necesitas limpiar la base de datos
+DROP DATABASE IF EXISTS heymozo;
+CREATE DATABASE heymozo;
+```
+
+¿Podrías confirmarme si:
+1. ¿Tienes el archivo `.env` configurado?
+2. ¿Los datos de conexión coinciden con tu configuración local de PostgreSQL?
+3. ¿La base de datos 'heymozo' existe en tu pgAdmin?
+
+---
+
+_**User**_
+
+sa
+
+---
+
+_**Assistant**_
+
+
+
+El error ahora indica que la autenticación falló para el usuario 'postgres'. Esto generalmente significa que la contraseña en el archivo `.env` no coincide con la contraseña configurada en tu PostgreSQL local.
+
+Vamos a verificar y corregir esto:
+
+1. Primero, verifica la contraseña en pgAdmin:
+   - Abre pgAdmin
+   - Click derecho en el servidor
+   - Properties
+   - Connection
+   - Password (asegúrate que coincida con la que pusiste en el .env)
+
+2. Si no recuerdas la contraseña o necesitas resetearla:
+```sql
+ALTER USER postgres WITH PASSWORD '1Q.2w.3e.4r.';
+```
+
+3. También puedes verificar que el método de autenticación sea correcto en el archivo `pg_hba.conf`:
+   - Busca el archivo en la instalación de PostgreSQL (usualmente en `C:\Program Files\PostgreSQL\{version}\data\pg_hba.conf`)
+   - Asegúrate que tenga una línea como esta:
+```
+# TYPE  DATABASE        USER            ADDRESS                 METHOD
+host    all            all             127.0.0.1/32            md5
+```
+
+4. Después de hacer cualquier cambio:
+   - Reinicia el servicio de PostgreSQL
+   - Reinicia tu aplicación
+
+5. También puedes probar la conexión directamente con psql:
+```bash
+psql -U postgres -d heymozo
+```
+Te pedirá la contraseña y podrás verificar si funciona.
+
+¿Podrías intentar estos pasos y decirme si el problema persiste?
+
+---
+
+_**User**_
+
+encontre un problema, para arreglar produccion creo que rompimos dev
+
+asi estaba el database.js antes
+
+y funcionaba dev
+
+  }
+};
+
+const environment = process.env.NODE_ENV || 'development';
+const dbConfig = config[environment];
+
+const sequelize = new Sequelize(
+  dbConfig.database,
+  dbConfig.username,
+  dbConfig.password,
+  {
+    host: dbConfig.host,
+    port: dbConfig.port,
+    dialect: dbConfig.dialect,
+    dialectOptions: dbConfig.dialectOptions,
+    logging: false
+  }
+);
+
+module.exports = sequelize; 
+
+
+asi esta ahora que funciona prod
+
+const { Sequelize } = require('sequelize');
+
+const sequelize = new Sequelize(
+  process.env.DATABASE_URL || 'postgres://localhost:5432/heymozo',
+  {
+
+
+
+
+
+
+
+
+
+
+
+
+    dialect: 'postgres',
+    dialectOptions: {
+      ssl: process.env.NODE_ENV === 'production' ? {
+        require: true,
+        rejectUnauthorized: false
+      } : false
+    }
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+);
+
+module.exports = sequelize; 
+
+armalo para que funcionen ambos por favor y ayudame a configurar despues las variables de render si es necesario
+
+---
+
+_**Assistant**_
+
+
+
+Vamos a crear una configuración que funcione tanto en desarrollo como en producción. Primero, vamos a crear un archivo de configuración separado:
+
+```javascript:src/config/config.js
+const config = {
+  development: {
+    username: process.env.DB_USER || 'postgres',
+    password: process.env.DB_PASSWORD || '1Q.2w.3e.4r.',
+    database: process.env.DB_NAME || 'heymozo',
+    host: process.env.DB_HOST || 'localhost',
+    port: process.env.DB_PORT || 5432,
+    dialect: 'postgres',
+    dialectOptions: {
+      ssl: false
+    }
+  },
+  production: {
+    use_env_variable: 'DATABASE_URL',
+    dialect: 'postgres',
+    dialectOptions: {
+      ssl: {
+        require: true,
+        rejectUnauthorized: false
+      }
+    }
+  }
+};
+
+module.exports = config;
+```
+
+Luego, actualizamos el archivo database.js:
+
+```javascript:src/config/database.js
+const { Sequelize } = require('sequelize');
+const config = require('./config');
+
+const environment = process.env.NODE_ENV || 'development';
+const dbConfig = config[environment];
+
+let sequelize;
+
+if (environment === 'production') {
+  sequelize = new Sequelize(process.env.DATABASE_URL, {
+    dialect: dbConfig.dialect,
+    dialectOptions: dbConfig.dialectOptions,
+    logging: false
+  });
+} else {
+  sequelize = new Sequelize(
+    dbConfig.database,
+    dbConfig.username,
+    dbConfig.password,
+    {
+      host: dbConfig.host,
+      port: dbConfig.port,
+      dialect: dbConfig.dialect,
+      dialectOptions: dbConfig.dialectOptions,
+      logging: false
+    }
+  );
+}
+
+module.exports = sequelize;
+```
+
+Para las variables de entorno:
+
+1. En desarrollo (`.env`):
+```env:.env
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=heymozo
+DB_USER=postgres
+DB_PASSWORD=1Q.2w.3e.4r.
+NODE_ENV=development
+```
+
+2. En Render:
+Necesitas configurar las siguientes variables de entorno en el dashboard de Render:
+- `DATABASE_URL`: (La URL que te proporciona Render para tu base de datos)
+- `NODE_ENV`: production
+
+Para configurar las variables en Render:
+1. Ve al dashboard de tu aplicación en Render
+2. Click en "Environment"
+3. Agrega o verifica estas variables:
+   - Key: `NODE_ENV`, Value: `production`
+   - Key: `DATABASE_URL`, Value: `postgres://user:password@host:5432/database` (usa la URL que te proporciona Render)
+
+Esta configuración:
+1. Usará la configuración local cuando estés en desarrollo
+2. Usará la URL de la base de datos de Render cuando estés en producción
+3. Configurará automáticamente SSL para producción
+4. Mantendrá las configuraciones separadas y limpias
+
+¿Quieres que implemente estos cambios?
+
+---
+
+_**User**_
+
+d
+
+---
+
+_**Assistant**_
+
+
+
+Ahora el error es que no existe la base de datos 'heymozo'. Necesitamos crearla primero. Hay dos formas de hacerlo:
+
+1. Usando pgAdmin:
+- Abre pgAdmin
+- Click derecho en "Databases"
+- Create > Database
+- Nombre: heymozo
+- Click en Save
+
+2. O usando SQL directamente:
+```sql
+CREATE DATABASE heymozo;
+```
+
+También podemos modificar el código para que cree la base de datos si no existe. Vamos a actualizar el archivo `server.js`:
+
+```javascript:server.js
+// ... imports existentes ...
+const { Client } = require('pg');
+
+// ... código existente ...
+
+// Función para crear la base de datos si no existe
+async function createDatabaseIfNotExists() {
+  const client = new Client({
+    host: process.env.DB_HOST || 'localhost',
+    port: process.env.DB_PORT || 5432,
+    user: process.env.DB_USER || 'postgres',
+    password: process.env.DB_PASSWORD || '1Q.2w.3e.4r.',
+    database: 'postgres' // Conectamos a la base de datos por defecto
+  });
+
+  try {
+    await client.connect();
+    // Verificar si la base de datos existe
+    const result = await client.query(
+      "SELECT 1 FROM pg_database WHERE datname = 'heymozo'"
+    );
+
+    if (result.rows.length === 0) {
+      // La base de datos no existe, la creamos
+      await client.query('CREATE DATABASE heymozo');
+      console.log('Database created successfully');
+    }
+  } catch (error) {
+    console.error('Error creating database:', error);
+    throw error;
+  } finally {
+    await client.end();
+  }
+}
+
+// Modificar la función startServer
+async function startServer() {
+  try {
+    // Crear base de datos si no existe
+    if (process.env.NODE_ENV !== 'production') {
+      await createDatabaseIfNotExists();
+    }
+
+    if (process.env.NODE_ENV === 'production') {
+      await sequelize.sync();
+    } else {
+      await sequelize.sync({ alter: true });
+    }
+
+    app.listen(PORT, () => {
+      console.log(`Server running on http://localhost:${PORT}`);
+    });
+  } catch (error) {
+    console.error('Unable to start server:', error);
+    process.exit(1);
+  }
+}
+
+// ... resto del código ...
+```
+
+Este cambio:
+1. Verifica si la base de datos existe
+2. Si no existe, la crea
+3. Solo lo hace en desarrollo (no en producción)
+4. Maneja los errores apropiadamente
+
+¿Quieres que implemente estos cambios?
+
+---
+
+_**User**_
+
+@AdminScreen.js Error: Request failed with status code 404
+
+---
+
+_**Assistant**_
+
+
+
+El error 404 indica que el servidor no está respondiendo a las peticiones. Esto probablemente está ocurriendo porque:
+
+1. El servidor no se inició correctamente debido al error de la base de datos
+2. Las rutas de la API no están configuradas correctamente
+
+Vamos a hacer algunos ajustes:
+
+1. Primero, asegurémonos de que el servidor se inicie correctamente modificando `server.js`:
+
+```javascript:server.js
+// ... imports existentes ...
+
+async function startServer() {
+  try {
+    // Crear base de datos si no existe
+    if (process.env.NODE_ENV !== 'production') {
+      try {
+        await createDatabaseIfNotExists();
+      } catch (error) {
+        console.error('Error creating database:', error);
+        // Continuamos incluso si hay error al crear la base de datos
+      }
+    }
+
+    try {
+      if (process.env.NODE_ENV === 'production') {
+        await sequelize.sync();
+      } else {
+        await sequelize.sync({ alter: true });
+      }
+    } catch (error) {
+      console.error('Error syncing database:', error);
+      // Continuamos incluso si hay error en la sincronización
+    }
+
+    // Iniciamos el servidor de todas formas
+    app.listen(PORT, () => {
+      console.log(`Server running on http://localhost:${PORT}`);
+    });
+  } catch (error) {
+    console.error('Unable to start server:', error);
+    process.exit(1);
+  }
+}
+
+// ... resto del código ...
+```
+
+2. Asegurémonos de que el proxy esté bien configurado en `package.json`:
+
+```json:package.json
+{
+  // ... otros campos ...
+  "proxy": "http://localhost:3001"
+}
+```
+
+3. Verifica que las rutas en `routes.json` coincidan con las del servidor:
+
+```json:routes.json
+{
+  "/api/companies": "/companies",
+  "/api/companies/:id": "/companies/:id",
+  "/api/branches": "/branches",
+  "/api/branches/:id": "/branches/:id",
+  "/api/tables": "/tables",
+  "/api/tables/:id": "/tables/:id",
+  "/api/tables/:id/events": "/tables/:id/events",
+  "/api/branches/:id/release-all-tables": "/branches/:id/release-all-tables",
+  "/api/companies/:id/config": "/companies/:id/config",
+  "/api/branches/:id/config": "/branches/:id/config",
+  "DELETE /api/tables/:id": "/tables/:id",
+  "/api/mailing-list": "/mailing-list"
+}
+```
+
+4. Asegúrate de que estás ejecutando tanto el servidor como el cliente:
+
+```bash
+# En una terminal
+npm run server
+
+# En otra terminal
+npm start
+```
+
+O usando el script combinado:
+```bash
+npm run dev
+```
+
+5. También podemos agregar más logging al servidor para debuggear:
+
+```javascript:server.js
+// Agregar esto después de la configuración de middleware
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.url}`);
+  next();
+});
+```
+
+¿Podrías decirme específicamente qué endpoint está devolviendo 404? Esto nos ayudaría a identificar mejor el problema.
+
+---
+
+_**User**_
+
+ad
+
+---
+
+_**Assistant**_
+
+
+
+Veo que el servidor está funcionando pero está devolviendo 404 para `/api/companies/1`. Esto es porque la base de datos está vacía - se creó pero no tiene datos.
+
+Vamos a crear un seeder para agregar datos iniciales:
+
+```javascript:src/database/seeder.js
+const Company = require('../models/Company');
+const Branch = require('../models/Branch');
+const Table = require('../models/Table');
+const Event = require('../models/Event');
+const sequelize = require('../config/database');
+
+async function seed() {
+  try {
+    // Forzar sincronización en desarrollo
+    if (process.env.NODE_ENV !== 'production') {
+      await sequelize.sync({ force: true });
+    }
+
+    // Crear compañía
+    const company = await Company.create({
+      name: 'Demo Company',
+      website: 'https://demo.com',
+      menu: 'https://demo.com/menu',
+      logo: 'https://demo.com/logo.png'
+    });
+
+    // Crear sucursal
+    const branch = await Branch.create({
+      name: 'Sucursal Principal',
+      website: 'https://demo.com/branch1',
+      menu: 'https://demo.com/branch1/menu',
+      logo: 'https://demo.com/branch1/logo.png',
+      companyId: company.id
+    });
+
+    // Crear algunas mesas
+    const tables = await Promise.all([
+      Table.create({
+        tableName: 'Mesa 1',
+        tableDescription: 'Ventana',
+        branchId: branch.id
+      }),
+      Table.create({
+        tableName: 'Mesa 2',
+        tableDescription: 'Centro',
+        branchId: branch.id
+      }),
+      Table.create({
+        tableName: 'Mesa 3',
+        tableDescription: 'Barra',
+        branchId: branch.id
+      })
+    ]);
+
+    // Actualizar los tableIds en la sucursal
+    await branch.update({
+      tableIds: tables.map(table => table.id)
+    });
+
+    // Actualizar los branchIds en la compañía
+    await company.update({
+      branchIds: [branch.id]
+    });
+
+    console.log('Seed completed successfully');
+  } catch (error) {
+    console.error('Error seeding database:', error);
+    process.exit(1);
+  }
+}
+
+seed();
+```
+
+Luego, actualiza el `package.json` para incluir el script de seed:
+
+```json:package.json
+{
+  // ... resto del archivo ...
+  "scripts": {
+    // ... otros scripts ...
+    "seed": "node src/database/seeder.js",
+    // ... otros scripts ...
+  }
+}
+```
+
+Para ejecutar el seeder:
+
+```bash
+npm run seed
+```
+
+Esto creará:
+1. Una compañía de demo
+2. Una sucursal
+3. Tres mesas de ejemplo
+
+Después de ejecutar el seeder, la aplicación debería poder encontrar la compañía con ID 1 y funcionar correctamente.
+
+¿Quieres que implemente estos cambios?
+
+---
+
+_**User**_
+
+tengo esto en render, que tengo que agregar para que no se rompa cuando haga el deploy?
+
+
+
+---
+
+_**Assistant**_
+
+Para que la aplicación funcione correctamente en Render con esa URL de base de datos, necesitamos hacer algunos ajustes:
+
+1. Primero, actualiza el archivo `src/config/config.js`:
+
+```javascript:src/config/config.js
+const config = {
+  development: {
+    username: process.env.DB_USER || 'postgres',
+    password: process.env.DB_PASSWORD || '1Q.2w.3e.4r.',
+    database: process.env.DB_NAME || 'heymozo',
+    host: process.env.DB_HOST || 'localhost',
+    port: process.env.DB_PORT || 5432,
+    dialect: 'postgres',
+    dialectOptions: {
+      ssl: false
+    }
+  },
+  production: {
+    url: process.env.DATABASE_URL,
+    dialect: 'postgres',
+    dialectOptions: {
+      ssl: {
+        require: true,
+        rejectUnauthorized: false
+      }
+    },
+    pool: {
+      max: 5,
+      min: 0,
+      acquire: 30000,
+      idle: 10000
+    }
+  }
+};
+
+module.exports = config;
+```
+
+2. Actualiza el archivo `src/config/database.js`:
+
+```javascript:src/config/database.js
+const { Sequelize } = require('sequelize');
+const config = require('./config');
+
+const environment = process.env.NODE_ENV || 'development';
+const dbConfig = config[environment];
+
+let sequelize;
+
+if (environment === 'production') {
+  sequelize = new Sequelize(process.env.DATABASE_URL, {
+    dialect: 'postgres',
+    dialectOptions: dbConfig.dialectOptions,
+    pool: dbConfig.pool,
+    logging: false
+  });
+} else {
+  sequelize = new Sequelize(
+    dbConfig.database,
+    dbConfig.username,
+    dbConfig.password,
+    {
+      host: dbConfig.host,
+      port: dbConfig.port,
+      dialect: dbConfig.dialect,
+      dialectOptions: dbConfig.dialectOptions,
+      logging: false
+    }
+  );
+}
+
+module.exports = sequelize;
+```
+
+3. En Render, asegúrate de tener estas variables de entorno:
+- `NODE_ENV`: production
+- `DATABASE_URL`: postgres://admin:EJm2AWqXhY7wojsvaYyjOTr1Smy9xNv@dpg-culqollds7s73d9oo50-a.oregon-postgres.render.com/general_fn23
+
+4. Agrega un script `build` en tu `package.json`:
+
+```json:package.json
+{
+  "scripts": {
+    // ... otros scripts ...
+    "build": "react-scripts build",
+    "start": "node server.js"
+  }
+}
+```
+
+5. Agrega un archivo `render.yaml` en la raíz del proyecto:
+
+```yaml:render.yaml
+services:
+  - type: web
+    name: heymozo
+    env: node
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: heymozo-db
+          property: connectionString
+
+databases:
+  - name: heymozo-db
+    databaseName: general_fn23
+    user: admin
+```
+
+6. Modifica el `server.js` para servir los archivos estáticos correctamente:
+
+```javascript:server.js
+// ... código existente ...
+
+// Servir archivos estáticos
+app.use(express.static(path.join(__dirname, 'build')));
+
+// La ruta catch-all debe ser LA ÚLTIMA
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'build', 'index.html'));
+});
+
+// ... resto del código ...
+```
+
+Estos cambios asegurarán que:
+1. La aplicación se conecte correctamente a la base de datos de Render
+2. Los archivos estáticos se sirvan correctamente
+3. La configuración SSL sea la adecuada
+4. El pool de conexiones esté optimizado para producción
+
+¿Quieres que implemente estos cambios?
+
+---
+
+_**User**_
+
+==> Cloning from https://github.com/LeandroMagonza/HeyMozo
+==> Checking out commit d055c7ac760be9c3753b2895d0ce09b92f04f89d in branch staging
+==> Downloading cache...
+==> Transferred 250MB in 8s. Extraction took 6s.
+==> Requesting Node.js version 18.x
+==> Using Node.js version 18.20.6 via /opt/render/project/src/.node-version
+==> Docs on specifying a Node.js version: https://render.com/docs/node-version
+==> Using Bun version 1.1.0 (default)
+==> Docs on specifying a bun version: https://render.com/docs/bun-version
+==> Running build command 'npm install && npm run build'...
+up to date, audited 1635 packages in 4s
+275 packages are looking for funding
+  run `npm fund` for details
+14 vulnerabilities (8 moderate, 6 high)
+To address all issues possible (including breaking changes), run:
+  npm audit fix --force
+Some issues need review, and may require choosing
+a different dependency.
+Run `npm audit` for details.
+> heymozo@0.1.0 build
+> react-scripts build
+Creating an optimized production build...
+Failed to compile.
+Module not found: Error: Can't resolve 'web-vitals' in '/opt/render/project/src/src'
+==> Build failed 😞
+
+---
+
+_**Assistant**_
+
+
+
+El error es porque falta el paquete `web-vitals`. Vamos a arreglar esto:
+
+1. Primero, actualiza el `package.json` para incluir las dependencias necesarias:
+
+```json:package.json
+{
+  "name": "heymozo",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    // ... otras dependencias ...
+    "web-vitals": "^2.1.4",
+    "@faker-js/faker": "^8.0.2"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "concurrently \"react-scripts start\" \"npm run server\"",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject",
+    "server": "node server.js",
+    "seed": "node src/database/seeder.js"
+  },
+  // ... resto del archivo ...
+}
+```
+
+2. También vamos a actualizar el `render.yaml` para asegurarnos que la instalación sea limpia:
+
+```yaml:render.yaml
+services:
+  - type: web
+    name: heymozo
+    env: node
+    buildCommand: |
+      npm ci
+      npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: heymozo-db
+          property: connectionString
+
+databases:
+  - name: heymozo-db
+    databaseName: general_fn23
+    user: admin
+```
+
+3. Asegúrate de que el archivo `src/reportWebVitals.js` exista:
+
+```javascript:src/reportWebVitals.js
+const reportWebVitals = onPerfEntry => {
+  if (onPerfEntry && onPerfEntry instanceof Function) {
+    import('web-vitals').then(({ getCLS, getFID, getFCP, getLCP, getTTFB }) => {
+      getCLS(onPerfEntry);
+      getFID(onPerfEntry);
+      getFCP(onPerfEntry);
+      getLCP(onPerfEntry);
+      getTTFB(onPerfEntry);
+    });
+  }
+};
+
+export default reportWebVitals;
+```
+
+4. Y que esté importado en `src/index.js`:
+
+```javascript:src/index.js
+// ... otros imports ...
+import reportWebVitals from './reportWebVitals';
+
+// ... resto del código ...
+
+// If you want to start measuring performance in your app, pass a function
+// to log results (for example: reportWebVitals(console.log))
+// or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
+reportWebVitals();
+```
+
+Estos cambios deberían resolver el error de compilación en Render. ¿Quieres que implemente estos cambios?
+
+---
+
+_**User**_
+
+antes no tiraba este error que agregaste que falla????
+
+==> Cloning from https://github.com/LeandroMagonza/HeyMozo
+==> Checking out commit d32ceceda0d4a50b68e30f0e9a9900152b061652 in branch staging
+==> Downloading cache...
+==> Transferred 248MB in 7s. Extraction took 6s.
+==> Requesting Node.js version 18.x
+==> Using Node.js version 18.20.6 via /opt/render/project/src/.node-version
+==> Docs on specifying a Node.js version: https://render.com/docs/node-version
+==> Using Bun version 1.1.0 (default)
+==> Docs on specifying a bun version: https://render.com/docs/bun-version
+==> Running build command 'npm install && npm run build'...
+changed 1 package, and audited 1635 packages in 7s
+275 packages are looking for funding
+  run `npm fund` for details
+14 vulnerabilities (8 moderate, 6 high)
+To address all issues possible (including breaking changes), run:
+  npm audit fix --force
+Some issues need review, and may require choosing
+a different dependency.
+Run `npm audit` for details.
+> heymozo@0.1.0 build
+> react-scripts build
+Creating an optimized production build...
+Failed to compile.
+Module not found: Error: Can't resolve 'web-vitals' in '/opt/render/project/src/src'
+==> Build failed 😞
+==> Common ways to troubleshoot your deploy: https://render.com/docs/troubleshooting-deploys
+
+---
+
+_**Assistant**_
+
+
+
+Tienes razón, me
 
 ---
 
