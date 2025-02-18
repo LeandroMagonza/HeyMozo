@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
-    "@faker-js/faker": "^9.0.1",
+    "@faker-js/faker": "^8.0.2",
     "@react-pdf/renderer": "^4.2.1",
     "axios": "^1.7.7",
     "concurrently": "^9.0.1",
@@ -25,7 +25,8 @@
     "pg": "^8.11.3",
     "pg-hstore": "^2.3.4",
     "sequelize": "^6.37.1",
-    "cors": "^2.8.5"
+    "cors": "^2.8.5",
+    "web-vitals": "^2.1.4"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^5.17.0",
@@ -35,14 +36,14 @@
   },
   "scripts": {
     "start": "node server.js",
+    "dev": "concurrently \"react-scripts start\" \"npm run server\"",
     "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject",
     "server": "node server.js",
     "seed": "node src/database/seeder.js",
     "migrate": "node src/database/migrate.js",
-    "dev": "concurrently \"react-scripts start\" \"npm run server\"",
-    "render-start": "node server.js",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "render-start": "node server.js"
   },
   "engines": {
     "node": "18.x",
