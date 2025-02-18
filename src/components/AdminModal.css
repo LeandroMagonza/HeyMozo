@@ -21,7 +21,7 @@
 .modal {
   background: white;
   border-radius: 10px;
-  width: 85%;
+  width: 90%;
   max-width: 800px;
   height: 85vh;
   max-height: 90vh;
@@ -155,7 +155,7 @@
 /* Media queries para móvil */
 @media (max-width: 768px) {
   .modal {
-    width: 85%;
+    width: 90%;
     height: 90vh;
     border-radius: 10px;
   }
@@ -186,6 +186,26 @@
     margin: 0 -12px;
     padding: 0 12px;
   }
+
+  .action-buttons-row {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .action-buttons-row .app-button {
+    width: 100%;
+    white-space: normal;
+    padding: 8px;
+    min-height: 36px;
+  }
+}
+
+/* Añadir un breakpoint intermedio para pantallas medianas */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .action-buttons-row .app-button {
+    font-size: 0.9em;
+    padding: 8px;
+  }
 }
 
 .modal-actions .app-button.release-button {
@@ -214,6 +234,8 @@
 
 .action-buttons-row .app-button {
   flex: 1;
+  white-space: nowrap;
+  min-width: 0;
 }
 
 

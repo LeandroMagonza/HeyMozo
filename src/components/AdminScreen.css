@@ -258,22 +258,23 @@
     }
 
     .controls-right {
-      flex-direction: row;
-      justify-content: space-between;
+      flex-direction: column;
       width: 100%;
       gap: 8px;
     }
 
-    .sound-toggle-button {
-      width: 36px;
-      height: 36px;
+    .release-all-button.app-button {
+      width: 100%;
+      height: auto;
       padding: 8px;
+      white-space: normal;
+      text-align: center;
+      justify-content: center;
+      min-height: 36px;
     }
 
-    .release-all-button {
-      flex: 1;
-      margin-top: 0;
-      white-space: nowrap;
+    .sound-toggle-button {
+      align-self: flex-end;
     }
   }
 

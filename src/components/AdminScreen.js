@@ -105,100 +105,69 @@ const AdminScreen = () => {
 
   // Función para determinar el estado y tiempo de espera de una mesa
   const getTableStateAndWaitTime = (events, currentTime) => {
-    if (!events || events.length === 0) return { state: TableStates.AVAILABLE, waitTime: 0 };
+    if (!Array.isArray(events) || events.length === 0) {
+      return { state: TableStates.AVAILABLE, waitTime: 24 * 60 * 60 * 1000 }; // 24 horas por defecto
+    }
 
     let state = TableStates.AVAILABLE;
-    let waitTime = 0;
-    let lastOccupiedTime = null;
-    let hasUnseenWaiter = false;
-    let hasUnseenCheck = false;
-    let hasUnseenManager = false;
-    let lastAvailableIndex = -1;
-
-    // Ordenar eventos por fecha, más antiguo primero
-    const sortedEvents = [...events].sort((a, b) => 
-      new Date(a.createdAt) - new Date(b.createdAt)
-    );
-
-    // Encontrar el último evento MARK_AVAILABLE
-    lastAvailableIndex = sortedEvents.findLastIndex(event => event.type === EventTypes.MARK_AVAILABLE);
-
-    // Si no hay MARK_AVAILABLE o hay eventos después de él, la mesa está ocupada
-    const eventsAfterLastAvailable = lastAvailableIndex === -1 ? 
-      sortedEvents : 
-      sortedEvents.slice(lastAvailableIndex + 1);
-
-    if (lastAvailableIndex === -1 || eventsAfterLastAvailable.length > 0) {
-      state = TableStates.OCCUPIED;
-      // Usar el primer evento como tiempo de ocupación si no hay MARK_AVAILABLE
-      lastOccupiedTime = lastAvailableIndex === -1 ? 
-        new Date(sortedEvents[0].createdAt) : 
-        new Date(sortedEvents[lastAvailableIndex + 1].createdAt);
-    }
-
-    // Procesar eventos después del último MARK_AVAILABLE
-    for (const event of eventsAfterLastAvailable) {
-      const eventTime = new Date(event.createdAt);
-
-      switch (event.type) {
-        case EventTypes.CALL_WAITER:
-          if (!event.seenAt) {
-            hasUnseenWaiter = true;
-          }
-          break;
-
-        case EventTypes.REQUEST_CHECK:
-          if (!event.seenAt) {
-            hasUnseenCheck = true;
-          }
-          break;
-
-        case EventTypes.CALL_MANAGER:
-          if (!event.seenAt) {
-            hasUnseenManager = true;
-          }
-          break;
-
-        case EventTypes.MARK_SEEN:
-          // Solo resetear los estados si el MARK_SEEN es después del último evento de cada tipo
-          const lastWaiterCall = eventsAfterLastAvailable.findLast(e => e.type === EventTypes.CALL_WAITER);
-          const lastCheckRequest = eventsAfterLastAvailable.findLast(e => e.type === EventTypes.REQUEST_CHECK);
-          const lastManagerCall = eventsAfterLastAvailable.findLast(e => e.type === EventTypes.CALL_MANAGER);
-
-          if (!lastWaiterCall || eventTime > new Date(lastWaiterCall.createdAt)) hasUnseenWaiter = false;
-          if (!lastCheckRequest || eventTime > new Date(lastCheckRequest.createdAt)) hasUnseenCheck = false;
-          if (!lastManagerCall || eventTime > new Date(lastManagerCall.createdAt)) hasUnseenManager = false;
-          break;
+    let scanFound = null;
+    let unseenWaiterFound = null;
+    let unseenCheckFound = null;
+    let unseenManagerFound = null;
+    let markAvailablefound = new Date(new Date().setDate(new Date().getDate() - 1));
+    // Los eventos vienen ordenados del más nuevo al más viejo
+    for (const event of events) {
+      if (event.type === EventTypes.MARK_AVAILABLE) {
+        markAvailablefound = new Date(event.createdAt);
+        break; // Termina la ocupación
       }
-    }
 
-    // Determinar estado final
-    if (state !== TableStates.AVAILABLE) {
-      if (hasUnseenManager) {
-        if (hasUnseenWaiter && hasUnseenCheck) {
-          state = TableStates.MANAGER_WAITER_CHECK;
-        } else if (hasUnseenWaiter) {
-          state = TableStates.MANAGER_WAITER;
-        } else if (hasUnseenCheck) {
-          state = TableStates.MANAGER_CHECK;
-        } else {
-          state = TableStates.MANAGER;
+      if (event.type === 'SCAN') {
+        scanFound = new Date(event.createdAt);
+      }
+
+      if (!event.seenAt) {
+        if (event.type === EventTypes.CALL_MANAGER) {
+          unseenManagerFound = new Date(event.createdAt);
         }
-      } else if (hasUnseenWaiter && hasUnseenCheck) {
-        state = TableStates.WAITER_AND_CHECK;
-      } else if (hasUnseenWaiter) {
-        state = TableStates.WAITER;
-      } else if (hasUnseenCheck) {
-        state = TableStates.CHECK;
+        if (event.type === EventTypes.REQUEST_CHECK) {
+          unseenCheckFound = new Date(event.createdAt);
+        }
+        if (event.type === EventTypes.CALL_WAITER) {
+          unseenWaiterFound = new Date(event.createdAt);
+        }
       }
     }
 
-    // Calcular tiempo de espera
-    if (state === TableStates.AVAILABLE) {
-      const lastEvent = sortedEvents[sortedEvents.length - 1];
-      waitTime = currentTime - new Date(lastEvent.createdAt);
-    } else if (lastOccupiedTime) {
-      waitTime = currentTime - lastOccupiedTime;
+    let waitTime = 0;
+
+    if (unseenManagerFound && unseenWaiterFound && unseenCheckFound) {
+      state = TableStates.MANAGER_WAITER_CHECK;
+      waitTime = currentTime - Math.min(unseenManagerFound, unseenCheckFound, unseenWaiterFound);
+    } else if (unseenManagerFound && unseenWaiterFound) {
+      state = TableStates.MANAGER_WAITER;
+      waitTime = currentTime - Math.min(unseenManagerFound, unseenWaiterFound);
+    } else if (unseenManagerFound && unseenCheckFound) {
+      state = TableStates.MANAGER_CHECK;
+      waitTime = currentTime - Math.min(unseenManagerFound, unseenCheckFound);
+    } else if (unseenWaiterFound && unseenCheckFound) {
+      state = TableStates.WAITER_AND_CHECK;
+      waitTime = currentTime - Math.min(unseenWaiterFound, unseenCheckFound);
+    } else if (unseenWaiterFound) {
+      state = TableStates.WAITER;
+      waitTime = currentTime - unseenWaiterFound;
+    } else if (unseenCheckFound) {
+      state = TableStates.CHECK;
+      waitTime = currentTime - unseenCheckFound;
+    } else if (unseenManagerFound) {
+      state = TableStates.MANAGER;
+      waitTime = currentTime - unseenManagerFound;
+    } else if (scanFound) {
+      state = TableStates.OCCUPIED;
+      waitTime = currentTime - scanFound;
+    } else {
+      state = TableStates.AVAILABLE;
+      waitTime = currentTime - markAvailablefound;
     }
 
     return { state, waitTime };
@@ -209,42 +178,30 @@ const AdminScreen = () => {
     // Verificar que events existe y es un array
     if (!Array.isArray(events)) {
       return {
-        countWithMessage: 0,
-        hasUnseenWithoutMessage: false,
         hasUnseenWithMessage: false,
         totalUnseen: 0
       };
     }
 
-    let countWithMessage = 0;
-    let hasUnseenWithoutMessage = false;
+    let useenEventCount = 0;
     let hasUnseenWithMessage = false;
-    let lastSeenOrAvailableTime = null;
-
-    // Ordenar eventos por fecha, más reciente primero
-    const sortedEvents = [...events].sort((a, b) => 
-      new Date(b.createdAt) - new Date(a.createdAt)
-    );
-
-    for (const event of sortedEvents) {
-      if (event.type === EventTypes.MARK_SEEN || event.type === EventTypes.MARK_AVAILABLE) {
-        lastSeenOrAvailableTime = new Date(event.createdAt);
-      } else if ((event.type === EventTypes.CALL_WAITER || event.type === EventTypes.REQUEST_CHECK) &&
-                 (lastSeenOrAvailableTime === null || new Date(event.createdAt) > lastSeenOrAvailableTime)) {
-        if (event.message) {
-          countWithMessage++;
-          hasUnseenWithMessage = true;
-        } else {
-          hasUnseenWithoutMessage = true;
-        }
+    
+    for (const event of events) {
+      if (event.seenAt != null) { break; } 
+      else if (
+        event.type === EventTypes.CALL_WAITER || 
+          event.type === EventTypes.REQUEST_CHECK || 
+          event.type === EventTypes.CALL_MANAGER)  {
+        useenEventCount++;
+        if (event.message) { hasUnseenWithMessage = true;}
       }
     }
-
+    if (useenEventCount > 0) {
+      console.log('Eventos no vistos:', useenEventCount);
+    }
     return {
-      countWithMessage,
-      hasUnseenWithoutMessage,
       hasUnseenWithMessage,
-      totalUnseen: countWithMessage + (hasUnseenWithoutMessage ? 1 : 0)
+      totalUnseen: useenEventCount
     };
   };
 
@@ -256,12 +213,12 @@ const AdminScreen = () => {
     return tables.map(table => {
       const { state, waitTime } = getTableStateAndWaitTime(table.events, currentTime);
       const unseenEvents = countUnseenEvents(table.events);
-      const canMarkSeenFromOutside = unseenEvents.hasUnseenWithoutMessage && !unseenEvents.hasUnseenWithMessage;
+      const canMarkSeenFromOutside = unseenEvents.hasUnseenWithMessage && unseenEvents.totalUnseen > 0;
 
       return {
         ...table,
         currentState: state,
-        unseenCount: unseenEvents.countWithMessage,
+        unseenCount: unseenEvents.totalUnseen,
         canMarkSeenFromOutside,
         waitingTime: waitTime,
       };
