@@ -33,8 +33,9 @@ const AdminHistoryModal = ({
               <button 
                 className="app-button" 
                 onClick={() => onMarkSeen(selectedTable.id)}
-                disabled={selectedTable.events[selectedTable.events.length-1]?.seenAt !== null}
+                disabled={selectedTable.events[0]?.seenAt !== null}
               >
+                
                 <FaCheckCircle /> Marcar Vistos
               </button>
               {isAvailable ? (

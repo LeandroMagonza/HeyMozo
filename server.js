@@ -1,5 +1,4 @@
-// server.js
-
+require('dotenv').config();
 const express = require('express');
 const path = require('path');
 const cors = require('cors');
@@ -35,6 +34,19 @@ app.use((req, res, next) => {
   console.log(`${req.method} ${req.url}`);
   next();
 });
+
+// Agregar esta función de utilidad después de las importaciones
+const sortEventsByCreatedAt = (events) => {
+  return events.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+};
+
+// Función helper para formatear una mesa con sus eventos ordenados
+const formatTableWithEvents = (table) => {
+  return {
+    ...table.toJSON(),
+    events: sortEventsByCreatedAt(table.Events)
+  };
+};
 
 // API Routes
 app.get('/api/companies', async (req, res) => {
@@ -91,20 +103,11 @@ app.get('/api/tables', async (req, res) => {
       include: [{
         model: Event,
         attributes: ['type', 'message', 'createdAt', 'seenAt'],
-        order: [['createdAt', 'DESC']]
-      }]
+      }],
+      order: [[Event, 'createdAt', 'DESC']]
     });
 
-    const formattedTables = tables.map(table => ({
-      ...table.toJSON(),
-      events: table.Events.map(event => ({
-        type: event.type,
-        message: event.message,
-        createdAt: event.createdAt,
-        seenAt: event.seenAt
-      }))
-    }));
-
+    const formattedTables = tables.map(formatTableWithEvents);
     res.json(formattedTables);
   } catch (error) {
     console.error('Error fetching tables:', error);
@@ -119,12 +122,12 @@ app.get('/api/tables/:id', async (req, res) => {
     console.log('Fetching table with id:', id); // Debug log
 
     const table = await Table.findByPk(id, {
-      attributes: ['id', 'tableName', 'branchId', 'tableDescription'], // Especificar atributos
+      attributes: ['id', 'tableName', 'branchId', 'tableDescription'],
       include: [{
         model: Event,
         attributes: ['type', 'message', 'createdAt', 'seenAt'],
-        order: [['createdAt', 'DESC']]
-      }]
+      }],
+      order: [[Event, 'createdAt', 'DESC']]
     });
 
     if (!table) {
@@ -132,18 +135,7 @@ app.get('/api/tables/:id', async (req, res) => {
       return res.status(404).json({ error: 'Table not found' });
     }
 
-    const formattedTable = {
-      ...table.toJSON(),
-      events: table.Events.map(event => ({
-        type: event.type,
-        message: event.message,
-        createdAt: event.createdAt,
-        seenAt: event.seenAt
-      }))
-    };
-
-    console.log('Sending formatted table:', formattedTable); // Debug log
-    res.json(formattedTable);
+    res.json(formatTableWithEvents(table));
   } catch (error) {
     console.error('Error fetching table:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -196,26 +188,11 @@ app.put('/api/tables/:id', async (req, res) => {
       include: [{
         model: Event,
         attributes: ['type', 'message', 'createdAt', 'seenAt'],
-        order: [['createdAt', 'DESC']]
-      }]
+      }],
+      order: [[Event, 'createdAt', 'DESC']]
     });
 
-    // Formatear la respuesta y verificar que seenAt se incluye
-    const formattedTable = {
-      ...updatedTable.toJSON(),
-      events: updatedTable.Events.map(event => {
-        console.log('Event being formatted:', event.toJSON()); // Debug log
-        return {
-          type: event.type,
-          message: event.message,
-          createdAt: event.createdAt,
-          seenAt: event.seenAt  // Asegurarnos que seenAt se incluye
-        };
-      })
-    };
-
-    console.log('Formatted table events:', formattedTable.events); // Debug log
-    res.json(formattedTable);
+    res.json(formatTableWithEvents(updatedTable));
   } catch (error) {
     console.error('Error updating table:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -267,22 +244,11 @@ app.put('/api/tables/:id/mark-seen', async (req, res) => {
       include: [{
         model: Event,
         attributes: ['type', 'message', 'createdAt', 'seenAt'],
-        order: [['createdAt', 'DESC']]
-      }]
+      }],
+      order: [[Event, 'createdAt', 'DESC']]
     });
 
-    // Formatear la respuesta
-    const formattedTable = {
-      ...updatedTable.toJSON(),
-      events: updatedTable.Events.map(event => ({
-        type: event.type,
-        message: event.message,
-        createdAt: event.createdAt,
-        seenAt: event.seenAt
-      }))
-    };
-
-    res.json(formattedTable);
+    res.json(formatTableWithEvents(updatedTable));
   } catch (error) {
     console.error('Error marking events as seen:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -370,22 +336,11 @@ app.post('/api/tables/:id/events', async (req, res) => {
       include: [{
         model: Event,
         attributes: ['type', 'message', 'createdAt', 'seenAt'],
-        order: [['createdAt', 'DESC']]
-      }]
+      }],
+      order: [[Event, 'createdAt', 'DESC']]
     });
 
-    // Formatear la respuesta
-    const formattedTable = {
-      ...updatedTable.toJSON(),
-      events: updatedTable.Events.map(event => ({
-        type: event.type,
-        message: event.message,
-        createdAt: event.createdAt,
-        seenAt: event.seenAt
-      }))
-    };
-
-    res.json(formattedTable);
+    res.json(formatTableWithEvents(updatedTable));
   } catch (error) {
     console.error('Error creating event:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -431,21 +386,11 @@ app.post('/api/branches/:id/release-all-tables', async (req, res) => {
       include: [{
         model: Event,
         attributes: ['type', 'message', 'createdAt', 'seenAt'],
-        order: [['createdAt', 'DESC']]
-      }]
+      }],
+      order: [[Event, 'createdAt', 'DESC']]
     });
 
-    // Formatear la respuesta
-    const formattedTables = updatedTables.map(table => ({
-      ...table.toJSON(),
-      events: table.Events.map(event => ({
-        type: event.type,
-        message: event.message,
-        createdAt: event.createdAt,
-        seenAt: event.seenAt
-      }))
-    }));
-
+    const formattedTables = updatedTables.map(formatTableWithEvents);
     res.json(formattedTables);
   } catch (error) {
     console.error('Error releasing all tables:', error);
@@ -553,7 +498,7 @@ app.post('/api/tables', async (req, res) => {
       }]
     });
 
-    res.status(201).json(tableWithEvents);
+    res.status(201).json(formatTableWithEvents(tableWithEvents));
   } catch (error) {
     console.error('Error creating table:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -654,28 +599,11 @@ async function createDatabaseIfNotExists() {
 // Modificar la función startServer
 async function startServer() {
   try {
-    // Crear base de datos si no existe
-    if (process.env.NODE_ENV !== 'production') {
-      try {
-        await createDatabaseIfNotExists();
-      } catch (error) {
-        console.error('Error creating database:', error);
-        // Continuamos incluso si hay error al crear la base de datos
-      }
-    }
+    // Solo verificar la conexión
+    await sequelize.authenticate();
+    console.log('Database connection has been established successfully.');
 
-    try {
-      if (process.env.NODE_ENV === 'production') {
-        await sequelize.sync();
-      } else {
-        await sequelize.sync({ alter: true });
-      }
-    } catch (error) {
-      console.error('Error syncing database:', error);
-      // Continuamos incluso si hay error en la sincronización
-    }
-
-    // Iniciamos el servidor de todas formas
+    // Iniciamos el servidor
     app.listen(PORT, () => {
       console.log(`Server running on http://localhost:${PORT}`);
     });

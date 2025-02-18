@@ -7,14 +7,10 @@ import { translateEvent } from '../utils/translations';
 import { FaCheckCircle } from 'react-icons/fa';
 
 const EventsList = ({ events, showSeenStatus = true }) => {
-  // Ordenar eventos por fecha, más reciente primero
-  const sortedEvents = [...events].sort((a, b) => 
-    new Date(b.createdAt) - new Date(a.createdAt)
-  );
 
   return (
     <ul className="events-list">
-      {sortedEvents.map((event, index) => (
+      {events.map((event, index) => (
         <li key={index} style={{ backgroundColor: EventColors[event.type] }}>
           <strong>
             {translateEvent(event.type)}

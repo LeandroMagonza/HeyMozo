@@ -55,7 +55,7 @@ const AdminScreen = () => {
 
       const tablesResponse = await getTables(branchId);
       setTables(tablesResponse.data);
-      console.log('Tablas obtenidas:', tablesResponse.data);
+      //console.log('Mesas obtenidas:', tablesResponse.data);
       setLoading(false);
     } catch (error) {
       console.error('Error fetching data:', error.response || error);
@@ -250,7 +250,7 @@ const AdminScreen = () => {
 
   // Procesar las mesas
   const processedTables = useMemo(() => {
-    console.log('Procesando mesas:', tables);
+    //console.log('Procesando mesas:', tables);
     const currentTime = new Date();
 
     return tables.map(table => {
@@ -312,7 +312,7 @@ const AdminScreen = () => {
   const viewEventHistory = (tableId) => {
     const table = sortedTables.find((t) => t.id === tableId);
     if (!table) return;
-
+    //console.log('Mesa seleccionada:', table);
     setSelectedTable(table);
     setShowEventsModal(true);
   };
