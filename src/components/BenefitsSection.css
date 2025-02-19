@@ -1,0 +1,125 @@
+.benefits-section {
+  padding: 4rem 0 4rem 2rem; /* Reducido el padding derecho */
+}
+
+.benefits-section h2 {
+  text-align: center;
+  margin-bottom: 2rem;
+  font-size: 2.5rem;
+  color: #333;
+}
+
+.benefits-wrapper {
+  position: relative;
+}
+
+.benefits-container {
+  display: flex;
+  gap: 1.5rem;
+  overflow-x: auto;
+  padding: 1rem 0;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none; /* Ocultar scrollbar */
+  -ms-overflow-style: none; /* Ocultar scrollbar en IE/Edge */
+  scroll-behavior: smooth;
+}
+
+.benefits-container::-webkit-scrollbar {
+  display: none; /* Ocultar scrollbar en Chrome/Safari/Webkit */
+}
+
+.benefit-card {
+  flex: 0 0 300px;
+  height: 450px;
+  border-radius: 12px;
+  background-size: cover;
+  background-position: center;
+  position: relative;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease;
+}
+
+.benefit-card:hover {
+  transform: translateY(-10px);
+}
+
+.benefit-content {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 2rem;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
+  color: white;
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
+}
+
+.benefit-content h3 {
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.benefit-content p {
+  font-size: 1rem;
+  line-height: 1.4;
+}
+
+/* Estilos para scrollbar */
+.benefits-container::-webkit-scrollbar {
+  height: 8px;
+}
+
+.benefits-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.benefits-container::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+.benefits-container::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+.scroll-buttons {
+  position: absolute;
+  bottom: -2rem;
+  right: 2rem;
+  display: flex;
+  gap: 1rem;
+}
+
+.scroll-button {
+  background: #333;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  font-size: 1.2rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.3s ease;
+}
+
+.scroll-button:hover {
+  background: #555;
+}
+
+/* Asegurar que se vean 3 cards en desktop */
+@media (min-width: 1024px) {
+  .benefits-container {
+    padding: 1rem 0; /* Eliminado el padding horizontal del 10% */
+    margin-right: 2rem; /* Añadir margen derecho para compensar */
+  }
+
+  .benefit-card {
+    flex: 0 0 calc(33.333% - 1rem);
+    min-width: 280px;
+  }
+}
