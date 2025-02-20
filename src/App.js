@@ -66,51 +66,56 @@ function LandingPage() {
       <HowItWorks />
 
       <section className="contact-section" ref={contactFormRef}>
-        <h2>Mejora la Experiencia de tu Restaurante</h2>
-        <p className="contact-intro">
-          Únete a los restaurantes que ya optimizaron su servicio con HeyMozo
-        </p>
-        <form id="demo-form" onSubmit={handleSubmit} className="contact-form">
-          <div className="form-group">
-            <label htmlFor="name">Nombre</label>
-            <input
-              type="text"
-              id="name"
-              value={formData.name}
-              onChange={(e) =>
-                setFormData({ ...formData, name: e.target.value })
-              }
-              required
-            />
+        <div className="contact-container">
+          <div className="contact-info">
+            <h2>Contactanos</h2>
+            <p>
+              ¿Tenés alguna pregunta o comentario? No dudes en contactarnos.
+              Estamos aquí para ayudarte.
+            </p>
           </div>
-          <div className="form-group">
-            <label htmlFor="email">Email</label>
-            <input
-              type="email"
-              id="email"
-              value={formData.email}
-              onChange={(e) =>
-                setFormData({ ...formData, email: e.target.value })
-              }
-              required
-            />
-          </div>
-          <div className="form-group">
-            <label htmlFor="message">Mensaje</label>
-            <textarea
-              id="message"
-              value={formData.message}
-              onChange={(e) =>
-                setFormData({ ...formData, message: e.target.value })
-              }
-              placeholder="Cuéntanos sobre tu restaurante..."
-              required
-            />
-          </div>
-          <button type="submit" className="submit-button">
-            Solicitar Demo
-          </button>
-        </form>
+          <form id="demo-form" onSubmit={handleSubmit} className="contact-form">
+            <div className="form-group">
+              <label htmlFor="name">Nombre</label>
+              <input
+                type="text"
+                id="name"
+                value={formData.name}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label htmlFor="email">Email</label>
+              <input
+                type="email"
+                id="email"
+                value={formData.email}
+                onChange={(e) =>
+                  setFormData({ ...formData, email: e.target.value })
+                }
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label htmlFor="message">Mensaje</label>
+              <textarea
+                id="message"
+                value={formData.message}
+                onChange={(e) =>
+                  setFormData({ ...formData, message: e.target.value })
+                }
+                placeholder="Cuéntanos sobre tu restaurante..."
+                required
+              />
+            </div>
+            <button type="submit" className="submit-button">
+              Solicitar Demo
+            </button>
+          </form>
+        </div>
       </section>
 
       <footer className="landing-footer">
