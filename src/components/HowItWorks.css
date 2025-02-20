@@ -1,0 +1,144 @@
+.how-it-works {
+  padding: 6rem 2rem;
+  background: #1a1a1a;
+  color: white;
+}
+
+.how-it-works-container {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.how-it-works h2 {
+  font-size: 2.8rem;
+  margin-bottom: 4rem;
+  text-align: center;
+  color: white;
+}
+
+.steps-grid {
+  display: grid;
+  grid-template-areas:
+    "large large medium small"
+    "large large wide wide";
+  gap: 1.5rem;
+  height: 600px; /* Reducido de 700px a 600px */
+}
+
+.step-card {
+  background-size: cover;
+  background-position: center;
+  border-radius: 20px;
+  position: relative;
+  overflow: hidden;
+  transform: none !important; /* Previene cualquier transformación del contenedor */
+  transition: none; /* Remove any transition from the container */
+}
+
+/* Add a pseudo-element for the background image */
+.step-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  background-image: inherit;
+  transition: transform 0.8s ease-out; /* Aumentado de 0.3s a 0.8s y cambiado a ease-out */
+  z-index: 0;
+  will-change: transform; /* Optimize performance for transform animations */
+}
+
+.step-card:hover::before {
+  transform: scale(1.1);
+}
+
+.step-card.large {
+  grid-area: large;
+}
+.step-card.medium {
+  grid-area: medium;
+}
+.step-card.small {
+  grid-area: small;
+}
+.step-card.wide {
+  grid-area: wide;
+}
+
+.step-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.8) 0%,
+    rgba(0, 0, 0, 0.4) 50%,
+    rgba(0, 0, 0, 0.2) 100%
+  );
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  transition: background 0.8s ease-out; /* Aumentado de 0.3s a 0.8s y cambiado a ease-out */
+  z-index: 1; /* Add this to ensure overlay stays above the background */
+}
+
+.step-card:hover .step-overlay {
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.9) 0%,
+    rgba(0, 0, 0, 0.6) 50%,
+    rgba(0, 0, 0, 0.3) 100%
+  );
+}
+
+/* Remove the .step-number styles since we're not using them anymore */
+
+.step-content {
+  color: white;
+}
+
+.step-content h3 {
+  font-size: 1.8rem;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: white;
+}
+
+.step-content p {
+  font-size: 1rem;
+  opacity: 0.9;
+  color: white;
+}
+
+@media (max-width: 1024px) {
+  .steps-grid {
+    grid-template-areas:
+      "large large"
+      "medium small"
+      "wide wide";
+    height: auto;
+  }
+
+  .step-card {
+    height: 200px; /* Reducido de 250px a 200px */
+  }
+}
+
+@media (max-width: 768px) {
+  .steps-grid {
+    grid-template-areas:
+      "large"
+      "medium"
+      "small"
+      "wide";
+  }
+
+  .how-it-works {
+    padding: 4rem 1rem;
+  }
+
+  .how-it-works h2 {
+    font-size: 2.2rem;
+    margin-bottom: 2rem;
+  }
+}

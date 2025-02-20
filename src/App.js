@@ -13,6 +13,7 @@ import "./App.css";
 import Header from "./components/Header";
 import FeatureCarousel from "./components/FeatureCarousel";
 import BenefitsSection from "./components/BenefitsSection";
+import HowItWorks from "./components/HowItWorks";
 
 function LandingPage() {
   const [formData, setFormData] = useState({
@@ -43,10 +44,9 @@ function LandingPage() {
       <section className="hero-section">
         <div className="hero-content">
           <div className="text-content">
-            <h1>HeyMozo</h1>
-            <p className="tagline">
+            <h2 className="tagline">
               La forma más inteligente de atender tu restaurante
-            </p>
+            </h2>
           </div>
           <img
             src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/heymozo-logo-lAd92AUlDVMY1PI8cSvsGEVNsGN0P2.png"
@@ -63,83 +63,54 @@ function LandingPage() {
 
       <BenefitsSection />
 
-      <section className="how-it-works">
-        <h2>Simple y Efectivo</h2>
-        <div className="steps-grid">
-          <div className="step-card">
-            <div className="step-number">1</div>
-            <h3>Genera QRs</h3>
-            <p>Crea códigos únicos para cada mesa de tu local</p>
-          </div>
-          <div className="step-card">
-            <div className="step-number">2</div>
-            <h3>Configura</h3>
-            <p>Personaliza tu menú y opciones en el dashboard</p>
-          </div>
-          <div className="step-card">
-            <div className="step-number">3</div>
-            <h3>Conecta</h3>
-            <p>Los clientes escanean y acceden a todas las funciones</p>
-          </div>
-          <div className="step-card">
-            <div className="step-number">4</div>
-            <h3>Gestiona</h3>
-            <p>Administra pedidos y mesas en tiempo real</p>
-          </div>
-        </div>
-      </section>
+      <HowItWorks />
 
       <section className="contact-section" ref={contactFormRef}>
-        <div className="contact-container">
-          <div className="contact-info">
-            <h2>Mejora la Experiencia de tu Restaurante</h2>
-            <p className="contact-intro">
-              Únete a los restaurantes que ya optimizaron su servicio con
-              HeyMozo
-            </p>
+        <h2>Mejora la Experiencia de tu Restaurante</h2>
+        <p className="contact-intro">
+          Únete a los restaurantes que ya optimizaron su servicio con HeyMozo
+        </p>
+        <form id="demo-form" onSubmit={handleSubmit} className="contact-form">
+          <div className="form-group">
+            <label htmlFor="name">Nombre</label>
+            <input
+              type="text"
+              id="name"
+              value={formData.name}
+              onChange={(e) =>
+                setFormData({ ...formData, name: e.target.value })
+              }
+              required
+            />
           </div>
-          <form id="demo-form" onSubmit={handleSubmit} className="contact-form">
-            <div className="form-group">
-              <label htmlFor="name">Nombre</label>
-              <input
-                type="text"
-                id="name"
-                value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
-                required
-              />
-            </div>
-            <div className="form-group">
-              <label htmlFor="email">Email</label>
-              <input
-                type="email"
-                id="email"
-                value={formData.email}
-                onChange={(e) =>
-                  setFormData({ ...formData, email: e.target.value })
-                }
-                required
-              />
-            </div>
-            <div className="form-group">
-              <label htmlFor="message">Mensaje</label>
-              <textarea
-                id="message"
-                value={formData.message}
-                onChange={(e) =>
-                  setFormData({ ...formData, message: e.target.value })
-                }
-                placeholder="Cuéntanos sobre tu restaurante..."
-                required
-              />
-            </div>
-            <button type="submit" className="submit-button">
-              Solicitar Demo
-            </button>
-          </form>
-        </div>
+          <div className="form-group">
+            <label htmlFor="email">Email</label>
+            <input
+              type="email"
+              id="email"
+              value={formData.email}
+              onChange={(e) =>
+                setFormData({ ...formData, email: e.target.value })
+              }
+              required
+            />
+          </div>
+          <div className="form-group">
+            <label htmlFor="message">Mensaje</label>
+            <textarea
+              id="message"
+              value={formData.message}
+              onChange={(e) =>
+                setFormData({ ...formData, message: e.target.value })
+              }
+              placeholder="Cuéntanos sobre tu restaurante..."
+              required
+            />
+          </div>
+          <button type="submit" className="submit-button">
+            Solicitar Demo
+          </button>
+        </form>
       </section>
 
       <footer className="landing-footer">

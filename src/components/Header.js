@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import "./Header.css";
 
 const Header = () => {
   const [isVisible, setIsVisible] = useState(true);
@@ -27,11 +28,14 @@ const Header = () => {
 
   return (
     <header className={`fixed-header ${isVisible ? "visible" : ""}`}>
-      <img
-        src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/heymozo-logo-lAd92AUlDVMY1PI8cSvsGEVNsGN0P2.png"
-        alt="HeyMozo Logo"
-        className="header-logo"
-      />
+      <div className="logo-container">
+        <img
+          src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/heymozo-logo-lAd92AUlDVMY1PI8cSvsGEVNsGN0P2.png"
+          alt="HeyMozo Logo"
+          className="header-logo"
+        />
+        <span className="header-title">HeyMozo</span>
+      </div>
       <button className="demo-button" onClick={handleDemoClick}>
         Obtener Demo
       </button>
