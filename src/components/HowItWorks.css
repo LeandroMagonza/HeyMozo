@@ -91,9 +91,27 @@
   );
 }
 
-/* Remove the .step-number styles since we're not using them anymore */
+/* Agregar al archivo CSS existente */
+.step-number {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  width: 30px;
+  height: 30px;
+  background-color: #ffb81c;
+  color: #000;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 18px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
 
+/* Si necesitas ajustar la posición del contenido existente */
 .step-content {
+  padding-top: 10px;
   color: white;
 }
 

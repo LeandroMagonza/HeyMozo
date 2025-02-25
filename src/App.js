@@ -119,7 +119,7 @@ function LandingPage() {
       </section>
 
       <footer className="landing-footer">
-        <p>© 2024 HeyMozo - Transformando la experiencia gastronómica</p>
+        <p>© 2025 HeyMozo - Transformando la experiencia gastronómica</p>
       </footer>
     </div>
   );

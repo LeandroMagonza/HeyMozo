@@ -3,32 +3,32 @@ import "./FeatureCarousel.css";
 
 const features = [
   {
-    title: "Menú Digital QR",
+    title: "Integra Tu Menú Existente",
     description:
-      "Tus clientes acceden al menú actualizado escaneando el código de su mesa",
+      "Utiliza el mismo link de tu menú actual. Sin necesidad de actualizar contenido en múltiples plataformas",
     image:
-      "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&q=80&w=500",
+      "https://images.unsplash.com/photo-1533777857889-4be7c70b33f7?auto=format&fit=crop&q=80&w=500",
   },
   {
     title: "Llamado al Mozo",
     description:
-      "Los comensales pueden solicitar atención sin necesidad de hacer señas",
+      "Los comensales pueden solicitar atención sin necesidad de hacer señas o esperar a que el mozo se desocupe",
     image:
-      "https://images.unsplash.com/photo-1516975080664-ed2fc6a32937?auto=format&fit=crop&q=80&w=500",
+      "https://images.unsplash.com/photo-1577563908411-5077b6dc7624?auto=format&fit=crop&q=80&w=500",
   },
   {
     title: "Pedir la Cuenta",
     description:
-      "Agiliza el proceso de pago permitiendo solicitar la cuenta desde la mesa",
+      "Agiliza el proceso de pago permitiendo solicitar la cuenta desde la mesa y especificar metodo de pago antes de que la lleve el mozo",
     image:
-      "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&q=80&w=500",
+      "https://images.unsplash.com/photo-1556742393-d75f468bfcb0?auto=format&fit=crop&q=80&w=500",
   },
   {
     title: "Dashboard en Tiempo Real",
     description:
       "Control total de mesas y pedidos desde una interfaz intuitiva",
     image:
-      "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=500",
+      "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=500",
   },
 ];
 
