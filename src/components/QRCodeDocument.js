@@ -15,6 +15,7 @@ const styles = StyleSheet.create({
     height: '48%',
     margin: '1%',
     padding: 15,
+    display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     borderStyle: 'dashed',
@@ -44,28 +45,48 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'space-around',
+    display: 'flex',
+    flexDirection: 'column',
+    paddingVertical: 5,
   },
   tableName: {
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 15,
+    marginTop: 8,
     textAlign: 'center',
   },
   qrCode: {
     width: 150,
     height: 150,
-    marginBottom: 15,
+    objectFit: 'contain',
+    alignSelf: 'center',
+    margin: 0,
+  },
+  qrCodeContainer: {
+    backgroundColor: '#FFFFFF',
+    padding: 12, // Slightly increased padding for better spacing
+    borderRadius: 8,
+    // Shadow for better separation from background
+    boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
+    // Add flexbox centering for perfect alignment
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 10, // Reduced margin at the bottom to bring logos closer
+    marginTop: 0, // No margin at the top
+    alignSelf: 'center', // Center horizontally in parent
   },
   infoContainer: {
     width: '100%',
-    marginTop: 10,
+    marginTop: 5,
     paddingHorizontal: 10,
   },
   branchInfoContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 6,
     width: '100%',
   },
   heymozoContainer: {
@@ -73,6 +94,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'flex-start',
     width: '100%',
+    marginBottom: 5,
   },
   logo: {
     width: 30,
@@ -104,7 +126,10 @@ const QRCodeDocument = ({
   textColor = "#000000",
   fontFamily = "Helvetica",
   qrBackgroundImage,
-  website // URL de la compañía/branch
+  website, // URL de la compañía/branch
+  qrDarkColor = "#000000", // New parameter for QR dark color
+  qrCodeSize = 180, // New parameter for QR size
+  useWhiteBackground = true // New parameter for white background
 }) => {
   // Función para generar la URL del QR
   const getTableUrl = (tableId) => {
@@ -129,13 +154,17 @@ const QRCodeDocument = ({
         try {
           const url = getTableUrl(table.id);
           const qrImage = await QRCode.toDataURL(url, {
-            width: 150,
-            margin: 0,
+            width: qrCodeSize, // Use custom size
+            margin: 4, // Added margin for quiet zone (recommended by QR standard)
             color: {
-              dark: '#000000',
-              light: '#FFFFFF'
+              dark: qrDarkColor, // Use custom dark color
+              light: '#FFFFFF'  // Pure white for maximum contrast
             },
-            errorCorrectionLevel: 'H'
+            errorCorrectionLevel: 'H', // Keep high error correction
+            // Optimize rendererOpts for better printing clarity
+            rendererOpts: {
+              quality: 1.0, // Highest quality
+            }
           });
           setQrDataUrl(qrImage);
         } catch (err) {
@@ -143,7 +172,7 @@ const QRCodeDocument = ({
         }
       };
       generateQR();
-    }, [table]);
+    }, [table, qrDarkColor, qrCodeSize]);
 
     // Función para convertir URL de Instagram a URL de imagen directa
     const getDirectImageUrl = (url) => {
@@ -158,22 +187,38 @@ const QRCodeDocument = ({
 
     return (
       <View style={styles.qrContainer}>
-        {qrBackgroundImage && (
+        {qrBackgroundImage && qrBackgroundImage !== '' && (
           <>
             <Image style={styles.backgroundImage} src={qrBackgroundImage} />
             <View style={styles.overlay} />
           </>
         )}
         <View style={styles.contentContainer}>
+          <View style={{ flex: 0.15 }}></View>
+          
           <Text style={[styles.tableName, { color: textColor, fontFamily }]}>
             {table.tableName}
           </Text>
           
-          <Image style={styles.qrCode} src={qrDataUrl} />
+          <View style={[styles.qrCodeContainer, { 
+            backgroundColor: useWhiteBackground ? '#FFFFFF' : 'transparent',
+            padding: useWhiteBackground ? 10 : 0,
+            boxShadow: useWhiteBackground ? '0 2px 5px rgba(0,0,0,0.2)' : 'none'
+          }]}>
+            <Image 
+              style={[styles.qrCode, { 
+                width: qrCodeSize * 0.8, // Scale QR code for better fit
+                height: qrCodeSize * 0.8,
+                margin: 'auto', // Center the image within the container
+                display: 'block' // Ensure block display for margin auto to work
+              }]} 
+              src={qrDataUrl} 
+            />
+          </View>
 
           <View style={styles.infoContainer}>
             <View style={styles.branchInfoContainer}>
-              {restaurantLogo && (
+              {restaurantLogo && restaurantLogo !== '' && (
                 <Image 
                   style={styles.logo} 
                   src={getDirectImageUrl(restaurantLogo)}
@@ -195,6 +240,8 @@ const QRCodeDocument = ({
               </Text>
             </View>
           </View>
+          
+          <View style={{ flex: 0.1 }}></View>
         </View>
       </View>
     );

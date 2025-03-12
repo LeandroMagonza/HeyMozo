@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { PDFDownloadLink } from '@react-pdf/renderer';
 import QRCodeDocument from './QRCodeDocument';
 import './QRGeneratorModal.css';
-import { FaTimes, FaUpload } from 'react-icons/fa';
+import { FaTimes, FaUpload, FaQrcode } from 'react-icons/fa';
 
 const FONT_OPTIONS = [
   { value: 'Helvetica', label: 'Helvetica' },
@@ -22,14 +22,17 @@ const FONT_OPTIONS = [
 ];
 
 const QRGeneratorModal = ({ show, onClose, tables, companyId, branchId, branch }) => {
-  const [logo, setLogo] = useState(null);
-  const [background, setBackground] = useState(null);
-  const [logoPreview, setLogoPreview] = useState(null);
-  const [backgroundPreview, setBackgroundPreview] = useState(null);
+  const [logo, setLogo] = useState('');
+  const [background, setBackground] = useState('');
+  const [logoPreview, setLogoPreview] = useState('');
+  const [backgroundPreview, setBackgroundPreview] = useState('');
   const [isReady, setIsReady] = useState(false);
   const [textColor, setTextColor] = useState("#000000");
   const [fontFamily, setFontFamily] = useState("Helvetica");
-  const [websiteText, setWebsiteText] = useState(branch.website || "");
+  const [websiteText, setWebsiteText] = useState(branch?.website || "");
+  const [qrDarkColor, setQrDarkColor] = useState("#000000");
+  const [qrCodeSize, setQrCodeSize] = useState(180);
+  const [useWhiteBackground, setUseWhiteBackground] = useState(true);
 
   const handleImageUpload = (e, type) => {
     const file = e.target.files[0];
@@ -49,11 +52,13 @@ const QRGeneratorModal = ({ show, onClose, tables, companyId, branchId, branch }
   };
 
   const handleGeneratePDF = () => {
-    if (logo && background) {
+    if (logo && logo !== '' && background && background !== '') {
       setIsReady(true);
       document.querySelector('.download-link')?.click();
     }
   };
+
+  const isGenerateButtonDisabled = !logo || logo === '' || !background || background === '';
 
   if (!show) return null;
 
@@ -146,13 +151,62 @@ const QRGeneratorModal = ({ show, onClose, tables, companyId, branchId, branch }
                 </select>
               </div>
             </div>
+
+            <div className="qr-code-options">
+              <h3><FaQrcode /> Configuración avanzada del QR</h3>
+              <div className="qr-option-controls">
+                <div className="input-group">
+                  <label>Color del QR</label>
+                  <input
+                    type="color"
+                    value={qrDarkColor}
+                    onChange={(e) => setQrDarkColor(e.target.value)}
+                    className="color-input"
+                    title="Color de los módulos oscuros del QR"
+                  />
+                </div>
+                
+                <div className="input-group">
+                  <label>Tamaño del QR (px)</label>
+                  <input
+                    type="range"
+                    min="150"
+                    max="250"
+                    value={qrCodeSize}
+                    onChange={(e) => setQrCodeSize(parseInt(e.target.value))}
+                    className="range-input"
+                    title="Tamaño del código QR"
+                  />
+                  <span className="range-value">{qrCodeSize}px</span>
+                </div>
+                
+                <div className="input-group">
+                  <label>Fondo blanco para QR</label>
+                  <div className="toggle-container">
+                    <input
+                      type="checkbox"
+                      id="white-background-toggle"
+                      checked={useWhiteBackground}
+                      onChange={(e) => setUseWhiteBackground(e.target.checked)}
+                      className="toggle-input"
+                    />
+                    <label htmlFor="white-background-toggle" className="toggle-label">
+                      <span className="toggle-slider"></span>
+                    </label>
+                  </div>
+                  <span className="toggle-text">
+                    {useWhiteBackground ? "Activado" : "Desactivado"}
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
 
           {!isReady ? (
             <button 
               className="generate-button"
               onClick={handleGeneratePDF}
-              disabled={!logo || !background}
+              disabled={isGenerateButtonDisabled}
             >
               Generar PDF
             </button>
@@ -169,6 +223,9 @@ const QRGeneratorModal = ({ show, onClose, tables, companyId, branchId, branch }
                   fontFamily={fontFamily}
                   qrBackgroundImage={background}
                   website={websiteText}
+                  qrDarkColor={qrDarkColor}
+                  qrCodeSize={qrCodeSize}
+                  useWhiteBackground={useWhiteBackground}
                 />
               }
               fileName={`qr-codes-${branch.name}.pdf`}
