@@ -19,7 +19,7 @@ const AdminScreen = () => {
   const [branch, setBranch] = useState(null);
   const [tables, setTables] = useState([]);
   const [currentTime, setCurrentTime] = useState(new Date());
-  const refreshInterval = 15000; // 15 segundos en milisegundos
+  const refreshInterval = 6000; // 6 segundos en milisegundos
   const [refreshCountdown, setRefreshCountdown] = useState(refreshInterval / 1000);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
