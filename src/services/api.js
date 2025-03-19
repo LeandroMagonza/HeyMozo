@@ -8,7 +8,62 @@ const api = axios.create({
   baseURL: API_BASE_URL,
 });
 
+// Add a request interceptor to include auth token in requests
+api.interceptors.request.use(
+  (config) => {
+    const authToken = localStorage.getItem('authToken');
+    if (authToken) {
+      config.headers['Authorization'] = `Bearer ${authToken}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
 console.log('API Base URL:', api.defaults.baseURL);
+
+// Authentication endpoints
+export const requestLogin = (email) => 
+  api.post('/auth/login-request', { email });
+
+export const verifyLoginToken = (token) => 
+  api.post('/auth/verify-token', { token });
+
+export const getCurrentUser = () => 
+  api.get('/auth/me');
+
+export const logout = () => {
+  localStorage.removeItem('authToken');
+  return Promise.resolve();
+};
+
+// User management endpoints (admin only)
+export const getUsers = () => 
+  api.get('/users');
+
+export const createUser = (userData) => 
+  api.post('/users', userData);
+
+export const updateUser = (userId, userData) => 
+  api.put(`/users/${userId}`, userData);
+
+export const deleteUser = (userId) => 
+  api.delete(`/users/${userId}`);
+
+export const getUserPermissions = (userId) => 
+  api.get(`/users/${userId}/permissions`);
+
+export const addUserPermission = (userId, resourceType, resourceId) => 
+  api.post(`/users/${userId}/permissions`, { resourceType, resourceId });
+
+export const removeUserPermission = (userId, resourceType, resourceId) => 
+  api.delete(`/users/${userId}/permissions`, { 
+    data: { resourceType, resourceId } 
+  });
+
+// Original API endpoints
 
 export const getCompany = (companyId) => 
   api.get(`/companies/${companyId}`);

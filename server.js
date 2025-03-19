@@ -573,7 +573,7 @@ async function createDatabaseIfNotExists() {
     port: process.env.DB_PORT || 5432,
     user: process.env.DB_USER || 'postgres',
     password: process.env.DB_PASSWORD || '1Q.2w.3e.4r.',
-    database: 'postgres' // Conectamos a la base de datos por defecto
+    database: 'heymozo_dev' // Conectamos a la base de datos por defecto
   });
 
   try {
