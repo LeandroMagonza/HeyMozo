@@ -8,7 +8,7 @@ const benefits = [
     description:
       "Tus clientes tendrán una experiencia más fluida y sin distracción",
     image:
-      "https://images.unsplash.com/photo-1552566626-52f8b828add9?q=80&w=800&auto=format",
+      "https://images.unsplash.com/photo-1533777857889-4be7c70b33f7?auto=format&fit=crop&q=80&w=500",
   },
   {
     id: 2,
@@ -16,7 +16,7 @@ const benefits = [
     description:
       "Reduce los traslados innecesarios de tus mozos permitiéndoles ser más eficientes en su trabajo",
     image:
-      "https://images.unsplash.com/photo-1513530176992-0cf39c4cbed4?q=80&w=800&auto=format",
+      "https://img.freepik.com/foto-gratis/hombre-ordenando-vista-lateral-restaurante_23-2149930154.jpg?t=st=1742437253~exp=1742440853~hmac=79831886d58c720d7aec720b7eae082703ddc75561a861d95548aaf1ed0bfa5c&w=826",
   },
   {
     id: 3,

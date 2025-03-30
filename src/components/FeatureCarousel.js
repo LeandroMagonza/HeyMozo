@@ -27,8 +27,7 @@ const features = [
     title: "Dashboard en Tiempo Real",
     description:
       "Control total de mesas y pedidos desde una interfaz intuitiva",
-    image:
-      "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=500",
+    image: "images/computadora.png",
   },
 ];
 
