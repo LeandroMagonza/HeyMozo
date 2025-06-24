@@ -1,4 +1,4 @@
-const { User, Permission, AuthToken } = require('../models');
+const { User, Permission, AuthToken, Table, Branch } = require('../models');
 const emailService = require('./email');
 const { Op } = require('sequelize');
 
@@ -89,7 +89,8 @@ const verifyLoginToken = async (token) => {
     // Format permissions for client
     const formattedPermissions = permissions.map(p => ({
       resourceType: p.resourceType,
-      resourceId: p.resourceId
+      resourceId: p.resourceId,
+      permissionLevel: p.permissionLevel
     }));
 
     return {
@@ -194,9 +195,10 @@ const hasPermission = async (userId, resourceType, resourceId) => {
  * @param {number} userId - User ID
  * @param {string} resourceType - Type of resource
  * @param {number} resourceId - Resource ID
+ * @param {string} permissionLevel - Permission level ('view' or 'edit')
  * @returns {Promise<Object>} - The created permission
  */
-const addPermission = async (userId, resourceType, resourceId) => {
+const addPermission = async (userId, resourceType, resourceId, permissionLevel = 'view') => {
   try {
     // Check if permission already exists
     const existingPermission = await Permission.findOne({
@@ -204,11 +206,16 @@ const addPermission = async (userId, resourceType, resourceId) => {
     });
 
     if (existingPermission) {
+      // Update permission level if different
+      if (existingPermission.permissionLevel !== permissionLevel) {
+        existingPermission.permissionLevel = permissionLevel;
+        await existingPermission.save();
+      }
       return existingPermission;
     }
 
     // Create new permission
-    return await Permission.create({ userId, resourceType, resourceId });
+    return await Permission.create({ userId, resourceType, resourceId, permissionLevel });
   } catch (error) {
     console.error('Error adding permission:', error);
     throw error;

@@ -1,4 +1,6 @@
-require('dotenv').config();
+// Load environment variables based on NODE_ENV
+const environment = process.env.NODE_ENV || 'development';
+require('dotenv').config({ path: `.env.${environment}` });
 const express = require('express');
 const path = require('path');
 const cors = require('cors');
@@ -11,6 +13,10 @@ const { Op } = require('sequelize');
 const { EventTypes } = require('./src/constants');
 const MailingList = require('./src/models/MailingList');
 const { Client } = require('pg');
+
+// Import auth routes
+const authRoutes = require('./src/routes/auth');
+const usersRoutes = require('./src/routes/users');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -28,6 +34,10 @@ Branch.hasMany(Table, { foreignKey: 'branchId' });
 Table.belongsTo(Branch, { foreignKey: 'branchId' });
 Table.hasMany(Event, { foreignKey: 'tableId' });
 Event.belongsTo(Table, { foreignKey: 'tableId' });
+
+// Mount auth routes
+app.use('/api/auth', authRoutes);
+app.use('/api/users', usersRoutes);
 
 // Agregar esto después de la configuración de middleware
 app.use((req, res, next) => {

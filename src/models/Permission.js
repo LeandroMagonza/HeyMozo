@@ -22,8 +22,14 @@ const Permission = sequelize.define('Permission', {
   resourceId: {
     type: DataTypes.INTEGER,
     allowNull: false
+  },
+  permissionLevel: {
+    type: DataTypes.ENUM('view', 'edit'),
+    allowNull: false,
+    defaultValue: 'view'
   }
 }, {
+  paranoid: true, // Enable soft deletes
   indexes: [
     // Create a unique index to prevent duplicate permissions
     {

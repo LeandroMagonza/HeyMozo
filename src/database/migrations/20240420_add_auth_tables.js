@@ -31,6 +31,10 @@ module.exports = {
       updatedAt: {
         type: Sequelize.DATE,
         allowNull: false
+      },
+      deletedAt: {
+        type: Sequelize.DATE,
+        allowNull: true
       }
     });
 
@@ -59,6 +63,11 @@ module.exports = {
         type: Sequelize.INTEGER,
         allowNull: false
       },
+      permissionLevel: {
+        type: Sequelize.ENUM('view', 'edit'),
+        allowNull: false,
+        defaultValue: 'view'
+      },
       createdAt: {
         type: Sequelize.DATE,
         allowNull: false
@@ -66,6 +75,10 @@ module.exports = {
       updatedAt: {
         type: Sequelize.DATE,
         allowNull: false
+      },
+      deletedAt: {
+        type: Sequelize.DATE,
+        allowNull: true
       }
     });
 
@@ -116,6 +129,10 @@ module.exports = {
       updatedAt: {
         type: Sequelize.DATE,
         allowNull: false
+      },
+      deletedAt: {
+        type: Sequelize.DATE,
+        allowNull: true
       }
     });
 

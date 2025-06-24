@@ -4,6 +4,10 @@ const Branch = require('../models/Branch');
 const Table = require('../models/Table');
 const Event = require('../models/Event');
 const MailingList = require('../models/MailingList');
+// Auth models
+const User = require('../models/User');
+const Permission = require('../models/Permission');
+const AuthToken = require('../models/AuthToken');
 
 async function migrate() {
   try {

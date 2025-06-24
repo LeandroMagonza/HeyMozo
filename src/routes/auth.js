@@ -76,7 +76,8 @@ router.get('/me', authMiddleware.authenticate, async (req, res) => {
     // Format permissions
     const formattedPermissions = permissions.map(p => ({
       resourceType: p.resourceType,
-      resourceId: p.resourceId
+      resourceId: p.resourceId,
+      permissionLevel: p.permissionLevel
     }));
     
     return res.json({
@@ -91,6 +92,180 @@ router.get('/me', authMiddleware.authenticate, async (req, res) => {
   } catch (error) {
     console.error('Error fetching user info:', error);
     return res.status(500).json({ error: 'Error fetching user information' });
+  }
+});
+
+/**
+ * Check if user has access to a specific admin route
+ * GET /api/auth/check-access?route=/admin/config
+ * GET /api/auth/check-access?route=/admin/1/config
+ * GET /api/auth/check-access?route=/admin/1/2/config
+ * GET /api/auth/check-access?route=/admin/1/2
+ */
+router.get('/check-access', authMiddleware.authenticate, async (req, res) => {
+  try {
+    const user = req.user;
+    const { route } = req.query;
+    
+    if (!route) {
+      return res.status(400).json({ error: 'Route parameter is required' });
+    }
+
+    // Parse the route to extract components
+    const routeParts = route.split('/').filter(part => part !== '');
+    
+    // Validate route format
+    if (routeParts[0] !== 'admin') {
+      return res.status(400).json({ error: 'Only admin routes are supported' });
+    }
+
+    let hasAccess = false;
+    let accessLevel = null;
+    let reason = '';
+
+    // Route: /admin/config - Only admins
+    if (routeParts.length === 2 && routeParts[1] === 'config') {
+      hasAccess = user.isAdmin;
+      accessLevel = hasAccess ? 'admin' : null;
+      reason = hasAccess ? 'User is admin' : 'Requires admin privileges';
+    }
+    // Route: /admin/:companyId/config - Edit access to company
+    else if (routeParts.length === 3 && routeParts[2] === 'config') {
+      const companyId = parseInt(routeParts[1]);
+      if (isNaN(companyId)) {
+        return res.status(400).json({ error: 'Invalid company ID' });
+      }
+      
+      if (user.isAdmin) {
+        hasAccess = true;
+        accessLevel = 'admin';
+        reason = 'User is admin';
+      } else {
+        const hasEditAccess = await authService.hasPermission(user.id, 'company', companyId);
+        const permission = await Permission.findOne({
+          where: { 
+            userId: user.id, 
+            resourceType: 'company', 
+            resourceId: companyId 
+          }
+        });
+        
+        hasAccess = hasEditAccess && permission?.permissionLevel === 'edit';
+        accessLevel = hasAccess ? 'edit' : null;
+        reason = hasAccess ? 'User has edit access to company' : 'Requires edit access to company';
+      }
+    }
+    // Route: /admin/:companyId/:branchId/config - Edit access to company or branch
+    else if (routeParts.length === 4 && routeParts[3] === 'config') {
+      const companyId = parseInt(routeParts[1]);
+      const branchId = parseInt(routeParts[2]);
+      
+      if (isNaN(companyId) || isNaN(branchId)) {
+        return res.status(400).json({ error: 'Invalid company ID or branch ID' });
+      }
+      
+      if (user.isAdmin) {
+        hasAccess = true;
+        accessLevel = 'admin';
+        reason = 'User is admin';
+      } else {
+        // Check company edit access first
+        const companyPermission = await Permission.findOne({
+          where: { 
+            userId: user.id, 
+            resourceType: 'company', 
+            resourceId: companyId 
+          }
+        });
+        
+        if (companyPermission?.permissionLevel === 'edit') {
+          hasAccess = true;
+          accessLevel = 'edit';
+          reason = 'User has edit access to company';
+        } else {
+          // Check branch edit access
+          const branchPermission = await Permission.findOne({
+            where: { 
+              userId: user.id, 
+              resourceType: 'branch', 
+              resourceId: branchId 
+            }
+          });
+          
+          hasAccess = branchPermission?.permissionLevel === 'edit';
+          accessLevel = hasAccess ? 'edit' : null;
+          reason = hasAccess ? 'User has edit access to branch' : 'Requires edit access to company or branch';
+        }
+      }
+    }
+    // Route: /admin/:companyId/:branchId - Any access to company or branch
+    else if (routeParts.length === 3) {
+      const companyId = parseInt(routeParts[1]);
+      const branchId = parseInt(routeParts[2]);
+      
+      if (isNaN(companyId) || isNaN(branchId)) {
+        return res.status(400).json({ error: 'Invalid company ID or branch ID' });
+      }
+      
+      if (user.isAdmin) {
+        hasAccess = true;
+        accessLevel = 'admin';
+        reason = 'User is admin';
+      } else {
+        // Check any access to company
+        const companyPermission = await Permission.findOne({
+          where: { 
+            userId: user.id, 
+            resourceType: 'company', 
+            resourceId: companyId 
+          }
+        });
+        
+        if (companyPermission) {
+          hasAccess = true;
+          accessLevel = companyPermission.permissionLevel;
+          reason = `User has ${companyPermission.permissionLevel} access to company`;
+        } else {
+          // Check any access to branch
+          const branchPermission = await Permission.findOne({
+            where: { 
+              userId: user.id, 
+              resourceType: 'branch', 
+              resourceId: branchId 
+            }
+          });
+          
+          if (branchPermission) {
+            hasAccess = true;
+            accessLevel = branchPermission.permissionLevel;
+            reason = `User has ${branchPermission.permissionLevel} access to branch`;
+          } else {
+            hasAccess = false;
+            accessLevel = null;
+            reason = 'Requires access to company or branch';
+          }
+        }
+      }
+    }
+    else {
+      return res.status(400).json({ error: 'Unsupported route format' });
+    }
+
+    return res.json({
+      route,
+      hasAccess,
+      accessLevel,
+      reason,
+      user: {
+        id: user.id,
+        email: user.email,
+        isAdmin: user.isAdmin
+      }
+    });
+
+  } catch (error) {
+    console.error('Error checking access:', error);
+    return res.status(500).json({ error: 'Error checking access permissions' });
   }
 });
 

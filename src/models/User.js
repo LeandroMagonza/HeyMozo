@@ -27,6 +27,8 @@ const User = sequelize.define('User', {
     type: DataTypes.DATE,
     allowNull: true
   }
+}, {
+  paranoid: true // Enable soft deletes
 });
 
 module.exports = User; 

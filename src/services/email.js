@@ -47,6 +47,16 @@ if (!isDevelopment) {
 const sendLoginLink = async (email, token, loginUrl) => {
   const fullLoginUrl = `${loginUrl}?token=${token}`;
   
+  // ALWAYS show the token in console for testing
+  console.log('='.repeat(60));
+  console.log('🔐 AUTH TOKEN GENERATED FOR TESTING');
+  console.log('='.repeat(60));
+  console.log('📧 Email:', email);
+  console.log('🔑 Token:', token);
+  console.log('🔗 Full URL:', fullLoginUrl);
+  console.log('⏰ Valid for: 15 minutes');
+  console.log('='.repeat(60));
+  
   // Email content
   const mailOptions = {
     from: process.env.EMAIL_FROM || 'no-reply@heymozo.com',
@@ -82,15 +92,16 @@ const sendLoginLink = async (email, token, loginUrl) => {
     `
   };
 
-  // In development, log to console instead of sending
-  if (isDevelopment) {
-    console.log('==== LOGIN LINK ====');
-    console.log(fullLoginUrl);
-    return transporter.sendMail(mailOptions);
-  }
-
-  // Send email
-  return transporter.sendMail(mailOptions);
+  // Always log to console for testing, don't send actual emails for now
+  console.log('📧 EMAIL CONTENT (not sent):');
+  console.log('To:', mailOptions.to);
+  console.log('Subject:', mailOptions.subject);
+  
+  // Return a promise that resolves immediately
+  return Promise.resolve({
+    messageId: 'test-message-id',
+    response: 'Token logged to console for testing'
+  });
 };
 
 module.exports = {

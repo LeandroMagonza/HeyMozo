@@ -37,6 +37,7 @@ const AuthToken = sequelize.define('AuthToken', {
     defaultValue: false
   }
 }, {
+  paranoid: true, // Enable soft deletes
   indexes: [
     {
       fields: ['token']

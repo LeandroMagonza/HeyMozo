@@ -1,0 +1,314 @@
+{
+	"info": {
+		"_postman_id": "heymozo-auth-testing",
+		"name": "HeyMozo Auth Testing",
+		"description": "Colección para testear el sistema de autenticación de HeyMozo",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "1. Request Login Token",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"email\": \"test@example.com\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/auth/login-request",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"auth",
+						"login-request"
+					]
+				},
+				"description": "Solicita un token de login por email. El token aparecerá en la consola del servidor."
+			},
+			"response": []
+		},
+		{
+			"name": "2. Verify Token",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"token\": \"PASTE_TOKEN_FROM_CONSOLE_HERE\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/auth/verify-token",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"auth",
+						"verify-token"
+					]
+				},
+				"description": "Verifica el token recibido y devuelve JWT + datos del usuario. Si el usuario no existe, lo crea automáticamente."
+			},
+			"response": []
+		},
+		{
+			"name": "3. Get Current User Info",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{jwt_token}}"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/api/auth/me",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"auth",
+						"me"
+					]
+				},
+				"description": "Obtiene información del usuario autenticado usando el JWT token."
+			},
+			"response": []
+		},
+		{
+			"name": "4. Add User Permission",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer {{jwt_token}}"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"resourceType\": \"company\",\n  \"resourceId\": 1,\n  \"permissionLevel\": \"edit\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/users/{{user_id}}/permissions",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"users",
+						"{{user_id}}",
+						"permissions"
+					]
+				},
+				"description": "Agrega un permiso a un usuario (requiere estar autenticado)"
+			},
+			"response": []
+		},
+		{
+			"name": "5. Get User Permissions",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{jwt_token}}"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/api/users/{{user_id}}/permissions",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"users",
+						"{{user_id}}",
+						"permissions"
+					]
+				},
+				"description": "Obtiene todos los permisos de un usuario"
+			},
+			"response": []
+		},
+		{
+			"name": "6. Check Access - Admin Config (Admin Only)",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{jwt_token}}"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/api/auth/check-access?route=/admin/config",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"auth",
+						"check-access"
+					],
+					"query": [
+						{
+							"key": "route",
+							"value": "/admin/config"
+						}
+					]
+				},
+				"description": "Verifica acceso a /admin/config (solo admins)"
+			},
+			"response": []
+		},
+		{
+			"name": "7. Check Access - Company Config (Edit Required)",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{jwt_token}}"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/api/auth/check-access?route=/admin/1/config",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"auth",
+						"check-access"
+					],
+					"query": [
+						{
+							"key": "route",
+							"value": "/admin/1/config"
+						}
+					]
+				},
+				"description": "Verifica acceso a /admin/:companyId/config (requiere edit en company)"
+			},
+			"response": []
+		},
+		{
+			"name": "8. Check Access - Branch Config (Edit Required)",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{jwt_token}}"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/api/auth/check-access?route=/admin/1/2/config",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"auth",
+						"check-access"
+					],
+					"query": [
+						{
+							"key": "route",
+							"value": "/admin/1/2/config"
+						}
+					]
+				},
+				"description": "Verifica acceso a /admin/:companyId/:branchId/config (requiere edit en company o branch)"
+			},
+			"response": []
+		},
+		{
+			"name": "9. Check Access - Branch Operational (Any Access)",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{jwt_token}}"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/api/auth/check-access?route=/admin/1/2",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"auth",
+						"check-access"
+					],
+					"query": [
+						{
+							"key": "route",
+							"value": "/admin/1/2"
+						}
+					]
+				},
+				"description": "Verifica acceso a /admin/:companyId/:branchId (requiere cualquier acceso a company o branch)"
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:3001",
+			"type": "string"
+		},
+		{
+			"key": "jwt_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "user_id",
+			"value": "",
+			"type": "string"
+		}
+	]
+} 
