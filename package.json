@@ -46,7 +46,8 @@
     "server": "node server.js",
     "seed": "node src/database/seeder.js",
     "migrate": "node src/database/migrate.js",
-    "render-start": "node server.js"
+    "render-start": "npm run migrate && node server.js",
+    "render-start-safe": "node server.js"
   },
   "engines": {
     "node": "18.x",

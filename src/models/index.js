@@ -5,6 +5,7 @@ const Company = require('./Company');
 const Branch = require('./Branch');
 const Table = require('./Table');
 const Event = require('./Event');
+const MailingList = require('./MailingList');
 
 // User associations
 User.hasMany(Permission, { foreignKey: 'userId' });
@@ -31,5 +32,6 @@ module.exports = {
   Company,
   Branch,
   Table,
-  Event
+  Event,
+  MailingList
 }; 

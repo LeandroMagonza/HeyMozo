@@ -85,6 +85,7 @@ const getLoginBaseUrl = (req) => {
  * POST /api/auth/login-request
  */
 router.post('/login-request', async (req, res) => {
+  console.log('🚀 /login-request endpoint reached!');
   try {
     console.log('=== LOGIN REQUEST DEBUG ===');
     console.log('Request body:', req.body);

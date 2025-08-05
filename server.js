@@ -30,10 +30,25 @@ console.log('Starting server setup');
 app.use(express.json());
 app.use(cors());
 
+// Add request logging middleware
+app.use((req, res, next) => {
+  console.log(`🌐 ${req.method} ${req.url} - ${new Date().toISOString()}`);
+  console.log(`🔍 Headers:`, req.headers);
+  if (req.body && Object.keys(req.body).length > 0) {
+    console.log(`📦 Body:`, req.body);
+  }
+  next();
+});
+
 // Relations are defined in src/models/index.js
+console.log('🔗 Loading model relationships...');
+require('./src/models/index'); // This ensures all model relationships are loaded
+console.log('✅ Model relationships loaded');
 
 // Mount auth routes
+console.log('🔧 Mounting auth routes at /api/auth');
 app.use('/api/auth', authRoutes);
+console.log('🔧 Mounting users routes at /api/users');
 app.use('/api/users', usersRoutes);
 
 // PUBLIC ROUTES FOR USERSCREEN (before authentication middleware)
@@ -158,13 +173,10 @@ app.post('/api/tables/:id/events', async (req, res) => {
 });
 
 // Mount API routes with authentication middleware
+console.log('🔧 Mounting protected API routes at /api with authentication middleware');
 app.use('/api', authMiddleware.authenticate, apiRoutes);
 
-// Agregar esto después de la configuración de middleware
-app.use((req, res, next) => {
-  console.log(`${req.method} ${req.url}`);
-  next();
-});
+// Request logging is now handled above
 
 // Agregar esta función de utilidad después de las importaciones
 const sortEventsByCreatedAt = (events) => {
@@ -755,9 +767,12 @@ async function createDatabaseIfNotExists() {
 // Modificar la función startServer
 async function startServer() {
   try {
-    // Solo verificar la conexión
+    // Verificar la conexión
     await sequelize.authenticate();
     console.log('Database connection has been established successfully.');
+
+    // Database tables should be created by migration script
+    console.log('💡 Database tables should be created by running: npm run migrate');
 
     // Iniciamos el servidor
     app.listen(PORT, () => {

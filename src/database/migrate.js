@@ -1,25 +1,42 @@
 const sequelize = require('../config/database');
-const Company = require('../models/Company');
-const Branch = require('../models/Branch');
-const Table = require('../models/Table');
-const Event = require('../models/Event');
-const MailingList = require('../models/MailingList');
-// Auth models
-const User = require('../models/User');
-const Permission = require('../models/Permission');
-const AuthToken = require('../models/AuthToken');
+
+// Load all models and their relationships
+console.log('📦 Loading models and relationships...');
+require('../models/index');
+console.log('✅ Models and relationships loaded');
 
 async function migrate() {
   try {
-    // Forzar recreación de tablas en desarrollo
-    const force = process.env.NODE_ENV !== 'production';
+    console.log('🔄 Starting database migration...');
+    console.log('Environment:', process.env.NODE_ENV);
+    
+    // En producción, usar alter: true para no perder datos
+    // En desarrollo, usar force: true para recrear tablas
+    const isProduction = process.env.NODE_ENV === 'production';
+    const syncOptions = isProduction 
+      ? { alter: true }  // Actualiza estructura sin perder datos
+      : { force: true }; // Recrea tablas completamente
+    
+    console.log('Sync options:', syncOptions);
+    
+    // Test database connection first
+    await sequelize.authenticate();
+    console.log('✅ Database connection established');
     
     // Sincronizar todos los modelos
-    await sequelize.sync({ force });
+    await sequelize.sync(syncOptions);
     
-    console.log('Database tables created successfully');
+    console.log('✅ Database tables synchronized successfully');
+    
+    if (isProduction) {
+      console.log('📊 Production migration completed - existing data preserved');
+    } else {
+      console.log('🔄 Development migration completed - tables recreated');
+    }
+    
   } catch (error) {
-    console.error('Error creating database tables:', error);
+    console.error('❌ Error during database migration:', error);
+    console.error('Error details:', error.message);
     process.exit(1);
   }
 }
