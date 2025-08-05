@@ -234,6 +234,49 @@ router.get('/check-access', authMiddleware.authenticate, async (req, res) => {
         }
       }
     }
+    // Route: /admin/:companyId/:branchId/urls - Edit access to company or branch (same as config)
+    else if (routeParts.length === 4 && routeParts[3] === 'urls') {
+      const companyId = parseInt(routeParts[1]);
+      const branchId = parseInt(routeParts[2]);
+      
+      if (isNaN(companyId) || isNaN(branchId)) {
+        return res.status(400).json({ error: 'Invalid company ID or branch ID' });
+      }
+      
+      if (user.isAdmin) {
+        hasAccess = true;
+        accessLevel = 'admin';
+        reason = 'User is admin';
+      } else {
+        // Check company edit access first
+        const companyPermission = await Permission.findOne({
+          where: { 
+            userId: user.id, 
+            resourceType: 'company', 
+            resourceId: companyId 
+          }
+        });
+        
+        if (companyPermission?.permissionLevel === 'edit') {
+          hasAccess = true;
+          accessLevel = 'edit';
+          reason = 'User has edit access to company';
+        } else {
+          // Check branch edit access
+          const branchPermission = await Permission.findOne({
+            where: { 
+              userId: user.id, 
+              resourceType: 'branch', 
+              resourceId: branchId 
+            }
+          });
+          
+          hasAccess = branchPermission?.permissionLevel === 'edit';
+          accessLevel = hasAccess ? 'edit' : null;
+          reason = hasAccess ? 'User has edit access to branch' : 'Requires edit access to company or branch';
+        }
+      }
+    }
     // Route: /admin/:companyId/:branchId - Any access to company or branch
     else if (routeParts.length === 3) {
       const companyId = parseInt(routeParts[1]);

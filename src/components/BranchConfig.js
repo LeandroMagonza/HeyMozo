@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { getBranch, getTables, updateBranch, updateTable, createTable, deleteTable, getCompany } from '../services/api';
 import './BranchConfig.css';
-import { FaEye, FaQrcode, FaChair, FaSave, FaTrash } from 'react-icons/fa';
+import { FaEye, FaQrcode, FaChair, FaSave, FaTrash, FaPlus } from 'react-icons/fa';
 import '../styles/common.css';
 import AdminHeader from './AdminHeader';
 
@@ -51,6 +51,11 @@ const BranchConfig = () => {
   };
 
   const handleSaveBranch = async () => {
+    const isConfirmed = window.confirm(
+      "¿Estás seguro de que deseas guardar los cambios en esta sucursal?"
+    );
+    if (!isConfirmed) return;
+
     try {
       await updateBranch(branchId, editedBranch);
       setBranch(editedBranch);
@@ -81,6 +86,11 @@ const BranchConfig = () => {
     }
   };
   const handleAddTable = async () => {
+    const isConfirmed = window.confirm(
+      "¿Estás seguro de que deseas agregar una nueva mesa?"
+    );
+    if (!isConfirmed) return;
+
     const newTableNumber = tables.length + 1;
     const newTable = {
       tableName: `Mesa ${newTableNumber}`,
@@ -107,13 +117,15 @@ const BranchConfig = () => {
       console.log('Branch updated with new table:', updatedBranch);
     } catch (error) {
       console.error('Error adding new table:', error);
+      alert('Error al agregar la mesa. Por favor, intenta nuevamente.');
     }
   };
 
   const handleDeleteTable = async (id) => {
     try {
       // Primero confirmar con el usuario
-      if (!window.confirm('¿Está seguro que desea eliminar esta mesa?')) {
+      const tableName = tables.find(t => t.id === id)?.tableName || 'esta mesa';
+      if (!window.confirm(`¿Estás seguro de que deseas eliminar "${tableName}"? Esta acción no se puede deshacer.`)) {
         return;
       }
 
@@ -235,7 +247,7 @@ const BranchConfig = () => {
           </div>
 
           <div className="branch-actions-row">
-            <button className="app-button" onClick={handleSaveBranch}>
+            <button className="app-button success" onClick={handleSaveBranch}>
               <FaSave /> Guardar Cambios
             </button>
           </div>
@@ -246,11 +258,11 @@ const BranchConfig = () => {
             <div className="section-header">
               <h3>Mesas</h3>
               <div className="section-actions">
-                <button className="app-button add-table-btn" onClick={handleAddTable}>
-                  <FaChair /> Agregar Mesa
+                <button className="app-button success add-table-btn" onClick={handleAddTable}>
+                <FaPlus /> <FaChair /> Agregar Mesa
                 </button>
-                <button className="app-button" onClick={() => navigate(`/admin/${companyId}/${branchId}/urls`)}>
-                  <FaQrcode /> Descargar URLs
+                <button className="app-button secondary" onClick={() => navigate(`/admin/${companyId}/${branchId}/urls`)}>
+                  <FaQrcode /> Descargar QRs
                 </button>
               </div>
             </div>
@@ -293,7 +305,7 @@ const BranchConfig = () => {
                                 <FaEye /> Ver
                               </button>
                               <button 
-                                className="app-button small delete-btn" 
+                                className="app-button small danger" 
                                 onClick={() => handleDeleteTable(table.id)}
                               >
                                 <FaTrash /> Eliminar

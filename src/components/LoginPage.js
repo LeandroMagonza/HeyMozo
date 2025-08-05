@@ -111,29 +111,6 @@ const LoginPage = () => {
     setAutoRedirect(!autoRedirect);
   };
 
-  const formatPermissionLevel = (level) => {
-    return level === 'view' ? 'Solo Lectura' : 'Lectura y Escritura';
-  };
-
-  const formatResourceType = (type) => {
-    switch(type) {
-      case 'company': return 'Empresa';
-      case 'branch': return 'Sucursal';
-      case 'table': return 'Mesa';
-      default: return type;
-    }
-  };
-
-  const groupPermissionsByType = (permissions) => {
-    const grouped = {};
-    permissions.forEach(perm => {
-      if (!grouped[perm.resourceType]) {
-        grouped[perm.resourceType] = [];
-      }
-      grouped[perm.resourceType].push(perm);
-    });
-    return grouped;
-  };
 
   // Clean up timer on unmount
   useEffect(() => {
@@ -171,39 +148,6 @@ const LoginPage = () => {
                 <div className="user-info">
                   <p><strong>Email:</strong> {userInfo.email}</p>
                   {userInfo.isAdmin && <p className="admin-badge">👑 Administrador</p>}
-                  
-                  {/* Display permissions */}
-                  <div className="permissions-section">
-                    <h3>Permisos del Usuario</h3>
-                    
-                    {userInfo.isAdmin ? (
-                      <div className="admin-permissions">
-                        <p>Como administrador, tienes acceso completo a todas las funcionalidades del sistema.</p>
-                      </div>
-                    ) : permissions.length > 0 ? (
-                      <div className="user-permissions">
-                        {Object.entries(groupPermissionsByType(permissions)).map(([resourceType, perms]) => (
-                          <div key={resourceType} className="permission-group">
-                            <h4>{formatResourceType(resourceType)}s</h4>
-                            <ul>
-                              {perms.map((perm, index) => (
-                                <li key={index} className="permission-item">
-                                  <span className="resource-id">ID: {perm.resourceId}</span>
-                                  <span className={`permission-level ${perm.permissionLevel}`}>
-                                    {formatPermissionLevel(perm.permissionLevel)}
-                                  </span>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="no-permissions">
-                        <p>No tienes permisos asignados actualmente.</p>
-                      </div>
-                    )}
-                  </div>
                 </div>
               )}
               

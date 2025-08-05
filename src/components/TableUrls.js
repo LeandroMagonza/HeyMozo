@@ -4,6 +4,7 @@ import { getBranch, getTables } from '../services/api';
 import QRGeneratorModal from './QRGeneratorModal';
 import './TableUrls.css';
 import AdminHeader from './AdminHeader';
+import { FaQrcode } from 'react-icons/fa';
 
 const TableUrls = () => {
   const { companyId, branchId } = useParams();
@@ -45,9 +46,9 @@ const TableUrls = () => {
       
       <div className="actions">
         <button 
-          className="generate-qr-button"
+          className="generate-qr-button app-button"
           onClick={() => setShowModal(true)}
-        >
+        ><FaQrcode />
           Generar códigos QR
         </button>
       </div>

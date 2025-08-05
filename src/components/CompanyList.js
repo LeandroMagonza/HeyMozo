@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { getCompanies, deleteCompany, createCompany } from '../services/api';
 import './CompanyList.css';
 import AdminHeader from './AdminHeader';
+import { FaPlus, FaCog, FaTrash, FaBuilding } from 'react-icons/fa';
 
 const CompanyList = () => {
   const [companies, setCompanies] = useState([]);
@@ -24,8 +25,10 @@ const CompanyList = () => {
     }
   };
 
-  const handleDeleteCompany = async (id) => {
-    const isConfirmed = window.confirm("¿Está seguro de que desea eliminar esta compañía?");
+  const handleDeleteCompany = async (id, companyName) => {
+    const isConfirmed = window.confirm(
+      `¿Estás seguro de que deseas eliminar la compañía "${companyName}"? Esta acción no se puede deshacer.`
+    );
     if (!isConfirmed) return;
 
     try {
@@ -33,10 +36,16 @@ const CompanyList = () => {
       fetchCompanies();
     } catch (error) {
       console.error('Error deleting company:', error);
+      alert('Error al eliminar la compañía. Por favor, intenta nuevamente.');
     }
   };
 
   const handleAddCompany = () => {
+    const isConfirmed = window.confirm(
+      "¿Estás seguro de que deseas crear una nueva compañía?"
+    );
+    if (!isConfirmed) return;
+    
     navigate('/admin/company/create');
   };
 
@@ -50,7 +59,9 @@ const CompanyList = () => {
         title="Compañías"
         showBackButton={false}
       />
-      <button className="app-button add-company-btn" onClick={handleAddCompany}>Agregar Compañía</button>
+      <button className="app-button success add-company-btn" onClick={handleAddCompany}>
+        <FaPlus /> <FaBuilding /> Agregar Compañía
+      </button>
       
       {companies.length === 0 ? (
         <div className="no-companies-message">
@@ -62,19 +73,22 @@ const CompanyList = () => {
           <tbody>
             {companies.map((company, index) => (
               <tr key={company.id} className="company-row">
-                <td>{index + 1}. {company.name}</td>
+                <td>
+                  <FaBuilding style={{ marginRight: '8px', color: '#666' }} />
+                  {index + 1}. {company.name}
+                </td>
                 <td className="company-actions">
                   <button 
-                    className="app-button"
+                    className="app-button warning"
                     onClick={() => navigate(`/admin/${company.id}/config`)}
                   >
-                    Configurar Compañía
+                    <FaCog /> Configurar
                   </button>
                   <button 
-                    className="app-button"
-                    onClick={() => handleDeleteCompany(company.id)}
+                    className="app-button danger"
+                    onClick={() => handleDeleteCompany(company.id, company.name)}
                   >
-                    Eliminar
+                    <FaTrash /> Eliminar
                   </button>
                 </td>
               </tr>

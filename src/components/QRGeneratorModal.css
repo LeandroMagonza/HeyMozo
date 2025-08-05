@@ -313,4 +313,18 @@
 /* Ensure images don't expand containers */
 img {
   max-width: 100%;
+}
+
+/* Estilo para el texto "(Opcional)" */
+.optional-text {
+  color: #666;
+  font-weight: normal;
+  font-size: 0.9em;
+  font-style: italic;
+}
+
+/* Asegurar que el botón de descarga tenga texto blanco */
+.download-link,
+.download-link span {
+  color: white !important;
 } 

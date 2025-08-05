@@ -1,30 +1,32 @@
 const { Sequelize } = require('sequelize');
-const config = require('./config');
 
 const environment = process.env.NODE_ENV || 'development';
-const dbConfig = config[environment];
 
 let sequelize;
 
 if (environment === 'production') {
+  // Production: use DATABASE_URL with SSL
   sequelize = new Sequelize(process.env.DATABASE_URL, {
     dialect: 'postgres',
-    dialectOptions: dbConfig.dialectOptions,
+    dialectOptions: {
+      ssl: {
+        require: true,
+        rejectUnauthorized: false
+      }
+    },
     logging: false
   });
 } else {
-  sequelize = new Sequelize(
-    dbConfig.database,
-    dbConfig.username,
-    dbConfig.password,
-    {
-      host: dbConfig.host,
-      port: dbConfig.port,
-      dialect: dbConfig.dialect,
-      dialectOptions: dbConfig.dialectOptions,
-      logging: false
-    }
-  );
+  // Development: use individual connection parameters or fallback DATABASE_URL
+  const dbUrl = process.env.DATABASE_URL || 'postgres://postgres:1Q.2w.3e.4r.@localhost:5432/heymozo';
+  
+  sequelize = new Sequelize(dbUrl, {
+    dialect: 'postgres',
+    dialectOptions: {
+      ssl: false
+    },
+    logging: false
+  });
 }
 
-module.exports = sequelize; 
+module.exports = sequelize;

@@ -52,13 +52,11 @@ const QRGeneratorModal = ({ show, onClose, tables, companyId, branchId, branch }
   };
 
   const handleGeneratePDF = () => {
-    if (logo && logo !== '' && background && background !== '') {
-      setIsReady(true);
-      document.querySelector('.download-link')?.click();
-    }
+    setIsReady(true);
+    document.querySelector('.download-link')?.click();
   };
 
-  const isGenerateButtonDisabled = !logo || logo === '' || !background || background === '';
+  const isGenerateButtonDisabled = false; // Logo y fondo son opcionales
 
   if (!show) return null;
 
@@ -75,7 +73,7 @@ const QRGeneratorModal = ({ show, onClose, tables, companyId, branchId, branch }
         <div className="modal-content">
           <div className="image-upload-section">
             <div className="upload-container">
-              <label>Logo del Restaurante</label>
+              <label>Logo del Restaurante <span className="optional-text">(Opcional)</span></label>
               <div className="upload-area">
                 {logoPreview ? (
                   <img src={logoPreview} alt="Logo preview" />
@@ -94,7 +92,7 @@ const QRGeneratorModal = ({ show, onClose, tables, companyId, branchId, branch }
             </div>
 
             <div className="upload-container">
-              <label>Fondo para QR</label>
+              <label>Fondo para QR <span className="optional-text">(Opcional)</span></label>
               <div className="upload-area">
                 {backgroundPreview ? (
                   <img src={backgroundPreview} alt="Background preview" />

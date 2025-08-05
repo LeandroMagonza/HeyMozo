@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getCompany, updateCompany, createBranch, deleteBranch, getBranches } from '../services/api';
 import './CompanyConfig.css';
-import { FaEye, FaSave, FaStore, FaCog, FaTrash } from 'react-icons/fa';
+import { FaEye, FaSave, FaStore, FaCog, FaTrash, FaPlus, FaDownload } from 'react-icons/fa';
 import '../styles/common.css';
 import AdminHeader from './AdminHeader';
 
@@ -13,26 +13,38 @@ const CompanyConfig = () => {
   const [branches, setBranches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editedCompany, setEditedCompany] = useState({
-    name: '',
-    website: '',
-    menu: '',
-    branchIds: []
+    name: "",
+    website: "",
+    menu: "",
+    branchIds: [],
   });
+  const [editedBranches, setEditedBranches] = useState({});
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const [companyResponse, branchesResponse] = await Promise.all([
           getCompany(companyId),
-          getBranches(companyId)
+          getBranches(companyId),
         ]);
 
         setCompany(companyResponse.data);
         setEditedCompany(companyResponse.data);
         setBranches(branchesResponse.data || []);
+
+        // Inicializar edited branches
+        const initialEditedBranches = {};
+        branchesResponse.data?.forEach((branch) => {
+          initialEditedBranches[branch.id] = {
+            name: branch.name,
+            description: branch.description || "Descripción por defecto",
+          };
+        });
+        setEditedBranches(initialEditedBranches);
+
         setLoading(false);
       } catch (error) {
-        console.error('Error fetching data:', error);
+        console.error("Error fetching data:", error);
         setLoading(false);
       }
     };
@@ -42,60 +54,86 @@ const CompanyConfig = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setEditedCompany(prev => ({ ...prev, [name]: value }));
+    setEditedCompany((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSave = async () => {
-    try {
-      await updateCompany(companyId, editedCompany);
-      setCompany(editedCompany);
-      alert('Company updated successfully');
-    } catch (error) {
-      console.error('Error updating company:', error);
-      alert('Failed to update company');
-    }
-  };
-
-  const handleAddBranch = async () => {
-    const newBranch = {
-      name: `New Branch ${branches.length + 1}`,
-      companyId: parseInt(companyId),
-      website: '',
-      menu: '',
-      tableIds: []
-    };
-
-    try {
-      const response = await createBranch(newBranch);
-      const updatedCompany = {
-        ...company,
-        branchIds: [...company.branchIds, response.data.id]
-      };
-      setCompany(updatedCompany);
-      setEditedCompany(updatedCompany);
-      setBranches([...branches, response.data]);
-      await updateCompany(companyId, updatedCompany);
-    } catch (error) {
-      console.error('Error adding new branch:', error);
-    }
+  const handleBranchInputChange = (branchId, field, value) => {
+    setEditedBranches((prev) => ({
+      ...prev,
+      [branchId]: {
+        ...prev[branchId],
+        [field]: value,
+      },
+    }));
   };
 
   const handleDeleteBranch = async (branchId) => {
-    const isConfirmed = window.confirm("Seguro que desea eliminar esta sucursal?");
+    // Mejor UX para móvil con confirmación más clara
+    const branchName =
+      branches.find((b) => b.id === branchId)?.name || "esta sucursal";
+    const isConfirmed = window.confirm(
+      `¿Estás seguro de que deseas eliminar "${branchName}"? Esta acción no se puede deshacer.`
+    );
     if (!isConfirmed) return;
 
     try {
       await deleteBranch(branchId);
       const updatedCompany = {
         ...company,
-        branchIds: company.branchIds.filter(id => id !== branchId)
+        branchIds: company.branchIds.filter((id) => id !== branchId),
       };
       setCompany(updatedCompany);
       setEditedCompany(updatedCompany);
-      setBranches(branches.filter(branch => branch.id !== branchId));
+      setBranches(branches.filter((branch) => branch.id !== branchId));
       await updateCompany(companyId, updatedCompany);
     } catch (error) {
-      console.error('Error deleting branch:', error);
+      console.error("Error deleting branch:", error);
+      alert("Error al eliminar la sucursal. Por favor, intenta nuevamente.");
+    }
+  };
+
+  const handleSave = async () => {
+    const isConfirmed = window.confirm(
+      "¿Estás seguro de que deseas guardar los cambios en esta compañía?"
+    );
+    if (!isConfirmed) return;
+
+    try {
+      await updateCompany(companyId, editedCompany);
+      setCompany(editedCompany);
+      alert("Compañía actualizada exitosamente");
+    } catch (error) {
+      console.error("Error updating company:", error);
+      alert("Error al actualizar la compañía. Por favor, intenta nuevamente.");
+    }
+  };
+
+  const handleAddBranch = async () => {
+    const isConfirmed = window.confirm(
+      "¿Estás seguro de que deseas agregar una nueva sucursal?"
+    );
+    if (!isConfirmed) return;
+
+    const newBranch = {
+      name: `New Branch ${branches.length + 1}`,
+      companyId: parseInt(companyId),
+      website: "",
+      menu: "",
+      tableIds: [],
+    };
+
+    try {
+      const response = await createBranch(newBranch);
+      const updatedCompany = {
+        ...company,
+        branchIds: [...company.branchIds, response.data.id],
+      };
+      setCompany(updatedCompany);
+      setEditedCompany(updatedCompany);
+      setBranches([...branches, response.data]);
+      await updateCompany(companyId, updatedCompany);
+    } catch (error) {
+      console.error("Error adding new branch:", error);
     }
   };
 
@@ -143,7 +181,7 @@ const CompanyConfig = () => {
                 placeholder="Ingrese URL del menú"
               />
             </div>
-            <button className="app-button" onClick={handleSave}>
+            <button className="app-button success" onClick={handleSave}>
               <FaSave /> Guardar Cambios
             </button>
           </div>
@@ -151,39 +189,90 @@ const CompanyConfig = () => {
           <div className="branches-section">
             <div className="branches-header">
               <h3>Sucursales</h3>
-              <button className="app-button" onClick={handleAddBranch}>
-                <FaStore /> Agregar Nueva Sucursal
-              </button>
+              <div className="header-buttons">
+                <button className="app-button success" onClick={handleAddBranch}>
+                  <FaPlus /> <FaStore /> Agregar Sucursal
+                </button>
+              </div>
             </div>
-            <table className="branches-table">
-              <tbody>
-                {branches.map((branch, index) => (
-                  <tr key={branch.id} className="branch-row">
-                    <td>{index + 1}. {branch.name}</td>
-                    <td className="branch-actions">
-                      <button 
-                        className="app-button small"
-                        onClick={() => navigate(`/admin/${companyId}/${branch.id}`)}
-                      >
-                        <FaEye /> Ver
-                      </button>
-                      <button 
-                        className="app-button small"
-                        onClick={() => navigate(`/admin/${companyId}/${branch.id}/config`)}
-                      >
-                        <FaCog /> Configurar
-                      </button>
-                      <button 
-                        className="app-button small delete-btn"
-                        onClick={() => handleDeleteBranch(branch.id)}
-                      >
-                        <FaTrash /> Eliminar
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+
+            <div className="branches-grid">
+              {branches.map((branch, index) => (
+                <div key={branch.id} className="branch-card">
+                  <div className="branch-card-header">
+                    <span className="branch-number">{index + 1}</span>
+                    <input
+                      type="text"
+                      className="branch-name-input"
+                      value={editedBranches[branch.id]?.name || branch.name}
+                      onChange={(e) =>
+                        handleBranchInputChange(
+                          branch.id,
+                          "name",
+                          e.target.value
+                        )
+                      }
+                      placeholder="Nombre de la sucursal"
+                    />
+                  </div>
+
+                  <div className="branch-card-body">
+                    <input
+                      type="text"
+                      className="branch-description-input"
+                      value={
+                        editedBranches[branch.id]?.description ||
+                        "Descripción por defecto"
+                      }
+                      onChange={(e) =>
+                        handleBranchInputChange(
+                          branch.id,
+                          "description",
+                          e.target.value
+                        )
+                      }
+                      placeholder="Descripción de la sucursal"
+                    />
+                  </div>
+
+                  <div className="branch-card-actions">
+                    <button
+                      className="app-button small"
+                      onClick={() =>
+                        navigate(`/admin/${companyId}/${branch.id}`)
+                      }
+                      title="Ver sucursal"
+                    >
+                      <FaEye /> Ver
+                    </button>
+                    <button
+                      className="app-button small warning"
+                      onClick={() =>
+                        navigate(`/admin/${companyId}/${branch.id}/config`)
+                      }
+                      title="Configurar sucursal"
+                    >
+                      <FaCog /> Configurar
+                    </button>
+                    <button
+                      className="app-button small danger"
+                      onClick={() => handleDeleteBranch(branch.id)}
+                      title="Eliminar sucursal"
+                    >
+                      <FaTrash /> Eliminar
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {branches.length === 0 && (
+              <div
+                style={{ textAlign: "center", padding: "2rem", color: "#666" }}
+              >
+                No hay sucursales creadas. ¡Agrega tu primera sucursal!
+              </div>
+            )}
           </div>
         </div>
       </div>
