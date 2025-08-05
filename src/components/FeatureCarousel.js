@@ -6,15 +6,13 @@ const features = [
     title: "Integra Tu Menú Existente",
     description:
       "Utiliza el mismo link de tu menú actual. Sin necesidad de actualizar contenido en múltiples plataformas",
-    image:
-      "https://images.unsplash.com/photo-1533777857889-4be7c70b33f7?auto=format&fit=crop&q=80&w=500",
+    image: "/images/viewUser.png",
   },
   {
     title: "Llamado al Mozo",
     description:
       "Los comensales pueden solicitar atención sin necesidad de hacer señas o esperar a que el mozo se desocupe",
-    image:
-      "https://images.unsplash.com/photo-1577563908411-5077b6dc7624?auto=format&fit=crop&q=80&w=500",
+    image: "/images/LlamarMozo.png",
   },
   {
     title: "Pedir la Cuenta",

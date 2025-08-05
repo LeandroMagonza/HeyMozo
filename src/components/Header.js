@@ -1,9 +1,14 @@
 import React, { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import "./Header.css";
 
 const Header = () => {
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
+  const location = useLocation();
+
+  // Solo mostrar el header en la landing page (ruta raíz)
+  const isLandingPage = location.pathname === "/";
 
   useEffect(() => {
     const handleScroll = () => {
@@ -12,9 +17,12 @@ const Header = () => {
       setLastScrollY(currentScrollY);
     };
 
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, [lastScrollY]);
+    // Solo agregar el listener si estamos en la landing page
+    if (isLandingPage) {
+      window.addEventListener("scroll", handleScroll, { passive: true });
+      return () => window.removeEventListener("scroll", handleScroll);
+    }
+  }, [lastScrollY, isLandingPage]);
 
   const handleDemoClick = () => {
     const demoForm = document.getElementById("demo-form");
@@ -26,15 +34,17 @@ const Header = () => {
     }
   };
 
+  // No renderizar el header si no estamos en la landing page
+  if (!isLandingPage) {
+    return null;
+  }
+
   return (
     <header className={`fixed-header ${isVisible ? "visible" : ""}`}>
       <div className="logo-container">
-        <img
-          src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/heymozo-logo-lAd92AUlDVMY1PI8cSvsGEVNsGN0P2.png"
-          alt="HeyMozo Logo"
-          className="header-logo"
-        />
-        <span className="header-title">HeyMozo</span>
+        <a style={{ textDecoration: "none", color: "#333" }} href="/">
+          <span className="header-title">HeyMozo</span>
+        </a>
       </div>
       <button className="demo-button" onClick={handleDemoClick}>
         Obtener Demo

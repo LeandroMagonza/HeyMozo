@@ -124,11 +124,12 @@ function LandingPage() {
     </div>
   );
 }
+/*Falta http://localhost:3000/admin/1/1/config */
 function App() {
   return (
     <div className="App">
-      <Header />
       <Router>
+        <Header />
         <Routes>
           <Route path="/admin/:companyId/:branchId" element={<AdminScreen />} />
           <Route

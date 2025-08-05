@@ -153,6 +153,10 @@ body {
   .hero-logo {
     max-width: 300px;
   }
+
+  .hero-section .text-content {
+    text-align: center;
+  }
 }
 
 .hero-content h2 {
