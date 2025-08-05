@@ -14,8 +14,8 @@ const {
   Permission
 } = require('../models');
 
-// Auth routes
-router.use('/auth', authRoutes);
+// Auth routes are mounted directly in server.js, not here
+// router.use('/auth', authRoutes);
 
 // User management routes
 router.use('/users', userRoutes);

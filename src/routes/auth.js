@@ -16,6 +16,56 @@ router.get('/health', (req, res) => {
   });
 });
 
+// Test database connection
+router.get('/test-db', async (req, res) => {
+  try {
+    console.log('🔍 Testing database connection...');
+    const { User, AuthToken } = require('../models');
+    
+    // Test basic database connection
+    await User.sequelize.authenticate();
+    console.log('✅ Database connection successful');
+    
+    // Test User model
+    const userCount = await User.count();
+    console.log('👥 Users in database:', userCount);
+    
+    // Test AuthToken model
+    const tokenCount = await AuthToken.count();
+    console.log('🎫 Tokens in database:', tokenCount);
+    
+    res.json({
+      status: 'OK',
+      database: 'connected',
+      userCount,
+      tokenCount,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('❌ Database test failed:', error);
+    res.status(500).json({
+      status: 'ERROR',
+      database: 'failed',
+      error: error.message,
+      stack: error.stack
+    });
+  }
+});
+
+// Simple test POST endpoint to verify routing works
+router.post('/test-post', (req, res) => {
+  console.log('🧪 Test POST endpoint called');
+  console.log('Request body:', req.body);
+  console.log('Headers:', req.headers);
+  
+  res.json({
+    status: 'OK',
+    message: 'POST endpoint working',
+    receivedBody: req.body,
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Base URL for the login link
 const getLoginBaseUrl = (req) => {
   const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
