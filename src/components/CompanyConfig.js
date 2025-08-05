@@ -109,11 +109,6 @@ const CompanyConfig = () => {
   };
 
   const handleAddBranch = async () => {
-    const isConfirmed = window.confirm(
-      "¿Estás seguro de que deseas agregar una nueva sucursal?"
-    );
-    if (!isConfirmed) return;
-
     const newBranch = {
       name: `New Branch ${branches.length + 1}`,
       companyId: parseInt(companyId),

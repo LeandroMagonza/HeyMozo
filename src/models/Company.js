@@ -17,6 +17,9 @@ const Company = sequelize.define('Company', {
     type: DataTypes.JSON,
     defaultValue: []
   }
+}, {
+  paranoid: true,
+  timestamps: true
 });
 
 module.exports = Company; 

@@ -360,25 +360,18 @@ router.post('/tables', async (req, res) => {
   }
 });
 
-// DELETE route to delete a table
+// DELETE route to soft delete a table
 router.delete('/tables/:tableId', authMiddleware.checkTablePermission, async (req, res) => {
   try {
     const tableId = req.params.tableId;
     
-    // Primero verificar que la mesa existe
+    // Verify table exists
     const table = await Table.findByPk(tableId);
     if (!table) {
       return res.status(404).json({ error: 'Table not found' });
     }
 
-    // Eliminar todos los eventos asociados primero
-    await Event.destroy({
-      where: {
-        tableId: tableId
-      }
-    });
-
-    // Luego eliminar la mesa
+    // Soft delete the table (events are kept for historical purposes)
     await table.destroy();
     
     res.status(204).send();
@@ -419,6 +412,103 @@ router.get('/companies', async (req, res) => {
   }
 });
 
-// Add other routes similar to above with permission checks...
+// POST route to create a new company
+router.post('/companies', async (req, res) => {
+  try {
+    const company = await Company.create(req.body);
+    res.status(201).json(company);
+  } catch (error) {
+    console.error('Error creating company:', error);
+    res.status(500).json({ error: 'Error creating company' });
+  }
+});
+
+// POST route to create a new branch
+router.post('/branches', async (req, res) => {
+  try {
+    const { companyId } = req.body;
+    
+    if (companyId) {
+      // Check permission for specific company
+      if (!req.user.isAdmin) {
+        const authService = require('../services/auth');
+        const hasAccess = await authService.hasPermission(req.user.id, 'company', parseInt(companyId));
+        if (!hasAccess) {
+          return res.status(403).json({ error: 'Access denied to this company' });
+        }
+      }
+    }
+    
+    const branch = await Branch.create(req.body);
+    res.status(201).json(branch);
+  } catch (error) {
+    console.error('Error creating branch:', error);
+    res.status(500).json({ error: 'Error creating branch' });
+  }
+});
+
+// DELETE route to soft delete a company
+router.delete('/companies/:companyId', authMiddleware.checkCompanyPermission, async (req, res) => {
+  try {
+    const companyId = req.params.companyId;
+    
+    // Verify company exists
+    const company = await Company.findByPk(companyId);
+    if (!company) {
+      return res.status(404).json({ error: 'Company not found' });
+    }
+
+    // Soft delete all branches for this company
+    await Branch.destroy({
+      where: { companyId: companyId }
+    });
+
+    // Find all tables in those branches and soft delete them
+    const branches = await Branch.findAll({
+      where: { companyId: companyId },
+      paranoid: false // Include soft deleted branches to find their tables
+    });
+
+    for (const branch of branches) {
+      await Table.destroy({
+        where: { branchId: branch.id }
+      });
+    }
+
+    // Soft delete the company
+    await company.destroy();
+    
+    res.status(204).send();
+  } catch (error) {
+    console.error('Error deleting company:', error);
+    res.status(500).json({ error: 'Error deleting company' });
+  }
+});
+
+// DELETE route to soft delete a branch
+router.delete('/branches/:branchId', authMiddleware.checkBranchPermission, async (req, res) => {
+  try {
+    const branchId = req.params.branchId;
+    
+    // Verify branch exists
+    const branch = await Branch.findByPk(branchId);
+    if (!branch) {
+      return res.status(404).json({ error: 'Branch not found' });
+    }
+
+    // Soft delete all tables for this branch
+    await Table.destroy({
+      where: { branchId: branchId }
+    });
+
+    // Soft delete the branch
+    await branch.destroy();
+    
+    res.status(204).send();
+  } catch (error) {
+    console.error('Error deleting branch:', error);
+    res.status(500).json({ error: 'Error deleting branch' });
+  }
+});
 
 module.exports = router; 

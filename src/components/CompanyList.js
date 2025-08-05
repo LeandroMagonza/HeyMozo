@@ -41,11 +41,6 @@ const CompanyList = () => {
   };
 
   const handleAddCompany = () => {
-    const isConfirmed = window.confirm(
-      "¿Estás seguro de que deseas crear una nueva compañía?"
-    );
-    if (!isConfirmed) return;
-    
     navigate('/admin/company/create');
   };
 

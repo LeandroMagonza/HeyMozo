@@ -25,6 +25,9 @@ const Branch = sequelize.define('Branch', {
     type: DataTypes.JSON,
     defaultValue: []
   }
+}, {
+  paranoid: true,
+  timestamps: true
 });
 
 module.exports = Branch; 

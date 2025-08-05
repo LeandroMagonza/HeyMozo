@@ -16,6 +16,9 @@ const Table = sequelize.define('Table', {
     allowNull: false
   },
   tableDescription: DataTypes.STRING
+}, {
+  paranoid: true,
+  timestamps: true
 });
 
 module.exports = Table; 

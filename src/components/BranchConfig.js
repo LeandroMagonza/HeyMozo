@@ -86,11 +86,6 @@ const BranchConfig = () => {
     }
   };
   const handleAddTable = async () => {
-    const isConfirmed = window.confirm(
-      "¿Estás seguro de que deseas agregar una nueva mesa?"
-    );
-    if (!isConfirmed) return;
-
     const newTableNumber = tables.length + 1;
     const newTable = {
       tableName: `Mesa ${newTableNumber}`,
