@@ -413,9 +413,18 @@ router.get('/companies', async (req, res) => {
 });
 
 // POST route to create a new company
-router.post('/companies', async (req, res) => {
+router.post('/companies', authMiddleware.authenticate, async (req, res) => {
   try {
     const company = await Company.create(req.body);
+    
+    // Create permission for the user who created the company
+    await Permission.create({
+      userId: req.user.id,
+      resourceType: 'company',
+      resourceId: company.id,
+      permissionLevel: 'edit' // Full access to the company they created
+    });
+    
     res.status(201).json(company);
   } catch (error) {
     console.error('Error creating company:', error);
@@ -458,24 +467,7 @@ router.delete('/companies/:companyId', authMiddleware.checkCompanyPermission, as
       return res.status(404).json({ error: 'Company not found' });
     }
 
-    // Soft delete all branches for this company
-    await Branch.destroy({
-      where: { companyId: companyId }
-    });
-
-    // Find all tables in those branches and soft delete them
-    const branches = await Branch.findAll({
-      where: { companyId: companyId },
-      paranoid: false // Include soft deleted branches to find their tables
-    });
-
-    for (const branch of branches) {
-      await Table.destroy({
-        where: { branchId: branch.id }
-      });
-    }
-
-    // Soft delete the company
+    // Only soft delete the company - branches and tables remain but become invisible through joins
     await company.destroy();
     
     res.status(204).send();
@@ -496,12 +488,7 @@ router.delete('/branches/:branchId', authMiddleware.checkBranchPermission, async
       return res.status(404).json({ error: 'Branch not found' });
     }
 
-    // Soft delete all tables for this branch
-    await Table.destroy({
-      where: { branchId: branchId }
-    });
-
-    // Soft delete the branch
+    // Only soft delete the branch - tables remain but become invisible through joins
     await branch.destroy();
     
     res.status(204).send();

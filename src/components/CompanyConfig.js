@@ -18,7 +18,6 @@ const CompanyConfig = () => {
     menu: "",
     branchIds: [],
   });
-  const [editedBranches, setEditedBranches] = useState({});
 
   useEffect(() => {
     const fetchData = async () => {
@@ -31,17 +30,6 @@ const CompanyConfig = () => {
         setCompany(companyResponse.data);
         setEditedCompany(companyResponse.data);
         setBranches(branchesResponse.data || []);
-
-        // Inicializar edited branches
-        const initialEditedBranches = {};
-        branchesResponse.data?.forEach((branch) => {
-          initialEditedBranches[branch.id] = {
-            name: branch.name,
-            description: branch.description || "Descripción por defecto",
-          };
-        });
-        setEditedBranches(initialEditedBranches);
-
         setLoading(false);
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -57,15 +45,6 @@ const CompanyConfig = () => {
     setEditedCompany((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleBranchInputChange = (branchId, field, value) => {
-    setEditedBranches((prev) => ({
-      ...prev,
-      [branchId]: {
-        ...prev[branchId],
-        [field]: value,
-      },
-    }));
-  };
 
   const handleDeleteBranch = async (branchId) => {
     // Mejor UX para móvil con confirmación más clara
@@ -196,38 +175,13 @@ const CompanyConfig = () => {
                 <div key={branch.id} className="branch-card">
                   <div className="branch-card-header">
                     <span className="branch-number">{index + 1}</span>
-                    <input
-                      type="text"
-                      className="branch-name-input"
-                      value={editedBranches[branch.id]?.name || branch.name}
-                      onChange={(e) =>
-                        handleBranchInputChange(
-                          branch.id,
-                          "name",
-                          e.target.value
-                        )
-                      }
-                      placeholder="Nombre de la sucursal"
-                    />
+                    <h4 className="branch-name">{branch.name}</h4>
                   </div>
 
                   <div className="branch-card-body">
-                    <input
-                      type="text"
-                      className="branch-description-input"
-                      value={
-                        editedBranches[branch.id]?.description ||
-                        "Descripción por defecto"
-                      }
-                      onChange={(e) =>
-                        handleBranchInputChange(
-                          branch.id,
-                          "description",
-                          e.target.value
-                        )
-                      }
-                      placeholder="Descripción de la sucursal"
-                    />
+                    <p className="branch-description">
+                      {branch.description || "Sin descripción"}
+                    </p>
                   </div>
 
                   <div className="branch-card-actions">

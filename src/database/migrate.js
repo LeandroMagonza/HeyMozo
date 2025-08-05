@@ -10,12 +10,12 @@ async function migrate() {
     console.log('🔄 Starting database migration...');
     console.log('Environment:', process.env.NODE_ENV);
     
-    // En producción, usar alter: true para no perder datos
-    // En desarrollo, usar force: true para recrear tablas
-    const isProduction = process.env.NODE_ENV === 'production';
-    const syncOptions = isProduction 
-      ? { alter: true }  // Actualiza estructura sin perder datos
-      : { force: true }; // Recrea tablas completamente
+    // Usar alter: true para preservar datos en todos los entornos
+    // Solo usar force: true si explícitamente se requiere recrear
+    const forceRecreate = process.env.FORCE_RECREATE === 'true';
+    const syncOptions = forceRecreate 
+      ? { force: true }   // Solo si se especifica explícitamente
+      : { alter: true };  // Por defecto, preservar datos
     
     console.log('Sync options:', syncOptions);
     
@@ -28,10 +28,10 @@ async function migrate() {
     
     console.log('✅ Database tables synchronized successfully');
     
-    if (isProduction) {
-      console.log('📊 Production migration completed - existing data preserved');
+    if (forceRecreate) {
+      console.log('🔄 Migration completed - tables recreated (data lost)');
     } else {
-      console.log('🔄 Development migration completed - tables recreated');
+      console.log('📊 Migration completed - existing data preserved');
     }
     
   } catch (error) {

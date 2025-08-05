@@ -431,5 +431,38 @@ router.get('/check-access', authMiddleware.authenticate, async (req, res) => {
   }
 });
 
+// Temporary endpoint to fix permission for company 4
+router.post('/fix-permission', authMiddleware.authenticate, async (req, res) => {
+  try {
+    const { companyId } = req.body;
+    
+    if (!companyId) {
+      return res.status(400).json({ error: 'Company ID is required' });
+    }
+    
+    // Delete any existing permission
+    await Permission.destroy({
+      where: {
+        userId: req.user.id,
+        resourceType: 'company',
+        resourceId: companyId
+      }
+    });
+    
+    // Create correct permission
+    await Permission.create({
+      userId: req.user.id,
+      resourceType: 'company',
+      resourceId: companyId,
+      permissionLevel: 'edit'
+    });
+    
+    res.json({ message: 'Permission fixed successfully' });
+  } catch (error) {
+    console.error('Error fixing permission:', error);
+    res.status(500).json({ error: 'Error fixing permission' });
+  }
+});
+
 module.exports = router;
  
