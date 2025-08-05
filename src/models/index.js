@@ -21,7 +21,7 @@ Company.hasMany(Branch, { foreignKey: 'companyId' });
 Branch.belongsTo(Company, { foreignKey: 'companyId' });
 Branch.hasMany(Table, { foreignKey: 'branchId' });
 Table.belongsTo(Branch, { foreignKey: 'branchId' });
-Table.hasMany(Event, { foreignKey: 'tableId' });
+Table.hasMany(Event, { foreignKey: 'tableId', as: 'events' });
 Event.belongsTo(Table, { foreignKey: 'tableId' });
 
 module.exports = {

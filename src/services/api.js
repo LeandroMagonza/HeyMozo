@@ -11,13 +11,30 @@ const api = axios.create({
 // Add a request interceptor to include auth token in requests
 api.interceptors.request.use(
   (config) => {
-    const authToken = localStorage.getItem('authToken');
+    const authToken = localStorage.getItem('heymozo_token');
     if (authToken) {
       config.headers['Authorization'] = `Bearer ${authToken}`;
     }
     return config;
   },
   (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Add a response interceptor to handle 401 responses (expired/invalid tokens)
+api.interceptors.response.use(
+  (response) => {
+    return response;
+  },
+  (error) => {
+    if (error.response?.status === 401) {
+      // Token is invalid/expired, clear local storage and redirect to login
+      localStorage.removeItem('heymozo_token');
+      localStorage.removeItem('heymozo_user');
+      localStorage.removeItem('heymozo_permissions');
+      window.location.href = '/';
+    }
     return Promise.reject(error);
   }
 );
@@ -35,7 +52,9 @@ export const getCurrentUser = () =>
   api.get('/auth/me');
 
 export const logout = () => {
-  localStorage.removeItem('authToken');
+  localStorage.removeItem('heymozo_token');
+  localStorage.removeItem('heymozo_user');
+  localStorage.removeItem('heymozo_permissions');
   return Promise.resolve();
 };
 
@@ -104,6 +123,12 @@ export const createCompany = (data) => api.post('/companies', data);
 
 export const markTableEventsSeen = (tableId) => 
   api.put(`/tables/${tableId}/mark-seen`);
+
+export const markTableAsAvailable = (tableId) => 
+  api.put(`/tables/${tableId}/mark-available`);
+
+export const markTableAsOccupied = (tableId) => 
+  api.put(`/tables/${tableId}/mark-occupied`);
 
 export const sendEvent = (tableId, eventData) => 
   api.post(`/tables/${tableId}/events`, eventData);

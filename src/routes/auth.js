@@ -7,6 +7,13 @@ const { User, Permission } = require('../models');
 // Base URL for the login link
 const getLoginBaseUrl = (req) => {
   const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
+  
+  // In development, use the frontend URL (port 3000)
+  if (process.env.NODE_ENV !== 'production') {
+    return `${protocol}://localhost:3000/login`;
+  }
+  
+  // In production, use the request host
   const host = req.get('host');
   return `${protocol}://${host}/login`;
 };
@@ -92,6 +99,35 @@ router.get('/me', authMiddleware.authenticate, async (req, res) => {
   } catch (error) {
     console.error('Error fetching user info:', error);
     return res.status(500).json({ error: 'Error fetching user information' });
+  }
+});
+
+/**
+ * Logout endpoint (optional - mainly for logging purposes)
+ * POST /api/auth/logout
+ */
+router.post('/logout', authMiddleware.authenticate, async (req, res) => {
+  try {
+    // In a more complex system, you might want to:
+    // 1. Add token to a blacklist
+    // 2. Log the logout event
+    // 3. Update user's last logout time
+    
+    const user = req.user;
+    
+    // Optional: Update user's last logout time
+    if (user) {
+      user.lastLogout = new Date();
+      await user.save();
+    }
+    
+    return res.json({
+      success: true,
+      message: 'Logout successful'
+    });
+  } catch (error) {
+    console.error('Logout error:', error);
+    return res.status(500).json({ error: 'Error during logout' });
   }
 });
 

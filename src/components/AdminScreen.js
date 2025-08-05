@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { getCompany, getBranch, getTables, updateTable, markTableEventsSeen, releaseAllTables } from '../services/api';
+import { getCompany, getBranch, getTables, updateTable, markTableEventsSeen, releaseAllTables, markTableAsAvailable, markTableAsOccupied } from '../services/api';
 import './AdminScreen.css';
 import './AdminModal.css';
 import EventsList from './EventsList';
@@ -12,6 +12,7 @@ import AdminHistoryModal from './AdminHistoryModal';
 import notificationSound from '../sounds/notification.mp3';
 import TablesList from './TablesList';
 import SoundToggleButton from './SoundToggleButton';
+import AdminHeader from './AdminHeader';
 
 const AdminScreen = () => {
   const { companyId, branchId } = useParams();
@@ -109,6 +110,9 @@ const AdminScreen = () => {
       return { state: TableStates.AVAILABLE, waitTime: 24 * 60 * 60 * 1000 }; // 24 horas por defecto
     }
 
+    // Asegurar que los eventos estén ordenados de más nuevo a más viejo
+    const sortedEvents = [...events].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
     let state = TableStates.AVAILABLE;
     let scanFound = null;
     let unseenWaiterFound = null;
@@ -116,7 +120,7 @@ const AdminScreen = () => {
     let unseenManagerFound = null;
     let markAvailablefound = new Date(new Date().setDate(new Date().getDate() - 1));
     // Los eventos vienen ordenados del más nuevo al más viejo
-    for (const event of events) {
+    for (const event of sortedEvents) {
       if (event.type === EventTypes.MARK_AVAILABLE) {
         markAvailablefound = new Date(event.createdAt);
         break; // Termina la ocupación
@@ -304,22 +308,8 @@ const AdminScreen = () => {
 
   // Función para marcar la mesa como disponible
   const markAsAvailable = async (tableId) => {
-    const table = tables.find((t) => t.id === tableId);
-    if (!table) return;
-
-    const newEvent = {
-      type: EventTypes.MARK_AVAILABLE,
-      createdAt: new Date().toISOString(),
-      message: null,
-    };
-
-    const updatedTable = {
-      ...table,
-      events: [...table.events, newEvent],
-    };
-
     try {
-      await updateTable(tableId, updatedTable);
+      await markTableAsAvailable(tableId);
       const tablesResponse = await getTables(branchId);
       setTables(tablesResponse.data);
       
@@ -340,22 +330,8 @@ const AdminScreen = () => {
 
   // Función para marcar la mesa como ocupada
   const markAsOccupied = async (tableId) => {
-    const table = tables.find((t) => t.id === tableId);
-    if (!table) return;
-
-    const newEvent = {
-      type: EventTypes.MARK_OCCUPIED,
-      createdAt: new Date().toISOString(),
-      message: null,
-    };
-
-    const updatedTable = {
-      ...table,
-      events: [...table.events, newEvent],
-    };
-
     try {
-      await updateTable(tableId, updatedTable);
+      await markTableAsOccupied(tableId);
       const tablesResponse = await getTables(branchId);
       setTables(tablesResponse.data);
       
@@ -411,18 +387,11 @@ const AdminScreen = () => {
 
   return (
     <div className="admin-screen">
-      <div className="branch-info">
-        {loading ? (
-          <p>Cargando...</p>
-        ) : error ? (
-          <p className="error">{error}</p>
-        ) : (
-          <>
-            <h1>{company?.name}</h1>
-            <h2>{branch?.name}</h2>
-          </>
-        )}
-      </div>
+      <AdminHeader 
+        title={loading ? 'Cargando...' : error ? 'Error' : `${company?.name} - ${branch?.name}`}
+        showBackButton={true}
+        backUrl={`/admin/${companyId}/${branchId}/config`}
+      />
       <div className="refresh-timer">
         Refrescando en {refreshCountdown} segundos
       </div>

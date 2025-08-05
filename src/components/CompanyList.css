@@ -34,3 +34,16 @@
   justify-content: flex-end;
   gap: 10px;
 }
+
+.no-companies-message {
+  text-align: center;
+  padding: 40px 20px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  margin-top: 20px;
+}
+
+.no-companies-message p {
+  margin: 10px 0;
+  color: #666;
+}

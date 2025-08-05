@@ -26,6 +26,10 @@ const User = sequelize.define('User', {
   lastLogin: {
     type: DataTypes.DATE,
     allowNull: true
+  },
+  lastLogout: {
+    type: DataTypes.DATE,
+    allowNull: true
   }
 }, {
   paranoid: true // Enable soft deletes

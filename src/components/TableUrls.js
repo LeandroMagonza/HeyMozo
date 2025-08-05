@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { getBranch, getTables } from '../services/api';
 import QRGeneratorModal from './QRGeneratorModal';
 import './TableUrls.css';
+import AdminHeader from './AdminHeader';
 
 const TableUrls = () => {
   const { companyId, branchId } = useParams();
@@ -36,7 +37,11 @@ const TableUrls = () => {
 
   return (
     <div className="table-urls">
-      <h2>URLs de Mesas - {branch.name}</h2>
+      <AdminHeader 
+        title={`URLs de Mesas - ${branch.name}`}
+        showBackButton={true}
+        backUrl={`/admin/${companyId}/${branchId}/config`}
+      />
       
       <div className="actions">
         <button 

@@ -28,6 +28,7 @@
     "react-router-dom": "^6.26.2",
     "react-scripts": "5.0.1",
     "request": "^2.88.2",
+    "resend": "^4.8.0",
     "sequelize": "^6.37.1",
     "web-vitals": "^2.1.4"
   },

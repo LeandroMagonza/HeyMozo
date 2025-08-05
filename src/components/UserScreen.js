@@ -53,10 +53,17 @@ const UserScreen = () => {
 
         try {
           const response = await sendEvent(tableId, scanEvent);
-          // Solo mantener los eventos locales
-          setEvents([scanEvent]);
+          console.log('Scan event response:', response.data);
+          // Usar los eventos de la respuesta del servidor
+          if (response.data && response.data.events) {
+            setEvents(response.data.events);
+          } else {
+            setEvents([scanEvent]);
+          }
         } catch (error) {
           console.error('Error sending scan event:', error);
+          // Usar evento local como fallback
+          setEvents([scanEvent]);
         }
 
         // Solo establecer el menuLink si existe una URL en la sucursal o compañía
@@ -95,9 +102,15 @@ const UserScreen = () => {
       };
 
       const response = await sendEvent(tableId, newEvent);
+      console.log('Event response:', response.data);
       
-      // Agregar el nuevo evento a la lista local
-      setEvents(prevEvents => [...prevEvents, newEvent]);
+      // Usar los eventos de la respuesta del servidor
+      if (response.data && response.data.events) {
+        setEvents(response.data.events);
+      } else {
+        // Agregar el nuevo evento a la lista local como fallback
+        setEvents(prevEvents => [...prevEvents, newEvent]);
+      }
       handleCloseModal();
     } catch (error) {
       console.error('Error sending event:', error);
@@ -111,8 +124,11 @@ const UserScreen = () => {
         message: null
       });
 
-      setTable(response.data);
-      setEvents(response.data.events || []);
+      console.log('Direct event response:', response.data);
+      if (response.data) {
+        setTable(response.data);
+        setEvents(response.data.events || []);
+      }
     } catch (error) {
       console.error('Error sending event:', error);
     }

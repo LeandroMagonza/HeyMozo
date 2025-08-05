@@ -57,14 +57,26 @@ AuthToken.generateToken = async function(email, userId = null) {
   const expiresAt = new Date();
   expiresAt.setMinutes(expiresAt.getMinutes() + 15);
   
+
+  
   // Create and return the token
-  return await this.create({
+  const createdToken = await this.create({
     email,
     userId,
     token,
     expiresAt,
     used: false
   });
+  
+  console.log('✅ Token saved to database:', {
+    id: createdToken.id,
+    email: createdToken.email,
+    token: createdToken.token,
+    expiresAt: createdToken.expiresAt,
+    used: createdToken.used
+  });
+  
+  return createdToken;
 };
 
 // Method to verify if a token is valid

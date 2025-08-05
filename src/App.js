@@ -7,7 +7,11 @@ import UserScreen from './components/UserScreen';
 import BranchConfig from './components/BranchConfig';
 import CompanyConfig from './components/CompanyConfig';
 import CompanyList from './components/CompanyList';
+import CompanyCreate from './components/CompanyCreate';
 import TableUrls from './components/TableUrls';
+import LoginPage from './components/LoginPage';
+import LoginForm from './components/LoginForm';
+import ProtectedRoute from './components/ProtectedRoute';
 import axios from 'axios';
 import './App.css';
 
@@ -170,13 +174,68 @@ function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/admin/:companyId/:branchId" element={<AdminScreen />} />
-        <Route path="/admin/:companyId/:branchId/config" element={<BranchConfig />} />
-        <Route path="/admin/:companyId/:branchId/urls" element={<TableUrls />} />
-        <Route path="/admin/:companyId/config" element={<CompanyConfig />} />
-        <Route path="/admin/config" element={<CompanyList />} />
-        <Route path="/user/:companyId/:branchId/:tableId" element={<UserScreen />} />
+        {/* Public routes */}
         <Route path="/" element={<LandingPage />} />
+        <Route path="/user/:companyId/:branchId/:tableId" element={<UserScreen />} />
+        
+        {/* Authentication routes */}
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/admin/login" element={<LoginForm />} />
+        
+        {/* Protected admin routes */}
+        <Route 
+          path="/admin/config" 
+          element={
+            <ProtectedRoute>
+              <CompanyList />
+            </ProtectedRoute>
+          } 
+        />
+        
+        <Route 
+          path="/admin/company/create" 
+          element={
+            <ProtectedRoute>
+              <CompanyCreate />
+            </ProtectedRoute>
+          } 
+        />
+        
+        <Route 
+          path="/admin/:companyId/config" 
+          element={
+            <ProtectedRoute>
+              <CompanyConfig />
+            </ProtectedRoute>
+          } 
+        />
+        
+        <Route 
+          path="/admin/:companyId/:branchId/config" 
+          element={
+            <ProtectedRoute>
+              <BranchConfig />
+            </ProtectedRoute>
+          } 
+        />
+        
+        <Route 
+          path="/admin/:companyId/:branchId/urls" 
+          element={
+            <ProtectedRoute>
+              <TableUrls />
+            </ProtectedRoute>
+          } 
+        />
+        
+        <Route 
+          path="/admin/:companyId/:branchId" 
+          element={
+            <ProtectedRoute>
+              <AdminScreen />
+            </ProtectedRoute>
+          } 
+        />
       </Routes>
     </Router>
   );

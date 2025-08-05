@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getCompanies, deleteCompany, createCompany } from '../services/api';
 import './CompanyList.css';
+import AdminHeader from './AdminHeader';
 
 const CompanyList = () => {
   const [companies, setCompanies] = useState([]);
@@ -35,23 +36,8 @@ const CompanyList = () => {
     }
   };
 
-  const handleAddCompany = async () => {
-    const newCompany = {
-      name: `Nueva Compañía ${companies.length + 1}`,
-      website: '',
-      menu: '',
-      branchIds: []
-    };
-
-    try {
-      const response = await createCompany(newCompany);
-      if (response.data) {
-        await fetchCompanies();
-      }
-    } catch (error) {
-      console.error('Error adding new company:', error);
-      alert('Error al crear la compañía');
-    }
+  const handleAddCompany = () => {
+    navigate('/admin/company/create');
   };
 
   if (loading) {
@@ -60,31 +46,42 @@ const CompanyList = () => {
 
   return (
     <div className="company-list">
-      <h2>Compañías</h2>
+      <AdminHeader 
+        title="Compañías"
+        showBackButton={false}
+      />
       <button className="app-button add-company-btn" onClick={handleAddCompany}>Agregar Compañía</button>
-      <table className="companies-table">
-        <tbody>
-          {companies.map((company, index) => (
-            <tr key={company.id} className="company-row">
-              <td>{index + 1}. {company.name}</td>
-              <td className="company-actions">
-                <button 
-                  className="app-button"
-                  onClick={() => navigate(`/admin/${company.id}/config`)}
-                >
-                  Configurar Compañía
-                </button>
-                <button 
-                  className="app-button"
-                  onClick={() => handleDeleteCompany(company.id)}
-                >
-                  Eliminar
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      
+      {companies.length === 0 ? (
+        <div className="no-companies-message">
+          <p>No tienes compañías asignadas actualmente.</p>
+          <p>Puedes crear una nueva compañía haciendo clic en el botón "Agregar Compañía".</p>
+        </div>
+      ) : (
+        <table className="companies-table">
+          <tbody>
+            {companies.map((company, index) => (
+              <tr key={company.id} className="company-row">
+                <td>{index + 1}. {company.name}</td>
+                <td className="company-actions">
+                  <button 
+                    className="app-button"
+                    onClick={() => navigate(`/admin/${company.id}/config`)}
+                  >
+                    Configurar Compañía
+                  </button>
+                  <button 
+                    className="app-button"
+                    onClick={() => handleDeleteCompany(company.id)}
+                  >
+                    Eliminar
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
     </div>
   );
 };

@@ -49,6 +49,20 @@ const verifyLoginToken = async (token) => {
   }
 
   try {
+    console.log('🔍 Verifying token:', token);
+    
+    // Debug: Check if token exists at all
+    const anyToken = await AuthToken.findOne({
+      where: { token }
+    });
+    
+    if (!anyToken) {
+  
+      throw new Error('Invalid or expired token');
+    }
+    
+
+
     // Find the token
     const authToken = await AuthToken.findOne({
       where: {
@@ -59,6 +73,7 @@ const verifyLoginToken = async (token) => {
     });
 
     if (!authToken) {
+
       throw new Error('Invalid or expired token');
     }
 

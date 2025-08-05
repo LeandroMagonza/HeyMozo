@@ -5,6 +5,7 @@ import { getBranch, getTables, updateBranch, updateTable, createTable, deleteTab
 import './BranchConfig.css';
 import { FaEye, FaQrcode, FaChair, FaSave, FaTrash } from 'react-icons/fa';
 import '../styles/common.css';
+import AdminHeader from './AdminHeader';
 
 const BranchConfig = () => {
   const { companyId, branchId } = useParams();
@@ -174,10 +175,14 @@ const BranchConfig = () => {
 
   return (
     <div className="admin-container">
+      <AdminHeader 
+        title={`Configuración de Sucursal - ${company?.name || 'Cargando...'}`}
+        showBackButton={true}
+        backUrl={`/admin/${companyId}/config`}
+      />
       <div className="admin-content">
         <div className="branch-config">
           <div className="header-row">
-            <h2>Configuración de Sucursal - {company?.name || 'Cargando...'}</h2>
             <button 
               className="app-button"
               onClick={() => navigate(`/admin/${companyId}/${branchId}`)}
@@ -192,7 +197,7 @@ const BranchConfig = () => {
               <input
                 type="text"
                 name="name"
-                value={editedBranch.name}
+                value={editedBranch?.name || ''}
                 onChange={handleBranchInputChange}
                 placeholder="Ingrese nombre de sucursal"
               />
@@ -202,7 +207,7 @@ const BranchConfig = () => {
               <input
                 type="text"
                 name="website"
-                value={editedBranch.website}
+                value={editedBranch?.website || ''}
                 onChange={handleBranchInputChange}
                 placeholder="Ingrese URL del sitio web"
               />
@@ -212,7 +217,7 @@ const BranchConfig = () => {
               <input
                 type="text"
                 name="menu"
-                value={editedBranch.menu}
+                value={editedBranch?.menu || ''}
                 onChange={handleBranchInputChange}
                 placeholder="Ingrese URL del menú"
               />
@@ -222,7 +227,7 @@ const BranchConfig = () => {
               <input
                 type="text"
                 name="logo"
-                value={editedBranch.logo}
+                value={editedBranch?.logo || ''}
                 onChange={handleBranchInputChange}
                 placeholder="Ingrese URL del logo"
               />

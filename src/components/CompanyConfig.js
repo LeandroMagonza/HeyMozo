@@ -4,6 +4,7 @@ import { getCompany, updateCompany, createBranch, deleteBranch, getBranches } fr
 import './CompanyConfig.css';
 import { FaEye, FaSave, FaStore, FaCog, FaTrash } from 'react-icons/fa';
 import '../styles/common.css';
+import AdminHeader from './AdminHeader';
 
 const CompanyConfig = () => {
   const { companyId } = useParams();
@@ -104,11 +105,13 @@ const CompanyConfig = () => {
 
   return (
     <div className="admin-container">
+      <AdminHeader 
+        title="Configuración de Compañía"
+        showBackButton={true}
+        backUrl="/admin/config"
+      />
       <div className="admin-content">
         <div className="company-config">
-          <div className="header-row">
-            <h2>Configuración de Compañía</h2>
-          </div>
           <div className="company-details">
             <div className="input-group">
               <label>Nombre de Compañía</label>
