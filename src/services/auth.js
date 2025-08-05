@@ -9,31 +9,47 @@ const { Op } = require('sequelize');
  * @returns {Promise<Object>} - Result of the operation
  */
 const requestLoginToken = async (email, loginBaseUrl) => {
+  console.log('🔐 requestLoginToken called with:', { email, loginBaseUrl });
+  
   // Email validation
   if (!email || !email.includes('@')) {
+    console.log('❌ Invalid email format:', email);
     throw new Error('Valid email address is required');
   }
 
   try {
+    console.log('👤 Checking if user exists...');
     // Check if the user exists
     let user = await User.findOne({ where: { email } });
+    console.log('👤 User found:', user ? `ID: ${user.id}` : 'No user found');
     
+    console.log('🎫 Generating auth token...');
     // Generate a new token
     const authToken = await AuthToken.generateToken(email, user?.id);
+    console.log('🎫 Auth token generated:', {
+      id: authToken.id,
+      token: authToken.token.substring(0, 8) + '...',
+      expiresAt: authToken.expiresAt
+    });
     
+    console.log('📧 Sending login email...');
     // Send login email
     await emailService.sendLoginLink(
       email, 
       authToken.token, 
       loginBaseUrl
     );
+    console.log('📧 Email service completed');
     
+    console.log('✅ requestLoginToken completed successfully');
     return {
       success: true,
       message: 'Login link sent to email'
     };
   } catch (error) {
-    console.error('Error generating login token:', error);
+    console.error('❌ Error in requestLoginToken:', error);
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
     throw error;
   }
 };

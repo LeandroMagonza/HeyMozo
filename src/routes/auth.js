@@ -4,6 +4,18 @@ const authService = require('../services/auth');
 const authMiddleware = require('../middleware/auth');
 const { User, Permission } = require('../models');
 
+// Health check endpoint - no authentication required
+router.get('/health', (req, res) => {
+  console.log('🩺 Health check requested');
+  res.json({
+    status: 'OK',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV,
+    resendConfigured: !!process.env.RESEND_API_KEY,
+    emailFrom: process.env.EMAIL_FROM || 'not-configured'
+  });
+});
+
 // Base URL for the login link
 const getLoginBaseUrl = (req) => {
   const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
@@ -24,19 +36,39 @@ const getLoginBaseUrl = (req) => {
  */
 router.post('/login-request', async (req, res) => {
   try {
+    console.log('=== LOGIN REQUEST DEBUG ===');
+    console.log('Request body:', req.body);
+    console.log('NODE_ENV:', process.env.NODE_ENV);
+    console.log('RESEND_API_KEY configured:', !!process.env.RESEND_API_KEY);
+    console.log('EMAIL_FROM:', process.env.EMAIL_FROM);
+    
     const { email } = req.body;
     
     if (!email) {
+      console.log('❌ No email provided');
       return res.status(400).json({ error: 'Email is required' });
     }
 
+    console.log('📧 Processing login request for:', email);
+    
     const loginBaseUrl = getLoginBaseUrl(req);
+    console.log('🔗 Login base URL:', loginBaseUrl);
+    
     const result = await authService.requestLoginToken(email, loginBaseUrl);
+    console.log('✅ Login token request successful:', result);
     
     return res.json(result);
   } catch (error) {
-    console.error('Login request error:', error);
-    return res.status(500).json({ error: 'Error processing login request' });
+    console.error('❌ Login request error:', error);
+    console.error('Error stack:', error.stack);
+    console.error('Error message:', error.message);
+    
+    // Return more detailed error info for debugging
+    return res.status(500).json({ 
+      error: 'Error processing login request',
+      details: process.env.NODE_ENV === 'production' ? 'Check server logs' : error.message,
+      stack: process.env.NODE_ENV === 'production' ? undefined : error.stack
+    });
   }
 });
 
