@@ -23,7 +23,7 @@ const benefits = [
     title: "Gestión eficiente",
     description: "Mejora la organización y el control de las mesas",
     image:
-      "https://images.unsplash.com/photo-1450101499163-c8848c66ca85?q=80&w=800&auto=format",
+      "https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=800&auto=format",
   },
   {
     id: 4,
@@ -31,7 +31,7 @@ const benefits = [
     description:
       "Facilita la interacción entre comensales y mozos de manera clara y efectiva",
     image:
-      "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=800&auto=format",
+      "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?q=80&w=800&auto=format",
   },
 ];
 

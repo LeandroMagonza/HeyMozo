@@ -62,51 +62,87 @@ body {
   overflow-x: hidden;
 }
 
+/* Header de la landing page */
 .landing-header {
-  background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
-  color: white;
-  text-align: center;
-  padding: 6rem 2rem;
-  position: relative;
-}
-
-.landing-header::after {
-  content: "";
-  position: absolute;
-  bottom: -50px;
+  position: fixed;
+  top: 0;
   left: 0;
   right: 0;
-  height: 100px;
-  background: linear-gradient(to bottom right, transparent 49%, #f9f9f9 50%);
-}
-
-.landing-logo {
-  max-width: 120px; /* Reduced from 180px */
-  margin-bottom: 2rem;
+  background: rgba(26, 26, 26, 0.95);
+  backdrop-filter: blur(10px);
+  padding: 1rem 2rem;
+  z-index: 1000;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  transform: translateY(0);
   transition: transform 0.3s ease;
 }
 
-.landing-logo:hover {
-  transform: scale(1.05);
+.landing-header.hidden {
+  transform: translateY(-100%);
 }
 
-.landing-header h1 {
-  font-size: 3.5rem;
-  margin-bottom: 1rem;
-  font-weight: 700;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+.landing-header.visible {
+  transform: translateY(0);
 }
 
-.tagline {
-  font-weight: 500;
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.logo-section {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.header-logo {
+  height: 32px;
+  width: auto;
+}
+
+.brand-name {
   color: white;
-  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+}
+
+.login-button {
+  background: linear-gradient(135deg, #ffd700 0%, #ffed4a 100%);
+  color: #1a1a1a;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.login-button:hover {
+  background: linear-gradient(135deg, #ffed4a 0%, #ffd700 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(255, 215, 0, 0.3);
+  color: #1a1a1a;
+  text-decoration: none;
 }
 
 .hero-section {
   background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
   color: white;
-  padding: 4rem 2rem;
+  padding: 8rem 2rem 4rem 2rem; /* Aumenté el padding-top para el header fijo */
   min-height: 80vh;
   display: flex;
   align-items: center;
@@ -140,6 +176,27 @@ body {
 }
 
 @media (max-width: 768px) {
+  .landing-header {
+    padding: 0.75rem 1rem;
+  }
+
+  .header-content {
+    gap: 1rem;
+  }
+
+  .brand-name {
+    font-size: 1.25rem;
+  }
+
+  .login-button {
+    padding: 0.5rem 1rem;
+    font-size: 0.8rem;
+  }
+
+  .hero-section {
+    padding: 6rem 1rem 4rem 1rem; /* Ajustado para móviles */
+  }
+
   .hero-content {
     flex-direction: column-reverse;
     text-align: center;
@@ -357,9 +414,38 @@ body {
   position: relative;
 }
 
+.footer-content {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.footer-links {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+
+.footer-link {
+  color: white;
+  text-decoration: none;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+}
+
+.footer-link:hover {
+  color: #ffd700;
+  background: rgba(255, 215, 0, 0.1);
+  text-decoration: none;
+}
+
 .landing-footer p {
   font-size: 1.1rem;
   opacity: 0.9;
+  margin: 0;
 }
 
 /* Responsive Design */
@@ -398,6 +484,16 @@ body {
 
   .hero-logo {
     max-width: 300px;
+  }
+
+  .footer-links {
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .footer-link {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.9rem;
   }
 }
 

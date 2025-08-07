@@ -1,115 +1,261 @@
+/* Carousel moderno y responsive */
+.carousel-wrapper {
+  width: 100%;
+  padding: 0 2rem;
+}
+
 .carousel-container {
-  display: flex;
-  align-items: center;
-  padding: 20px;
   max-width: 1200px;
   margin: 0 auto;
 }
 
 .carousel-content {
-  display: flex;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border-radius: 24px;
+  padding: 3rem;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Contenido principal del slide */
+.feature-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4rem;
   align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  padding: 40px;
-  background: #f5f5f5; /* Cambiado a un gris claro */
-  border-radius: 10px;
+  min-height: 400px;
 }
 
 .feature-info {
-  flex: 1;
-  padding-right: 40px;
-  position: relative;
-  min-height: 400px;
   display: flex;
   flex-direction: column;
+  justify-content: center;
+  gap: 1.5rem;
 }
 
 .feature-info h3 {
-  font-size: 2.5em;
-  margin-bottom: 20px;
-  color: #000; /* Cambiado de #fff a #000 */
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #1a202c;
+  line-height: 1.2;
+  margin: 0;
+  background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .feature-info p {
-  font-size: 1.4em;
-  line-height: 1.6;
-  color: #4a4a4a;
+  font-size: 1.125rem;
+  line-height: 1.7;
+  color: #4a5568;
+  margin: 0;
+  font-weight: 400;
 }
 
-.feature-image {
-  flex: 1;
+/* Container de imagen con tamaño fijo */
+.feature-image-container {
   display: flex;
   justify-content: center;
   align-items: center;
+  height: 350px;
+  width: 100%;
+  position: relative;
+}
+
+.feature-image {
+  width: 100%;
+  height: 100%;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+  position: relative;
+  background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
 }
 
 .feature-image img {
-  max-width: 100%;
-  height: auto;
-  border-radius: 8px;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.carousel-controls {
-  position: absolute;
-  bottom: 0;
-  left: 0;
+.feature-image:hover img {
+  transform: scale(1.05);
+}
+
+/* Navegación del carousel */
+.carousel-navigation {
   display: flex;
+  justify-content: center;
   align-items: center;
-  gap: 20px;
-  padding-top: 20px;
-}
-
-.carousel-dots {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-.dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background-color: rgba(0, 0, 0, 0.2);
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-}
-
-.dot.active {
-  background-color: rgba(0, 0, 0, 0.8);
+  gap: 2rem;
+  margin-top: 3rem;
+  padding-top: 2rem;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
 }
 
 .carousel-button {
-  background: rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
   border: none;
   border-radius: 50%;
-  width: 50px;
-  height: 50px;
-  font-size: 24px;
-  color: #000;
+  background: linear-gradient(135deg, #ffd700 0%, #ffed4a 100%);
+  color: #1a202c;
   cursor: pointer;
-  transition: background-color 0.3s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 15px rgba(255, 215, 0, 0.2);
 }
 
 .carousel-button:hover {
-  background: rgba(0, 0, 0, 0.2);
+  background: linear-gradient(135deg, #ffed4a 0%, #ffd700 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(255, 215, 0, 0.3);
+}
+
+.carousel-button:active {
+  transform: translateY(0);
+}
+
+/* Indicadores modernos */
+.carousel-indicators {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.indicator {
+  width: 12px;
+  height: 12px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(26, 32, 44, 0.2);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+.indicator.active {
+  background: linear-gradient(135deg, #ffd700 0%, #ffed4a 100%);
+  transform: scale(1.2);
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
+}
+
+.indicator:hover {
+  background: rgba(26, 32, 44, 0.4);
+  transform: scale(1.1);
+}
+
+.indicator.active:hover {
+  background: linear-gradient(135deg, #ffd700 0%, #ffed4a 100%);
+}
+
+/* Animaciones de entrada */
+.feature-content {
+  animation: slideIn 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .carousel-content {
+    padding: 2.5rem;
+  }
+
+  .feature-content {
+    gap: 3rem;
+  }
+
+  .feature-info h3 {
+    font-size: 2.25rem;
+  }
+
+  .feature-image-container {
+    height: 300px;
+  }
 }
 
 @media (max-width: 768px) {
+  .carousel-wrapper {
+    padding: 0 1rem;
+  }
+
   .carousel-content {
-    flex-direction: column;
-    padding: 20px;
+    padding: 2rem;
   }
 
-  .feature-info {
+  .feature-content {
+    grid-template-columns: 1fr;
+    gap: 2rem;
     text-align: center;
-    padding-right: 0;
-    align-items: center;
   }
 
-  .carousel-controls {
-    bottom: 0;
-    left: 50%;
-    transform: translateX(-50%);
+  .feature-info h3 {
+    font-size: 2rem;
+  }
+
+  .feature-info p {
+    font-size: 1rem;
+  }
+
+  .feature-image-container {
+    height: 250px;
+    order: -1;
+  }
+
+  .carousel-navigation {
+    gap: 1.5rem;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+  }
+
+  .carousel-button {
+    width: 44px;
+    height: 44px;
+  }
+}
+
+@media (max-width: 480px) {
+  .carousel-content {
+    padding: 1.5rem;
+  }
+
+  .feature-info h3 {
+    font-size: 1.75rem;
+  }
+
+  .feature-image-container {
+    height: 200px;
+  }
+
+  .carousel-navigation {
+    gap: 1rem;
+  }
+
+  .carousel-button {
+    width: 40px;
+    height: 40px;
+  }
+
+  .indicator {
+    width: 10px;
+    height: 10px;
   }
 }
