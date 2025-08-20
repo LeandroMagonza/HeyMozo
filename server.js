@@ -5,11 +5,14 @@ const express = require('express');
 const path = require('path');
 const cors = require('cors');
 const sequelize = require('./src/config/database');
-const Company = require('./src/models/Company');
-const Branch = require('./src/models/Branch');
-const Table = require('./src/models/Table');
-const Event = require('./src/models/Event');
-const Permission = require('./src/models/Permission');
+const { 
+  Company, 
+  Branch, 
+  Table, 
+  Event,
+  Permission,
+  EventType 
+} = require('./src/models');
 const { Op } = require('sequelize');
 const { EventTypes } = require('./src/constants');
 const MailingList = require('./src/models/MailingList');
@@ -18,6 +21,7 @@ const { Client } = require('pg');
 // Import auth routes and middleware
 const authRoutes = require('./src/routes/auth');
 const usersRoutes = require('./src/routes/users');
+const eventsRoutes = require('./src/routes/events');
 const apiRoutes = require('./src/routes/index');
 const authMiddleware = require('./src/middleware/auth');
 
@@ -32,11 +36,8 @@ app.use(cors());
 
 // Add request logging middleware
 app.use((req, res, next) => {
-  console.log(`🌐 ${req.method} ${req.url} - ${new Date().toISOString()}`);
-  console.log(`🔍 Headers:`, req.headers);
-  if (req.body && Object.keys(req.body).length > 0) {
-    console.log(`📦 Body:`, req.body);
-  }
+  const logger = require('./src/utils/logger');
+  logger.request(req.method, req.url);
   next();
 });
 
@@ -50,6 +51,8 @@ console.log('🔧 Mounting auth routes at /api/auth');
 app.use('/api/auth', authRoutes);
 console.log('🔧 Mounting users routes at /api/users');
 app.use('/api/users', usersRoutes);
+console.log('🔧 Mounting events routes at /api');
+app.use('/api', eventsRoutes);
 
 // PUBLIC ROUTES FOR USERSCREEN (before authentication middleware)
 // Obtener una compañía específica (pública para UserScreen)
@@ -112,9 +115,17 @@ app.get('/api/tables/:id', async (req, res) => {
     const { id } = req.params;
     const table = await Table.findByPk(id, {
       include: [{
+        model: Branch,
+        include: [{ model: Company }]
+      }, {
         model: Event,
         as: 'events',
-        attributes: ['type', 'message', 'createdAt', 'seenAt'],
+        include: [{
+          model: require('./src/models').EventType,
+          as: 'eventType',
+          attributes: ['id', 'eventName', 'stateName', 'userColor', 'userFontColor', 'userIcon', 'adminColor', 'priority', 'systemEventType']
+        }],
+        attributes: ['type', 'message', 'createdAt', 'seenAt', 'eventTypeId'],
       }],
       order: [['events', 'createdAt', 'DESC']]
     });
@@ -123,32 +134,136 @@ app.get('/api/tables/:id', async (req, res) => {
       return res.status(404).json({ error: 'Table not found' });
     }
 
-    res.json(formatTableWithEvents(table));
+    // Get effective event types for this table
+    const EventConfigService = require('./src/services/eventConfig');
+    const effectiveEvents = await EventConfigService.getEffectiveEvents(
+      'table',
+      parseInt(id),
+      table.Branch.Company.id
+    );
+
+    // Filter to only customer-visible events (exclude system events)
+    const customerEvents = effectiveEvents.filter(event => 
+      !event.systemEventType && event.enabled !== false
+    );
+
+    const response = {
+      ...formatTableWithEvents(table),
+      availableEventTypes: customerEvents
+    };
+
+    res.json(response);
   } catch (error) {
     console.error('Error fetching table:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-// Ruta para crear un nuevo evento (pública para UserScreen)
+// Ruta para crear un nuevo evento (pública para UserScreen) - SYSTEM AND CUSTOM EVENTS
 app.post('/api/tables/:id/events', async (req, res) => {
+  console.log(req.params);
   try {
     const { id: tableId } = req.params;
-    const { type, message } = req.body;
+    const { type, eventTypeId, systemEventType, message } = req.body;
     const currentTime = new Date();
 
-    console.log(`Creating event for table ${tableId}:`, { type, message });
+    console.log(`Creating event for table ${tableId}:`, { type, eventTypeId, systemEventType, message });
 
-    // Verificar que la mesa existe
-    const table = await Table.findByPk(tableId);
+    // Verificar que la mesa existe y obtener company info
+    const table = await Table.findByPk(tableId, {
+      include: [{
+        model: Branch,
+        include: [{ model: Company }]
+      }]
+    });
+    
+    console.log('Table found:', table ? 'YES' : 'NO');
+    if (table) {
+      console.log('Table structure:', {
+        id: table.id,
+        tableName: table.tableName,
+        branchId: table.branchId,
+        branch: table.Branch ? 'EXISTS' : 'NULL',
+        company: table.Branch?.Company ? 'EXISTS' : 'NULL'
+      });
+    }
+    
     if (!table) {
       return res.status(404).json({ error: 'Table not found' });
+    }
+
+    if (!table.Branch) {
+      return res.status(500).json({ error: 'Table has no branch associated' });
+    }
+
+    if (!table.Branch.Company) {
+      return res.status(500).json({ error: 'Branch has no company associated' });
+    }
+
+    const companyId = table.Branch.Company.id;
+    console.log('Extracted companyId:', companyId);
+    let finalEventTypeId = eventTypeId;
+
+    // Case 1: Custom event with eventTypeId provided
+    if (eventTypeId && !systemEventType && !type) {
+      finalEventTypeId = eventTypeId;
+    }
+    // Case 2: System event with systemEventType provided (SCAN, MARK_SEEN, OCCUPY, VACATE)
+    else if (systemEventType && !eventTypeId) {
+      try {
+        console.log(`Looking for system event: ${systemEventType} in company: ${companyId}`);
+        const { EventType } = require('./src/models');
+        
+        // First, let's see what EventTypes exist
+        const allEventTypes = await EventType.findAll({
+          where: { companyId, isActive: true },
+          attributes: ['id', 'eventName', 'systemEventType']
+        });
+        console.log('All EventTypes for company:', allEventTypes.map(et => et.toJSON()));
+        
+        const eventType = await EventType.findOne({
+          where: {
+            companyId,
+            systemEventType,
+            isActive: true
+          }
+        });
+        
+        console.log('Found eventType for systemEventType:', eventType ? eventType.toJSON() : 'null');
+        
+        if (!eventType) {
+          return res.status(400).json({ error: `System event type ${systemEventType} not found for company ${companyId}` });
+        }
+        
+        finalEventTypeId = eventType.id;
+        console.log(`Resolved system event '${systemEventType}' to eventTypeId: ${finalEventTypeId}`);
+      } catch (error) {
+        console.error('Failed to resolve system event type:', error);
+        return res.status(400).json({ error: `Invalid system event type: ${systemEventType}` });
+      }
+    }
+    // Case 3: Legacy support - type string provided
+    else if (type && !eventTypeId && !systemEventType) {
+      try {
+        const EventConfigService = require('./src/services/eventConfig');
+        const eventType = await EventConfigService.findEventTypeByLegacyType(type, companyId);
+        finalEventTypeId = eventType.id;
+        console.log(`Resolved legacy type '${type}' to eventTypeId: ${finalEventTypeId}`);
+      } catch (error) {
+        console.error('Failed to resolve legacy event type:', error.message);
+        return res.status(400).json({ error: `Invalid event type: ${type}` });
+      }
+    }
+
+    if (!finalEventTypeId) {
+      return res.status(400).json({ error: 'Either eventTypeId, systemEventType, or type is required' });
     }
 
     // Crear el nuevo evento
     await Event.create({
       tableId,
-      type,
+      eventTypeId: finalEventTypeId,
+      type, // Keep for backward compatibility during migration
       message,
       createdAt: currentTime,
       seenAt: null
@@ -159,7 +274,12 @@ app.post('/api/tables/:id/events', async (req, res) => {
       include: [{
         model: Event,
         as: 'events',
-        attributes: ['type', 'message', 'createdAt', 'seenAt'],
+        include: [{
+          model: require('./src/models').EventType,
+          as: 'eventType',
+          attributes: ['id', 'eventName', 'stateName', 'userColor', 'adminColor', 'priority']
+        }],
+        attributes: ['id', 'type', 'message', 'createdAt', 'seenAt', 'eventTypeId'],
       }],
       order: [['events', 'createdAt', 'DESC']]
     });
@@ -361,10 +481,13 @@ app.put('/api/tables/:id/mark-seen', authMiddleware.authenticate, async (req, re
   try {
     const { id } = req.params;
     const currentTime = new Date();
-
-    // Primero, obtener todos los eventos no vistos de la mesa
+    
+    // Get table with branch info to determine company
     const table = await Table.findByPk(id, {
       include: [{
+        model: Branch,
+        include: [{ model: Company }]
+      }, {
         model: Event,
         as: 'events',
         where: {
@@ -373,20 +496,42 @@ app.put('/api/tables/:id/mark-seen', authMiddleware.authenticate, async (req, re
         required: false
       }]
     });
-
+    
     if (!table) {
       return res.status(404).json({ error: 'Table not found' });
     }
 
-    // Crear evento MARK_SEEN
-    await Event.create({
-      tableId: id,
-      type: EventTypes.MARK_SEEN,
-      createdAt: currentTime,
-      seenAt: currentTime
+    const companyId = table.Branch.Company.id;
+    
+    // Find MARK_SEEN EventType for this company
+    const markSeenEventType = await EventType.findOne({
+      where: {
+        companyId,
+        systemEventType: 'MARK_SEEN',
+        isActive: true
+      }
     });
     
-    // Marcar todos los eventos no vistos como vistos
+    // Create MARK_SEEN event (system events are auto-seen)
+    if (markSeenEventType) {
+      await Event.create({
+        tableId: id,
+        eventTypeId: markSeenEventType.id,
+        message: null,
+        createdAt: currentTime,
+        seenAt: currentTime // System events are immediately seen
+      });
+    } else {
+      // Fallback to legacy format for backward compatibility
+      await Event.create({
+        tableId: id,
+        type: EventTypes.MARK_SEEN,
+        createdAt: currentTime,
+        seenAt: currentTime
+      });
+    }
+    
+    // Mark all unseen events as seen
     await Event.update(
       { seenAt: currentTime },
       {
@@ -396,17 +541,17 @@ app.put('/api/tables/:id/mark-seen', authMiddleware.authenticate, async (req, re
         }
       }
     );
-
-    // Obtener la mesa actualizada con TODOS sus eventos
+    
+    // Get updated table with all events
     const updatedTable = await Table.findByPk(id, {
       include: [{
         model: Event,
         as: 'events',
-        attributes: ['type', 'message', 'createdAt', 'seenAt'],
+        attributes: ['type', 'eventTypeId', 'message', 'createdAt', 'seenAt'],
       }],
       order: [['events', 'createdAt', 'DESC']]
     });
-
+    
     res.json(formatTableWithEvents(updatedTable));
   } catch (error) {
     console.error('Error marking events as seen:', error);
@@ -420,13 +565,21 @@ app.put('/api/tables/:id/mark-available', authMiddleware.authenticate, async (re
     const { id } = req.params;
     const currentTime = new Date();
 
-    // Verificar que la mesa existe
-    const table = await Table.findByPk(id);
+    // Get table with branch info to determine company
+    const table = await Table.findByPk(id, {
+      include: [{
+        model: Branch,
+        include: [{ model: Company }]
+      }]
+    });
+    
     if (!table) {
       return res.status(404).json({ error: 'Table not found' });
     }
 
-    // Marcar todos los eventos como vistos
+    const companyId = table.Branch.Company.id;
+
+    // Mark all unseen events as seen
     await Event.update(
       { seenAt: currentTime },
       {
@@ -437,20 +590,40 @@ app.put('/api/tables/:id/mark-available', authMiddleware.authenticate, async (re
       }
     );
 
-    // Crear evento MARK_AVAILABLE
-    await Event.create({
-      tableId: id,
-      type: EventTypes.MARK_AVAILABLE,
-      createdAt: currentTime,
-      seenAt: currentTime
+    // Find VACATE EventType for this company
+    const vacateEventType = await EventType.findOne({
+      where: {
+        companyId,
+        systemEventType: 'VACATE',
+        isActive: true
+      }
     });
 
-    // Obtener la mesa actualizada con TODOS sus eventos
+    // Create VACATE event (system events are auto-seen)
+    if (vacateEventType) {
+      await Event.create({
+        tableId: id,
+        eventTypeId: vacateEventType.id,
+        message: null,
+        createdAt: currentTime,
+        seenAt: currentTime // System events are immediately seen
+      });
+    } else {
+      // Fallback to legacy format for backward compatibility
+      await Event.create({
+        tableId: id,
+        type: EventTypes.MARK_AVAILABLE,
+        createdAt: currentTime,
+        seenAt: currentTime
+      });
+    }
+
+    // Get updated table with all events
     const updatedTable = await Table.findByPk(id, {
       include: [{
         model: Event,
         as: 'events',
-        attributes: ['type', 'message', 'createdAt', 'seenAt'],
+        attributes: ['type', 'eventTypeId', 'message', 'createdAt', 'seenAt'],
       }],
       order: [['events', 'createdAt', 'DESC']]
     });
@@ -468,26 +641,54 @@ app.put('/api/tables/:id/mark-occupied', authMiddleware.authenticate, async (req
     const { id } = req.params;
     const currentTime = new Date();
 
-    // Verificar que la mesa existe
-    const table = await Table.findByPk(id);
+    // Get table with branch info to determine company
+    const table = await Table.findByPk(id, {
+      include: [{
+        model: Branch,
+        include: [{ model: Company }]
+      }]
+    });
+    
     if (!table) {
       return res.status(404).json({ error: 'Table not found' });
     }
 
-    // Crear evento SCAN (que indica ocupación)
-    await Event.create({
-      tableId: id,
-      type: 'SCAN',
-      createdAt: currentTime,
-      seenAt: currentTime
+    const companyId = table.Branch.Company.id;
+
+    // Find OCCUPY EventType for this company
+    const occupyEventType = await EventType.findOne({
+      where: {
+        companyId,
+        systemEventType: 'OCCUPY',
+        isActive: true
+      }
     });
 
-    // Obtener la mesa actualizada con TODOS sus eventos
+    // Create OCCUPY event (system events are auto-seen)
+    if (occupyEventType) {
+      await Event.create({
+        tableId: id,
+        eventTypeId: occupyEventType.id,
+        message: null,
+        createdAt: currentTime,
+        seenAt: currentTime // System events are immediately seen
+      });
+    } else {
+      // Fallback to legacy SCAN format for backward compatibility
+      await Event.create({
+        tableId: id,
+        type: 'SCAN',
+        createdAt: currentTime,
+        seenAt: currentTime
+      });
+    }
+
+    // Get updated table with all events
     const updatedTable = await Table.findByPk(id, {
       include: [{
         model: Event,
         as: 'events',
-        attributes: ['type', 'message', 'createdAt', 'seenAt'],
+        attributes: ['type', 'eventTypeId', 'message', 'createdAt', 'seenAt'],
       }],
       order: [['events', 'createdAt', 'DESC']]
     });

@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getCompany, updateCompany, createBranch, deleteBranch, getBranches } from '../services/api';
 import './CompanyConfig.css';
-import { FaEye, FaSave, FaStore, FaCog, FaTrash, FaPlus, FaDownload } from 'react-icons/fa';
+import { FaEye, FaSave, FaStore, FaCog, FaTrash, FaPlus, FaDownload, FaCalendarAlt } from 'react-icons/fa';
 import '../styles/common.css';
 import AdminHeader from './AdminHeader';
+import EventConfigModal from './EventConfigModal';
 
 const CompanyConfig = () => {
   const { companyId } = useParams();
@@ -12,6 +13,7 @@ const CompanyConfig = () => {
   const [company, setCompany] = useState(null);
   const [branches, setBranches] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showEventConfigModal, setShowEventConfigModal] = useState(false);
   const [editedCompany, setEditedCompany] = useState({
     name: "",
     website: "",
@@ -155,9 +157,17 @@ const CompanyConfig = () => {
                 placeholder="Ingrese URL del menú"
               />
             </div>
-            <button className="app-button success" onClick={handleSave}>
-              <FaSave /> Guardar Cambios
-            </button>
+            <div className="company-actions">
+              <button className="app-button success" onClick={handleSave}>
+                <FaSave /> Guardar Cambios
+              </button>
+              <button 
+                className="app-button primary"
+                onClick={() => setShowEventConfigModal(true)}
+              >
+                <FaCalendarAlt /> Configurar Eventos
+              </button>
+            </div>
           </div>
 
           <div className="branches-section">
@@ -225,6 +235,16 @@ const CompanyConfig = () => {
           </div>
         </div>
       </div>
+
+      {/* Event Configuration Modal */}
+      <EventConfigModal
+        isOpen={showEventConfigModal}
+        onClose={() => setShowEventConfigModal(false)}
+        resourceType="company"
+        resourceId={companyId}
+        companyId={companyId}
+        resourceName={company?.name || 'Company'}
+      />
     </div>
   );
 };

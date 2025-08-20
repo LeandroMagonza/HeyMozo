@@ -73,7 +73,9 @@
 .branch-actions-row {
   display: flex;
   justify-content: flex-end;
+  gap: 12px;
   margin-bottom: 20px;
+  flex-wrap: wrap;
 }
 
 .section-divider {

@@ -3,7 +3,7 @@ import EventsList from './EventsList';
 import './HistoryModal.css';
 import { FaTimes } from 'react-icons/fa';
 
-const HistoryModal = ({ show, onClose, events }) => {
+const HistoryModal = ({ show, onClose, events, eventTypes = [] }) => {
   if (!show) return null;
 
   return (
@@ -16,7 +16,7 @@ const HistoryModal = ({ show, onClose, events }) => {
           </button>
         </div>
         <div className="history-modal-content">
-          <EventsList events={events} showSeenStatus={false} />
+          <EventsList events={events} showSeenStatus={false} eventTypes={eventTypes} isAdminView={false} />
         </div>
       </div>
     </div>

@@ -3,9 +3,10 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { getBranch, getTables, updateBranch, updateTable, createTable, deleteTable, getCompany } from '../services/api';
 import './BranchConfig.css';
-import { FaEye, FaQrcode, FaChair, FaSave, FaTrash, FaPlus } from 'react-icons/fa';
+import { FaEye, FaQrcode, FaChair, FaSave, FaTrash, FaPlus, FaCalendarAlt } from 'react-icons/fa';
 import '../styles/common.css';
 import AdminHeader from './AdminHeader';
+import EventConfigModal from './EventConfigModal';
 
 const BranchConfig = () => {
   const { companyId, branchId } = useParams();
@@ -15,6 +16,7 @@ const BranchConfig = () => {
   const [editedBranch, setEditedBranch] = useState(null);
   const [tables, setTables] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showEventConfigModal, setShowEventConfigModal] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -245,6 +247,12 @@ const BranchConfig = () => {
             <button className="app-button success" onClick={handleSaveBranch}>
               <FaSave /> Guardar Cambios
             </button>
+            <button 
+              className="app-button primary"
+              onClick={() => setShowEventConfigModal(true)}
+            >
+              <FaCalendarAlt /> Configurar Eventos
+            </button>
           </div>
 
           <hr className="section-divider" />
@@ -318,6 +326,16 @@ const BranchConfig = () => {
           </div>
         </div>
       </div>
+
+      {/* Event Configuration Modal */}
+      <EventConfigModal
+        isOpen={showEventConfigModal}
+        onClose={() => setShowEventConfigModal(false)}
+        resourceType="branch"
+        resourceId={branchId}
+        companyId={companyId}
+        resourceName={branch?.name || 'Branch'}
+      />
     </div>
   );
 };

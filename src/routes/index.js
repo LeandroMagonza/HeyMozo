@@ -203,11 +203,35 @@ router.get('/tables', async (req, res) => {
         where: { branchId: parseInt(branchId) },
         include: [{
           model: Event,
-          as: 'events'
+          as: 'events',
+          include: [{
+            model: require('../models').EventType,
+            as: 'eventType',
+            attributes: ['id', 'eventName', 'stateName', 'userColor', 'userFontColor', 'userIcon', 'adminColor', 'priority', 'systemEventType']
+          }]
         }],
         order: [['events', 'createdAt', 'DESC']]
       });
-      return res.json(tables);
+
+      // Get available event types for the branch/company
+      const EventConfigService = require('../services/eventConfig');
+      const tablesWithEventTypes = await Promise.all(tables.map(async (table) => {
+        try {
+          const availableEventTypes = await EventConfigService.getAdminEventsForTable(table.id);
+          return {
+            ...table.toJSON(),
+            availableEventTypes
+          };
+        } catch (error) {
+          console.error(`Error getting event types for table ${table.id}:`, error);
+          return {
+            ...table.toJSON(),
+            availableEventTypes: []
+          };
+        }
+      }));
+
+      return res.json(tablesWithEventTypes);
     }
     
     // Return all tables user has access to
@@ -215,11 +239,35 @@ router.get('/tables', async (req, res) => {
       const tables = await Table.findAll({
         include: [{
           model: Event,
-          as: 'events'
+          as: 'events',
+          include: [{
+            model: require('../models').EventType,
+            as: 'eventType',
+            attributes: ['id', 'eventName', 'stateName', 'userColor', 'userFontColor', 'userIcon', 'adminColor', 'priority', 'systemEventType']
+          }]
         }],
         order: [['events', 'createdAt', 'DESC']]
       });
-      return res.json(tables);
+
+      // Get available event types for each table
+      const EventConfigService = require('../services/eventConfig');
+      const tablesWithEventTypes = await Promise.all(tables.map(async (table) => {
+        try {
+          const availableEventTypes = await EventConfigService.getAdminEventsForTable(table.id);
+          return {
+            ...table.toJSON(),
+            availableEventTypes
+          };
+        } catch (error) {
+          console.error(`Error getting event types for table ${table.id}:`, error);
+          return {
+            ...table.toJSON(),
+            availableEventTypes: []
+          };
+        }
+      }));
+
+      return res.json(tablesWithEventTypes);
     }
     
     // For regular users, need to find accessible branches first
@@ -258,12 +306,35 @@ router.get('/tables', async (req, res) => {
       },
       include: [{
         model: Event,
-        as: 'events'
+        as: 'events',
+        include: [{
+          model: require('../models').EventType,
+          as: 'eventType',
+          attributes: ['id', 'eventName', 'stateName', 'userColor', 'adminColor', 'priority', 'systemEventType']
+        }]
       }],
       order: [['events', 'createdAt', 'DESC']]
     });
+
+    // Get available event types for each table
+    const EventConfigService = require('../services/eventConfig');
+    const tablesWithEventTypes = await Promise.all(tables.map(async (table) => {
+      try {
+        const availableEventTypes = await EventConfigService.getAdminEventsForTable(table.id);
+        return {
+          ...table.toJSON(),
+          availableEventTypes
+        };
+      } catch (error) {
+        console.error(`Error getting event types for table ${table.id}:`, error);
+        return {
+          ...table.toJSON(),
+          availableEventTypes: []
+        };
+      }
+    }));
     
-    res.json(tables);
+    res.json(tablesWithEventTypes);
   } catch (error) {
     console.error('Error fetching tables:', error);
     res.status(500).json({ error: 'Error fetching tables' });
@@ -275,7 +346,12 @@ router.get('/tables/:tableId', authMiddleware.checkTablePermission, async (req, 
     const table = await Table.findByPk(req.params.tableId, {
       include: [{
         model: Event,
-        as: 'events'
+        as: 'events',
+        include: [{
+          model: require('../models').EventType,
+          as: 'eventType',
+          attributes: ['id', 'eventName', 'stateName', 'userColor', 'adminColor', 'priority', 'systemEventType']
+        }]
       }],
       order: [['events', 'createdAt', 'DESC']]
     });
@@ -283,8 +359,23 @@ router.get('/tables/:tableId', authMiddleware.checkTablePermission, async (req, 
     if (!table) {
       return res.status(404).json({ error: 'Table not found' });
     }
-    
-    res.json(table);
+
+    // Get available event types for this table
+    const EventConfigService = require('../services/eventConfig');
+    try {
+      const availableEventTypes = await EventConfigService.getAdminEventsForTable(table.id);
+      const tableWithEventTypes = {
+        ...table.toJSON(),
+        availableEventTypes
+      };
+      res.json(tableWithEventTypes);
+    } catch (error) {
+      console.error(`Error getting event types for table ${table.id}:`, error);
+      res.json({
+        ...table.toJSON(),
+        availableEventTypes: []
+      });
+    }
   } catch (error) {
     console.error('Error fetching table:', error);
     res.status(500).json({ error: 'Error fetching table' });
@@ -300,16 +391,36 @@ router.put('/tables/:tableId', authMiddleware.checkTablePermission, async (req, 
     
     await table.update(req.body);
     
-    // Fetch updated table with events
+    // Fetch updated table with events and event types
     const updatedTable = await Table.findByPk(req.params.tableId, {
       include: [{
         model: Event,
-        as: 'events'
+        as: 'events',
+        include: [{
+          model: require('../models').EventType,
+          as: 'eventType',
+          attributes: ['id', 'eventName', 'stateName', 'userColor', 'adminColor', 'priority', 'systemEventType']
+        }]
       }],
       order: [['events', 'createdAt', 'DESC']]
     });
-    
-    res.json(updatedTable);
+
+    // Get available event types for this table
+    const EventConfigService = require('../services/eventConfig');
+    try {
+      const availableEventTypes = await EventConfigService.getAdminEventsForTable(updatedTable.id);
+      const tableWithEventTypes = {
+        ...updatedTable.toJSON(),
+        availableEventTypes
+      };
+      res.json(tableWithEventTypes);
+    } catch (error) {
+      console.error(`Error getting event types for table ${updatedTable.id}:`, error);
+      res.json({
+        ...updatedTable.toJSON(),
+        availableEventTypes: []
+      });
+    }
   } catch (error) {
     console.error('Error updating table:', error);
     res.status(500).json({ error: 'Error updating table' });
@@ -318,8 +429,11 @@ router.put('/tables/:tableId', authMiddleware.checkTablePermission, async (req, 
 
 // POST route to create a new table
 router.post('/tables', async (req, res) => {
+  const logger = require('../utils/logger');
+  
   try {
     const { branchId } = req.body;
+    logger.request('POST', '/api/tables', req.user);
     
     if (branchId) {
       // Check permission for specific branch
@@ -333,15 +447,29 @@ router.post('/tables', async (req, res) => {
     }
     
     const table = await Table.create(req.body);
+    logger.info(`Table created successfully`, { id: table.id, branchId });
     
-    // Si hay eventos iniciales, crearlos
-    if (req.body.events && req.body.events.length > 0) {
-      await Event.bulkCreate(
-        req.body.events.map(event => ({
-          ...event,
-          tableId: table.id
-        }))
-      );
+    // Create initial VACATE event to mark table as unoccupied
+    const { EventType } = require('../models');
+    const vacateEventType = await EventType.findOne({
+      where: { 
+        systemEventType: 'VACATE',
+        companyId: branchId ? 
+          (await require('../models').Branch.findByPk(branchId))?.companyId : 
+          req.body.companyId
+      }
+    });
+    
+    if (vacateEventType) {
+      await Event.create({
+        tableId: table.id,
+        eventTypeId: vacateEventType.id,
+        type: 'VACATE', // Legacy support
+        message: 'Table initialized as available'
+      });
+      logger.info(`Created initial VACATE event for table ${table.id}`);
+    } else {
+      logger.warn(`No VACATE event type found for table ${table.id}`);
     }
 
     // Devolver la mesa con sus eventos
@@ -355,7 +483,23 @@ router.post('/tables', async (req, res) => {
 
     res.status(201).json(tableWithEvents);
   } catch (error) {
-    console.error('Error creating table:', error);
+    const logger = require('../utils/logger');
+    logger.error('Failed to create table', error);
+    
+    // Send more specific error messages
+    if (error.name === 'SequelizeValidationError') {
+      return res.status(400).json({ 
+        error: 'Validation error', 
+        details: error.errors.map(e => e.message) 
+      });
+    }
+    
+    if (error.name === 'SequelizeUniqueConstraintError') {
+      return res.status(409).json({ 
+        error: 'Table with this identifier already exists' 
+      });
+    }
+    
     res.status(500).json({ error: 'Error creating table' });
   }
 });
@@ -424,6 +568,10 @@ router.post('/companies', authMiddleware.authenticate, async (req, res) => {
       resourceId: company.id,
       permissionLevel: 'edit' // Full access to the company they created
     });
+    
+    // Create default event types for the new company
+    const EventConfigService = require('../services/eventConfig');
+    await EventConfigService.createDefaultEventTypes(company.id, req.user.id);
     
     res.status(201).json(company);
   } catch (error) {

@@ -26,21 +26,10 @@ const generateToken = (user) => {
  * @param {Function} next - Express next function
  */
 const authenticate = async (req, res, next) => {
-  console.log('🔒 AUTH MIDDLEWARE CALLED');
-  console.log('🔗 Request URL:', req.url);
-  console.log('🔗 Request Method:', req.method);
-  console.log('🔗 Request Path:', req.path);
-  console.log('🔗 Original URL:', req.originalUrl);
-  console.log('🔗 Base URL:', req.baseUrl);
-  console.log('📊 Stack trace:');
-  console.trace('Authentication middleware call stack');
-  
   // Get the token from the Authorization header
   const authHeader = req.headers.authorization;
-  console.log('🎫 Authorization header:', authHeader ? 'Present' : 'Missing');
   
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    console.log('❌ No valid authorization header found, returning 401');
     return res.status(401).json({ error: 'Authentication required' });
   }
 

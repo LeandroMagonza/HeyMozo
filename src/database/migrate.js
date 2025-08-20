@@ -23,8 +23,18 @@ async function migrate() {
     await sequelize.authenticate();
     console.log('✅ Database connection established');
     
-    // Sincronizar todos los modelos
-    await sequelize.sync(syncOptions);
+    // Sincronizar todos los modelos con manejo de errores de índices
+    try {
+      await sequelize.sync(syncOptions);
+    } catch (error) {
+      // If it's an index already exists error, try without alter
+      if (error.message?.includes('ya existe') || error.message?.includes('already exists')) {
+        console.log('⚠️ Index already exists, trying sync without alter...');
+        await sequelize.sync({ force: false });
+      } else {
+        throw error;
+      }
+    }
     
     console.log('✅ Database tables synchronized successfully');
     

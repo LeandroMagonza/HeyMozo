@@ -54,3 +54,51 @@
 .manager-button:hover {
   background-color: #c82333 !important;
 }
+
+/* Dynamic event button styles */
+.dynamic-event-button {
+  background-color: var(--event-color, #007bff) !important;
+  border: 2px solid var(--event-color, #007bff) !important;
+  color: var(--event-font-color, #ffffff) !important;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.dynamic-event-button:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.dynamic-event-button .button-icon {
+  color: inherit;
+  flex-shrink: 0;
+}
+
+.dynamic-event-button .button-text {
+  color: inherit;
+  line-height: 1.2;
+}
+
+.menu-button {
+  background-color: #28a745 !important;
+  border-color: #28a745 !important;
+}
+
+.menu-button:hover {
+  background-color: #218838 !important;
+  border-color: #1e7e34 !important;
+}
+
+.history-button {
+  background-color: #6c757d !important;
+  border-color: #6c757d !important;
+}
+
+.history-button:hover {
+  background-color: #5a6268 !important;
+  border-color: #545b62 !important;
+}

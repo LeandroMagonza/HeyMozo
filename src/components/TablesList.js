@@ -37,9 +37,9 @@ const TablesList = ({
           </thead>
           <tbody>
             {tables.map((table) => (
-              <tr key={table.id} style={{ backgroundColor: TableColors[table.currentState] }}>
+              <tr key={table.id} style={{ backgroundColor: table.stateColor || TableColors[table.currentState] }}>
                 <td>{table.tableName || '-'}</td>
-                <td>{translateState(table.currentState)}</td>
+                <td>{table.eventType?.stateName || translateState(table.currentState)}</td>
                 <td>{msToMinutes(table.waitingTime)} min</td>
                 <td>
                   <div className="table-actions">
@@ -85,12 +85,12 @@ const TablesList = ({
           <div
             key={table.id}
             className="chat-like-item"
-            style={{ backgroundColor: TableColors[table.currentState] }}
+            style={{ backgroundColor: table.stateColor || TableColors[table.currentState] }}
             onClick={() => onTableClick(table)}
           >
             <div className="chat-header">
               <span className="table-name">
-                {table.tableName || '-'} - {translateState(table.currentState)}
+                {table.tableName || '-'} - {table.eventType?.stateName || translateState(table.currentState)}
               </span>
               <span className="waiting-time">{msToMinutes(table.waitingTime)} min</span>
             </div>

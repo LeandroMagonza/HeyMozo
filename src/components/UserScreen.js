@@ -17,6 +17,7 @@ const UserScreen = () => {
   const [branch, setBranch] = useState(null);
   const [table, setTable] = useState(null);
   const [events, setEvents] = useState([]);
+  const [availableEventTypes, setAvailableEventTypes] = useState([]);
   const [menuLink, setMenuLink] = useState('');
   const [texts, setTexts] = useState({
     showMenu: 'Mostrar Menú',
@@ -31,6 +32,7 @@ const UserScreen = () => {
   useEffect(() => {
     const loadData = async () => {
       try {
+        // Load basic data first
         const [companyData, branchData, tableData] = await Promise.all([
           getCompany(companyId),
           getBranch(branchId),
@@ -43,27 +45,31 @@ const UserScreen = () => {
         setBranch(branchData.data);
         setTable(tableData.data);
 
-        // Crear evento de escaneo local (sin seenAt)
-        const scanEvent = {
-          type: EventTypes.SCAN,
-          message: null,
-          createdAt: new Date().toISOString(),
-          seenAt: null  // Explícitamente null
-        };
+        // Get available event types from table response
+        const availableEvents = tableData.data.availableEventTypes || [];
+        setAvailableEventTypes(availableEvents);
+        console.log('Available event types:', availableEvents);
 
+        // Set events from table response
+        if (tableData.data.events) {
+          setEvents(tableData.data.events);
+        }
+
+        // Send SCAN event automatically (customers scan QR to access page)
         try {
-          const response = await sendEvent(tableId, scanEvent);
-          console.log('Scan event response:', response.data);
-          // Usar los eventos de la respuesta del servidor
-          if (response.data && response.data.events) {
-            setEvents(response.data.events);
-          } else {
-            setEvents([scanEvent]);
+          const scanEvent = {
+            systemEventType: 'SCAN',
+            message: null
+          };
+
+          const scanResponse = await sendEvent(tableId, scanEvent);
+          console.log('Scan event sent successfully');
+          
+          if (scanResponse.data && scanResponse.data.events) {
+            setEvents(scanResponse.data.events);
           }
         } catch (error) {
           console.error('Error sending scan event:', error);
-          // Usar evento local como fallback
-          setEvents([scanEvent]);
         }
 
         // Solo establecer el menuLink si existe una URL en la sucursal o compañía
@@ -94,22 +100,25 @@ const UserScreen = () => {
 
   const handleModalSubmit = async (message) => {
     try {
-      const newEvent = {
+      // modalEventType is now the full event type object
+      const eventType = modalEventType && modalEventType.id 
+        ? modalEventType 
+        : availableEventTypes.find(et => et.id === modalEventType || et.eventName === modalEventType);
+      
+      const newEvent = eventType ? {
+        eventTypeId: eventType.id,
+        message: message || null
+      } : {
         type: modalEventType,
-        message: message || null,
-        createdAt: new Date().toISOString(),
-        seenAt: null  // Explícitamente null
+        message: message || null
       };
 
       const response = await sendEvent(tableId, newEvent);
       console.log('Event response:', response.data);
       
-      // Usar los eventos de la respuesta del servidor
+      // Update events from server response
       if (response.data && response.data.events) {
         setEvents(response.data.events);
-      } else {
-        // Agregar el nuevo evento a la lista local como fallback
-        setEvents(prevEvents => [...prevEvents, newEvent]);
       }
       handleCloseModal();
     } catch (error) {
@@ -119,10 +128,18 @@ const UserScreen = () => {
 
   const handleDirectEvent = async (eventType) => {
     try {
-      const response = await sendEvent(tableId, {
+      // Find the event type object from available events or use legacy format
+      const eventTypeObj = availableEventTypes.find(et => et.id === eventType || et.eventName === eventType);
+      
+      const eventData = eventTypeObj ? {
+        eventTypeId: eventTypeObj.id,
+        message: null
+      } : {
         type: eventType,
         message: null
-      });
+      };
+
+      const response = await sendEvent(tableId, eventData);
 
       console.log('Direct event response:', response.data);
       if (response.data) {
@@ -173,6 +190,7 @@ const UserScreen = () => {
             onEventSubmit={(eventType) => handleOpenModal(eventType)}
             onShowEvents={handleOpenEventsModal}
             showMenuButton={!!menuLink}
+            availableEvents={availableEventTypes}
           />
         </div>
 
@@ -187,11 +205,13 @@ const UserScreen = () => {
           onClose={handleCloseModal}
           onSubmit={handleModalSubmit}
           title={
-            modalEventType === EventTypes.CALL_WAITER 
-              ? "Llamar al Mesero" 
-              : modalEventType === EventTypes.REQUEST_CHECK 
-                ? "Solicitar Cuenta"
-                : "Llamar al Encargado"
+            modalEventType && modalEventType.eventName 
+              ? modalEventType.eventName
+              : modalEventType === EventTypes.CALL_WAITER 
+                ? "Llamar al Mesero" 
+                : modalEventType === EventTypes.REQUEST_CHECK 
+                  ? "Solicitar Cuenta"
+                  : "Llamar al Encargado"
           }
           messagePlaceholder="Ingrese un mensaje opcional..."
           eventType={modalEventType}
@@ -201,6 +221,7 @@ const UserScreen = () => {
           show={showEventsModal}
           onClose={handleCloseEventsModal}
           events={events}
+          eventTypes={availableEventTypes}
         />
       </div>
     </div>

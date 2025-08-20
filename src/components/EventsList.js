@@ -6,10 +6,30 @@ import { EventColors } from "../theme";
 import { translateEvent } from "../utils/translations";
 import { FaCheckCircle } from "react-icons/fa";
 
-const EventsList = ({ events, showSeenStatus = true }) => {
+const EventsList = ({ events, showSeenStatus = true, eventTypes = [], isAdminView = true }) => {
   const [isScrollingDown, setIsScrollingDown] = useState(false);
   const lastScrollTop = useRef(0);
   const containerRef = useRef(null);
+
+  // Helper function to get event type information
+  const getEventTypeInfo = (event) => {
+    if (event.eventTypeId) {
+      // Use dynamic EventType
+      const eventType = eventTypes.find(et => et.id === event.eventTypeId);
+      if (eventType) {
+        return {
+          name: isAdminView ? eventType.stateName : eventType.eventName,
+          color: isAdminView ? eventType.adminColor : eventType.userColor
+        };
+      }
+    }
+    
+    // Fallback to legacy system
+    return {
+      name: translateEvent(event.type),
+      color: EventColors[event.type] || '#f8f9fa'
+    };
+  };
 
   // Detectar dirección del scroll
   useEffect(() => {
@@ -109,10 +129,12 @@ const EventsList = ({ events, showSeenStatus = true }) => {
           );
         }
 
+        const eventInfo = getEventTypeInfo(item);
+        
         return (
           <li
             key={item.originalIndex}
-            style={{ backgroundColor: EventColors[item.type] }}
+            style={{ backgroundColor: eventInfo.color }}
           >
             <div
               style={{
@@ -122,7 +144,7 @@ const EventsList = ({ events, showSeenStatus = true }) => {
               }}
             >
               <strong>
-                {translateEvent(item.type)}
+                {eventInfo.name}
                 {showSeenStatus && item.seenAt && (
                   <FaCheckCircle
                     style={{ marginLeft: "5px", color: "#4CAF50" }}

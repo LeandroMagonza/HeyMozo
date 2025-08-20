@@ -9,7 +9,8 @@ const AdminHistoryModal = ({
   selectedTable, 
   onMarkSeen,
   onMarkAsAvailable,
-  onMarkAsOccupied 
+  onMarkAsOccupied,
+  eventTypes = []
 }) => {
   if (!show || !selectedTable) return null;
 
@@ -59,7 +60,7 @@ const AdminHistoryModal = ({
           </div>
           <div className="events-list-container">
             {events.length > 0 ? (
-              <EventsList events={events} />
+              <EventsList events={events} eventTypes={eventTypes} isAdminView={true} />
             ) : (
               <div className="no-events-message">
                 <p>No hay eventos registrados para esta mesa.</p>

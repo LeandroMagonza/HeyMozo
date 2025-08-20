@@ -19,6 +19,7 @@ const AdminScreen = () => {
   const [company, setCompany] = useState(null);
   const [branch, setBranch] = useState(null);
   const [tables, setTables] = useState([]);
+  const [availableEventTypes, setAvailableEventTypes] = useState([]);
   const [currentTime, setCurrentTime] = useState(new Date());
   const refreshInterval = 6000; // 6 segundos en milisegundos
   const [refreshCountdown, setRefreshCountdown] = useState(refreshInterval / 1000);
@@ -45,6 +46,29 @@ const AdminScreen = () => {
   const audioRef = useRef(new Audio(notificationSound));
   const previousUnseenCountRef = useRef(0);
 
+  // Función para cargar tipos de evento disponibles
+  const loadEventTypes = useCallback(async () => {
+    try {
+      const response = await fetch(`/api/companies/${companyId}/event-types`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      if (response.ok) {
+        const eventTypes = await response.json();
+        setAvailableEventTypes(eventTypes);
+        console.log('Admin available event types:', eventTypes);
+      } else {
+        console.error('Failed to load event types for admin');
+        setAvailableEventTypes([]);
+      }
+    } catch (error) {
+      console.error('Error loading admin event types:', error);
+      setAvailableEventTypes([]);
+    }
+  }, [companyId]);
+
   // Función para obtener los datos
   const fetchData = useCallback(async () => {
     try {
@@ -56,14 +80,25 @@ const AdminScreen = () => {
 
       const tablesResponse = await getTables(branchId);
       setTables(tablesResponse.data);
-      //console.log('Mesas obtenidas:', tablesResponse.data);
+      
+      // Extract event types from the first table (they should be the same for all tables in a branch)
+      if (tablesResponse.data && tablesResponse.data.length > 0 && tablesResponse.data[0].availableEventTypes) {
+        setAvailableEventTypes(tablesResponse.data[0].availableEventTypes);
+        console.log('Admin available event types from table data:', tablesResponse.data[0].availableEventTypes);
+      } else {
+        // Fallback: Load event types separately if not included in table data
+        console.log('Fallback: Loading event types separately');
+        await loadEventTypes();
+      }
+      
+      console.log('Mesas obtenidas:', tablesResponse.data);
       setLoading(false);
     } catch (error) {
       console.error('Error fetching data:', error.response || error);
       setError(error.message);
       setLoading(false);
     }
-  }, [companyId, branchId]);
+  }, [companyId, branchId, loadEventTypes]);
 
   // Efecto para el refresco inicial y periódico
   useEffect(() => {
@@ -104,81 +139,130 @@ const AdminScreen = () => {
     return Math.floor(duration / (1000 * 60));
   };
 
-  // Función para determinar el estado y tiempo de espera de una mesa
-  const getTableStateAndWaitTime = (events, currentTime) => {
+  // New simplified function for determining table state and wait time
+  const getTableStateAndWaitTime = (events, currentTime, eventTypes = []) => {
     if (!Array.isArray(events) || events.length === 0) {
-      return { state: TableStates.AVAILABLE, waitTime: 24 * 60 * 60 * 1000 }; // 24 horas por defecto
+      return { 
+        state: 'AVAILABLE', 
+        waitTime: 24 * 60 * 60 * 1000, 
+        priority: 0,
+        eventType: null,
+        color: '#28a745' // Default green for available
+      };
     }
 
-    // Asegurar que los eventos estén ordenados de más nuevo a más viejo
+    // Sort events from newest to oldest
     const sortedEvents = [...events].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
-    let state = TableStates.AVAILABLE;
-    let scanFound = null;
-    let unseenWaiterFound = null;
-    let unseenCheckFound = null;
-    let unseenManagerFound = null;
-    let markAvailablefound = new Date(new Date().setDate(new Date().getDate() - 1));
-    // Los eventos vienen ordenados del más nuevo al más viejo
+    // Find first non-MARK_SEEN event
+    let firstRelevantEvent = null;
     for (const event of sortedEvents) {
-      if (event.type === EventTypes.MARK_AVAILABLE) {
-        markAvailablefound = new Date(event.createdAt);
-        break; // Termina la ocupación
-      }
-
-      if (event.type === 'SCAN') {
-        scanFound = new Date(event.createdAt);
-      }
-
-      if (!event.seenAt) {
-        if (event.type === EventTypes.CALL_MANAGER) {
-          unseenManagerFound = new Date(event.createdAt);
-        }
-        if (event.type === EventTypes.REQUEST_CHECK) {
-          unseenCheckFound = new Date(event.createdAt);
-        }
-        if (event.type === EventTypes.CALL_WAITER) {
-          unseenWaiterFound = new Date(event.createdAt);
-        }
+      // Skip MARK_SEEN events
+      const eventType = eventTypes.find(et => 
+        (et.id === event.eventTypeId) || 
+        (et.systemEventType === 'MARK_SEEN' && (event.type === 'MARK_SEEN' || event.type === EventTypes.MARK_SEEN))
+      );
+      
+      if (!eventType || eventType.systemEventType !== 'MARK_SEEN') {
+        firstRelevantEvent = event;
+        break;
       }
     }
 
-    let waitTime = 0;
-
-    if (unseenManagerFound && unseenWaiterFound && unseenCheckFound) {
-      state = TableStates.MANAGER_WAITER_CHECK;
-      waitTime = currentTime - Math.min(unseenManagerFound, unseenCheckFound, unseenWaiterFound);
-    } else if (unseenManagerFound && unseenWaiterFound) {
-      state = TableStates.MANAGER_WAITER;
-      waitTime = currentTime - Math.min(unseenManagerFound, unseenWaiterFound);
-    } else if (unseenManagerFound && unseenCheckFound) {
-      state = TableStates.MANAGER_CHECK;
-      waitTime = currentTime - Math.min(unseenManagerFound, unseenCheckFound);
-    } else if (unseenWaiterFound && unseenCheckFound) {
-      state = TableStates.WAITER_AND_CHECK;
-      waitTime = currentTime - Math.min(unseenWaiterFound, unseenCheckFound);
-    } else if (unseenWaiterFound) {
-      state = TableStates.WAITER;
-      waitTime = currentTime - unseenWaiterFound;
-    } else if (unseenCheckFound) {
-      state = TableStates.CHECK;
-      waitTime = currentTime - unseenCheckFound;
-    } else if (unseenManagerFound) {
-      state = TableStates.MANAGER;
-      waitTime = currentTime - unseenManagerFound;
-    } else if (scanFound) {
-      state = TableStates.OCCUPIED;
-      waitTime = currentTime - scanFound;
-    } else {
-      state = TableStates.AVAILABLE;
-      waitTime = currentTime - markAvailablefound;
+    if (!firstRelevantEvent) {
+      return { 
+        state: 'AVAILABLE', 
+        waitTime: 24 * 60 * 60 * 1000,
+        priority: 0,
+        eventType: null,
+        color: '#28a745'
+      };
     }
 
-    return { state, waitTime };
+    // Find the EventType for this event
+    let relevantEventType = eventTypes.find(et => 
+      et.id === firstRelevantEvent.eventTypeId ||
+      et.systemEventType === 'VACATE' && (firstRelevantEvent.type === 'MARK_AVAILABLE' || firstRelevantEvent.type === EventTypes.MARK_AVAILABLE) ||
+      et.systemEventType === 'SCAN' && firstRelevantEvent.type === 'SCAN' ||
+      et.systemEventType === 'OCCUPY' && firstRelevantEvent.type === 'OCCUPY' ||
+      et.eventName === firstRelevantEvent.type // Legacy fallback
+    );
+
+    // If first event is VACATE, table is available
+    if (relevantEventType?.systemEventType === 'VACATE' || 
+        firstRelevantEvent.type === 'MARK_AVAILABLE' || 
+        firstRelevantEvent.type === EventTypes.MARK_AVAILABLE) {
+      return {
+        state: 'AVAILABLE',
+        waitTime: currentTime - new Date(firstRelevantEvent.createdAt),
+        priority: 0,
+        eventType: relevantEventType,
+        color: relevantEventType?.adminColor || '#28a745'
+      };
+    }
+
+    // Check for unseen custom events (highest priority first)
+    const unseenCustomEvents = sortedEvents
+      .filter(event => !event.seenAt)
+      .map(event => {
+        const eventType = eventTypes.find(et => 
+          et.id === event.eventTypeId || 
+          et.eventName === event.type // Legacy fallback
+        );
+        return { event, eventType };
+      })
+      .filter(({ eventType }) => eventType && !eventType.systemEventType) // Only custom events
+      .sort((a, b) => (b.eventType?.priority || 0) - (a.eventType?.priority || 0)); // Sort by priority
+
+    if (unseenCustomEvents.length > 0) {
+      const highestPriorityEvent = unseenCustomEvents[0];
+      return {
+        state: highestPriorityEvent.eventType.stateName,
+        waitTime: currentTime - new Date(highestPriorityEvent.event.createdAt),
+        priority: highestPriorityEvent.eventType.priority,
+        eventType: highestPriorityEvent.eventType,
+        color: highestPriorityEvent.eventType.adminColor
+      };
+    }
+
+    // If no unseen custom events, table is occupied (from SCAN/OCCUPY)
+    const occupyEvent = sortedEvents.find(event => {
+      const eventType = eventTypes.find(et => 
+        et.id === event.eventTypeId ||
+        et.systemEventType === 'SCAN' && event.type === 'SCAN' ||
+        et.systemEventType === 'OCCUPY' && event.type === 'OCCUPY'
+      );
+      return eventType && (eventType.systemEventType === 'SCAN' || eventType.systemEventType === 'OCCUPY');
+    });
+
+    if (occupyEvent) {
+      const occupyEventType = eventTypes.find(et => 
+        et.id === occupyEvent.eventTypeId ||
+        et.systemEventType === 'SCAN' && occupyEvent.type === 'SCAN' ||
+        et.systemEventType === 'OCCUPY' && occupyEvent.type === 'OCCUPY'
+      );
+      
+      return {
+        state: occupyEventType?.stateName || 'OCCUPIED',
+        waitTime: currentTime - new Date(occupyEvent.createdAt),
+        priority: occupyEventType?.priority || 80,
+        eventType: occupyEventType,
+        color: occupyEventType?.adminColor || '#ffc107'
+      };
+    }
+
+    // Default to available
+    return { 
+      state: 'AVAILABLE', 
+      waitTime: currentTime - new Date(firstRelevantEvent.createdAt),
+      priority: 0,
+      eventType: null,
+      color: '#28a745'
+    };
   };
 
-  // Función para contar eventos no vistos
-  const countUnseenEvents = (events) => {
+  // Función para contar eventos no vistos (excluding system events which are auto-seen)
+  const countUnseenEvents = (events, eventTypes = []) => {
     // Verificar que events existe y es un array
     if (!Array.isArray(events)) {
       return {
@@ -192,10 +276,19 @@ const AdminScreen = () => {
     
     for (const event of events) {
       if (event.seenAt != null) { break; } 
-      else if (
-        event.type === EventTypes.CALL_WAITER || 
+      
+      // Find the event type to check if it's a system event
+      const eventType = eventTypes.find(et => 
+        et.id === event.eventTypeId ||
+        et.eventName === event.type || // Legacy fallback
+        et.systemEventType === 'MARK_SEEN' && (event.type === 'MARK_SEEN' || event.type === EventTypes.MARK_SEEN)
+      );
+      
+      // Only count custom events (not system events) or legacy events
+      if (!eventType?.systemEventType || 
+          event.type === EventTypes.CALL_WAITER || 
           event.type === EventTypes.REQUEST_CHECK || 
-          event.type === EventTypes.CALL_MANAGER)  {
+          event.type === EventTypes.CALL_MANAGER) {
         useenEventCount++;
         if (event.message) { hasUnseenWithMessage = true;}
       }
@@ -215,8 +308,10 @@ const AdminScreen = () => {
     const currentTime = new Date();
 
     return tables.map(table => {
-      const { state, waitTime } = getTableStateAndWaitTime(table.events, currentTime);
-      const unseenEvents = countUnseenEvents(table.events);
+      // Use table-specific event types if available, otherwise fall back to global ones
+      const tableEventTypes = table.availableEventTypes || availableEventTypes;
+      const { state, waitTime, priority, eventType, color } = getTableStateAndWaitTime(table.events, currentTime, tableEventTypes);
+      const unseenEvents = countUnseenEvents(table.events, tableEventTypes);
       const canMarkSeenFromOutside = unseenEvents.hasUnseenWithMessage && unseenEvents.totalUnseen > 0;
 
       return {
@@ -225,9 +320,12 @@ const AdminScreen = () => {
         unseenCount: unseenEvents.totalUnseen,
         canMarkSeenFromOutside,
         waitingTime: waitTime,
+        priority: priority,
+        eventType: eventType,
+        stateColor: color
       };
     });
-  }, [tables]);
+  }, [tables, availableEventTypes]);
 
   // Nueva función para manejar el cambio de ordenamiento
   const handleSortChange = (event) => {
@@ -247,27 +345,36 @@ const AdminScreen = () => {
   const sortedTables = useMemo(() => {
     return [...processedTables].sort((a, b) => {
       if (sortType === 'priority') {
-        if (a.currentState !== b.currentState) {
-          const stateOrder = {
-            [TableStates.MANAGER_WAITER_CHECK]: 0,
-            [TableStates.MANAGER_WAITER]: 1,
-            [TableStates.MANAGER_CHECK]: 2,
-            [TableStates.MANAGER]: 3,
-            [TableStates.WAITER_AND_CHECK]: 4,
-            [TableStates.WAITER]: 5,
-            [TableStates.CHECK]: 6,
-            [TableStates.OCCUPIED]: 7,
-            [TableStates.AVAILABLE]: 8
-          };
-          return stateOrder[a.currentState] - stateOrder[b.currentState];
+        // Use dynamic priority from EventType or fallback to hardcoded values
+        const aPriority = a.priority !== undefined ? a.priority : getHardcodedPriority(a.currentState);
+        const bPriority = b.priority !== undefined ? b.priority : getHardcodedPriority(b.currentState);
+        
+        if (aPriority !== bPriority) {
+          return bPriority - aPriority; // Higher priority first
         }
-        return b.waitingTime - a.waitingTime;
+        return b.waitingTime - a.waitingTime; // Longer wait time first for same priority
       } else {
         // Ordenar por nombre de mesa usando ordenamiento natural
         return naturalSort(a.tableName || '', b.tableName || '');
       }
     });
   }, [processedTables, sortType]);
+
+  // Helper function for backward compatibility with hardcoded priorities
+  const getHardcodedPriority = (state) => {
+    const stateOrder = {
+      [TableStates.MANAGER_WAITER_CHECK]: 100,
+      [TableStates.MANAGER_WAITER]: 90,
+      [TableStates.MANAGER_CHECK]: 85,
+      [TableStates.MANAGER]: 80,
+      [TableStates.WAITER_AND_CHECK]: 70,
+      [TableStates.WAITER]: 60,
+      [TableStates.CHECK]: 50,
+      [TableStates.OCCUPIED]: 10,
+      [TableStates.AVAILABLE]: 0
+    };
+    return stateOrder[state] || 0;
+  };
 
   // Función para ver el historial de eventos
   const viewEventHistory = (tableId) => {
@@ -432,6 +539,7 @@ const AdminScreen = () => {
         onMarkSeen={markEventsAsSeen}
         onMarkAsAvailable={markAsAvailable}
         onMarkAsOccupied={markAsOccupied}
+        eventTypes={selectedTable?.availableEventTypes || availableEventTypes}
       />
     </div>
   );
