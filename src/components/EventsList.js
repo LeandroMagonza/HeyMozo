@@ -13,13 +13,23 @@ const EventsList = ({ events, showSeenStatus = true, eventTypes = [], isAdminVie
 
   // Helper function to get event type information
   const getEventTypeInfo = (event) => {
+    // Check if this is a local user event with styling info
+    if (event.type === 'user_generated' && event.eventName) {
+      return {
+        name: event.eventName,
+        color: event.eventColor || '#007bff',
+        fontColor: event.fontColor || '#ffffff'
+      };
+    }
+    
     if (event.eventTypeId) {
       // Use dynamic EventType
       const eventType = eventTypes.find(et => et.id === event.eventTypeId);
       if (eventType) {
         return {
           name: isAdminView ? eventType.stateName : eventType.eventName,
-          color: isAdminView ? eventType.adminColor : eventType.userColor
+          color: isAdminView ? eventType.adminColor : eventType.userColor,
+          fontColor: isAdminView ? '#000000' : (eventType.userFontColor || '#ffffff')
         };
       }
     }
@@ -27,7 +37,8 @@ const EventsList = ({ events, showSeenStatus = true, eventTypes = [], isAdminVie
     // Fallback to legacy system
     return {
       name: translateEvent(event.type),
-      color: EventColors[event.type] || '#f8f9fa'
+      color: EventColors[event.type] || '#f8f9fa',
+      fontColor: '#000000'
     };
   };
 
@@ -55,7 +66,7 @@ const EventsList = ({ events, showSeenStatus = true, eventTypes = [], isAdminVie
 
   // Ordenar eventos por fecha, más reciente primero
   const sortedEvents = [...events].sort(
-    (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+    (a, b) => new Date(b.createdAt || b.timestamp) - new Date(a.createdAt || a.timestamp)
   );
 
   // Función para formatear la fecha como WhatsApp
@@ -100,7 +111,7 @@ const EventsList = ({ events, showSeenStatus = true, eventTypes = [], isAdminVie
   let currentDate = null;
 
   sortedEvents.forEach((event, index) => {
-    const eventDate = new Date(event.createdAt);
+    const eventDate = new Date(event.createdAt || event.timestamp);
     const eventDateString = eventDate.toDateString();
 
     if (currentDate !== eventDateString) {
@@ -108,7 +119,7 @@ const EventsList = ({ events, showSeenStatus = true, eventTypes = [], isAdminVie
       groupedEvents.push({
         type: "date-separator",
         date: eventDate,
-        displayDate: formatDateForDisplay(event.createdAt),
+        displayDate: formatDateForDisplay(event.createdAt || event.timestamp),
       });
     }
 
@@ -134,7 +145,10 @@ const EventsList = ({ events, showSeenStatus = true, eventTypes = [], isAdminVie
         return (
           <li
             key={item.originalIndex}
-            style={{ backgroundColor: eventInfo.color }}
+            style={{ 
+              backgroundColor: eventInfo.color,
+              color: eventInfo.fontColor
+            }}
           >
             <div
               style={{
@@ -143,7 +157,7 @@ const EventsList = ({ events, showSeenStatus = true, eventTypes = [], isAdminVie
                 alignItems: "flex-start",
               }}
             >
-              <strong>
+              <strong style={{ color: eventInfo.fontColor }}>
                 {eventInfo.name}
                 {showSeenStatus && item.seenAt && (
                   <FaCheckCircle
@@ -155,12 +169,13 @@ const EventsList = ({ events, showSeenStatus = true, eventTypes = [], isAdminVie
               <span
                 style={{
                   fontSize: "12px",
-                  color: "#666",
+                  color: eventInfo.fontColor,
+                  opacity: 0.8,
                   marginLeft: "10px",
                   whiteSpace: "nowrap",
                 }}
               >
-                {new Date(item.createdAt).toLocaleTimeString("es-ES", {
+                {new Date(item.createdAt || item.timestamp).toLocaleTimeString("es-ES", {
                   hour: "2-digit",
                   minute: "2-digit",
                 })}
@@ -171,6 +186,7 @@ const EventsList = ({ events, showSeenStatus = true, eventTypes = [], isAdminVie
                 style={{
                   margin: "5px 0 0 0",
                   textAlign: "left",
+                  color: eventInfo.fontColor,
                 }}
               >
                 Mensaje: {item.message}

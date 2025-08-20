@@ -111,23 +111,19 @@ app.get('/api/branches/:id', async (req, res) => {
 
 // Ruta para obtener una mesa específica (pública para UserScreen)
 app.get('/api/tables/:id', async (req, res) => {
+  console.log('TABLE GET API - Fetching table:', req.params.id);
   try {
     const { id } = req.params;
+    
+    // Check if user is authenticated by looking for authorization header
+    const isAuthenticated = req.headers.authorization && req.headers.authorization.startsWith('Bearer ');
+    console.log('Request is authenticated:', isAuthenticated);
+    
     const table = await Table.findByPk(id, {
       include: [{
         model: Branch,
         include: [{ model: Company }]
-      }, {
-        model: Event,
-        as: 'events',
-        include: [{
-          model: require('./src/models').EventType,
-          as: 'eventType',
-          attributes: ['id', 'eventName', 'stateName', 'userColor', 'userFontColor', 'userIcon', 'adminColor', 'priority', 'systemEventType']
-        }],
-        attributes: ['type', 'message', 'createdAt', 'seenAt', 'eventTypeId'],
-      }],
-      order: [['events', 'createdAt', 'DESC']]
+      }]
     });
 
     if (!table) {
@@ -136,22 +132,72 @@ app.get('/api/tables/:id', async (req, res) => {
 
     // Get effective event types for this table
     const EventConfigService = require('./src/services/eventConfig');
-    const effectiveEvents = await EventConfigService.getEffectiveEvents(
+    
+    // Get all events (including system events) to find SCAN event
+    const allEvents = await EventConfigService.getEffectiveEventsForResource(
       'table',
       parseInt(id),
-      table.Branch.Company.id
+      table.Branch.Company.id,
+      null,
+      true // Include system events
     );
-
+    
     // Filter to only customer-visible events (exclude system events)
-    const customerEvents = effectiveEvents.filter(event => 
+    const customerEvents = allEvents.filter(event => 
       !event.systemEventType && event.enabled !== false
     );
 
+    // Get scan event configuration
+    const scanEvent = allEvents.find(event => 
+      event.systemEventType === 'SCAN'
+    );
+    console.log('SCAN event found in table API:', scanEvent ? 'YES' : 'NO');
+    if (scanEvent) {
+      console.log('SCAN event details:', scanEvent);
+    }
+    
+    const scanEventConfig = scanEvent ? {
+      eventName: scanEvent.eventName || 'Página Escaneada',
+      eventColor: scanEvent.userColor || '#28a745',
+      fontColor: scanEvent.userFontColor || '#ffffff'
+    } : null;
+    
+    console.log('scanEventConfig being returned:', scanEventConfig);
+
     const response = {
-      ...formatTableWithEvents(table),
-      availableEventTypes: customerEvents
+      ...table.toJSON(),
+      availableEventTypes: customerEvents,
+      scanEvent: scanEventConfig
     };
 
+    // Only include events array if user is authenticated (admin users)
+    if (isAuthenticated) {
+      // For authenticated users, include the events array with full event data
+      const tableWithEvents = await Table.findByPk(id, {
+        include: [{
+          model: Event,
+          as: 'events',
+          include: [{
+            model: require('./src/models').EventType,
+            as: 'eventType',
+            attributes: ['id', 'eventName', 'stateName', 'userColor', 'adminColor', 'priority']
+          }],
+          attributes: ['id', 'type', 'message', 'createdAt', 'seenAt', 'eventTypeId'],
+        }, {
+          model: Branch,
+          include: [{ model: Company }]
+        }],
+        order: [['events', 'createdAt', 'DESC']]
+      });
+      
+      if (tableWithEvents) {
+        response.events = tableWithEvents.events || [];
+      }
+    }
+    // For unauthenticated users (customers), events array is not included (private data)
+
+    console.log('Full API response includes scanEvent:', 'scanEvent' in response);
+    console.log('Full API response includes events:', 'events' in response);
     res.json(response);
   } catch (error) {
     console.error('Error fetching table:', error);

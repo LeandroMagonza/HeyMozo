@@ -17,6 +17,7 @@ const UserScreen = () => {
   const [branch, setBranch] = useState(null);
   const [table, setTable] = useState(null);
   const [events, setEvents] = useState([]);
+  const [userEvents, setUserEvents] = useState([]); // Track only user-generated events locally
   const [availableEventTypes, setAvailableEventTypes] = useState([]);
   const [menuLink, setMenuLink] = useState('');
   const [texts, setTexts] = useState({
@@ -28,6 +29,27 @@ const UserScreen = () => {
   const [showModal, setShowModal] = useState(false);
   const [modalEventType, setModalEventType] = useState(null);
   const [showEventsModal, setShowEventsModal] = useState(false);
+
+  // Initialize user events as empty array on component mount (session-only)
+  useEffect(() => {
+    setUserEvents([]);
+  }, [companyId, branchId, tableId]);
+
+  // Helper function to add event to local history with styling info
+  const addToLocalHistory = (eventType, message = null) => {
+    const historyEvent = {
+      id: Date.now() + Math.random(), // Unique ID for local events
+      timestamp: new Date().toISOString(),
+      eventName: eventType?.eventName || eventType,
+      eventColor: eventType?.userColor || eventType?.eventColor || '#007bff',
+      fontColor: eventType?.userFontColor || eventType?.fontColor || '#ffffff',
+      message: message,
+      type: 'user_generated'
+    };
+    
+    console.log('Adding event to local history:', historyEvent);
+    setUserEvents(prevEvents => [historyEvent, ...prevEvents]);
+  };
 
   useEffect(() => {
     const loadData = async () => {
@@ -50,9 +72,28 @@ const UserScreen = () => {
         setAvailableEventTypes(availableEvents);
         console.log('Available event types:', availableEvents);
 
+        // Check for scan event configuration in the response
+        console.log('Full table data response:', tableData.data);
+        const scanEventConfig = tableData.data.scanEvent;
+        console.log('Scan event config:', scanEventConfig);
+        console.log('scanEvent property exists:', 'scanEvent' in tableData.data);
+
         // Set events from table response
         if (tableData.data.events) {
           setEvents(tableData.data.events);
+        }
+
+        // Add SCAN event to user history immediately using config from API
+        if (scanEventConfig) {
+          addToLocalHistory(scanEventConfig);
+        } else {
+          // Fallback if no scan event config is provided
+          const fallbackScanEvent = {
+            eventName: 'Página Escaneada',
+            eventColor: '#28a745',
+            fontColor: '#ffffff'
+          };
+          addToLocalHistory(fallbackScanEvent);
         }
 
         // Send SCAN event automatically (customers scan QR to access page)
@@ -120,6 +161,9 @@ const UserScreen = () => {
       if (response.data && response.data.events) {
         setEvents(response.data.events);
       }
+      
+      // Add to local history with styling information
+      addToLocalHistory(eventType, message);
       handleCloseModal();
     } catch (error) {
       console.error('Error sending event:', error);
@@ -146,6 +190,9 @@ const UserScreen = () => {
         setTable(response.data);
         setEvents(response.data.events || []);
       }
+      
+      // Add to local history with styling information
+      addToLocalHistory(eventTypeObj);
     } catch (error) {
       console.error('Error sending event:', error);
     }
@@ -220,7 +267,7 @@ const UserScreen = () => {
         <HistoryModal
           show={showEventsModal}
           onClose={handleCloseEventsModal}
-          events={events}
+          events={userEvents}
           eventTypes={availableEventTypes}
         />
       </div>

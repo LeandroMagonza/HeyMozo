@@ -364,16 +364,48 @@ router.get('/tables/:tableId', authMiddleware.checkTablePermission, async (req, 
     const EventConfigService = require('../services/eventConfig');
     try {
       const availableEventTypes = await EventConfigService.getAdminEventsForTable(table.id);
+      
+      // Get all events (including system events) to find SCAN event for UserScreen
+      // First get the company ID from the table
+      const { Branch, Company } = require('../models');
+      const tableWithBranch = await Table.findByPk(table.id, {
+        include: [{
+          model: Branch,
+          include: [{ model: Company }]
+        }]
+      });
+      const companyId = tableWithBranch.Branch.Company.id;
+      
+      const allEvents = await EventConfigService.getEffectiveEventsForResource(
+        'table',
+        table.id,
+        companyId,
+        table.branchId,
+        true // Include system events
+      );
+      
+      // Get scan event configuration for UserScreen
+      const scanEvent = allEvents.find(event => 
+        event.systemEventType === 'SCAN'
+      );
+      const scanEventConfig = scanEvent ? {
+        eventName: scanEvent.eventName || 'Página Escaneada',
+        eventColor: scanEvent.userColor || '#28a745',
+        fontColor: scanEvent.userFontColor || '#ffffff'
+      } : null;
+      
       const tableWithEventTypes = {
         ...table.toJSON(),
-        availableEventTypes
+        availableEventTypes,
+        scanEvent: scanEventConfig
       };
       res.json(tableWithEventTypes);
     } catch (error) {
       console.error(`Error getting event types for table ${table.id}:`, error);
       res.json({
         ...table.toJSON(),
-        availableEventTypes: []
+        availableEventTypes: [],
+        scanEvent: null
       });
     }
   } catch (error) {
