@@ -332,9 +332,23 @@ router.post('/resources/:resourceType/:resourceId/events/config', async (req, re
       updatedBy: req.user.id
     }));
 
-    // Use individual upserts instead of bulkCreate with updateOnDuplicate
+    // Use findOrCreate then update pattern instead of upsert to avoid constraint issues
     for (const config of configUpdates) {
-      await EventConfiguration.upsert(config);
+      const [eventConfig, created] = await EventConfiguration.findOrCreate({
+        where: {
+          resourceType: config.resourceType,
+          resourceId: config.resourceId,
+          eventTypeId: config.eventTypeId
+        },
+        defaults: config
+      });
+      
+      if (!created) {
+        await eventConfig.update({
+          enabled: config.enabled,
+          updatedBy: config.updatedBy
+        });
+      }
     }
 
     const logger = require('../utils/logger');

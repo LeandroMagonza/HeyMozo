@@ -142,7 +142,8 @@ class EventConfigService {
   }
 
   static async getEffectiveEventsForResource(resourceType, resourceId, companyId, branchId = null, includeSystemEvents = true) {
-    // Simplified version - just get EventTypes for now, ignore configurations temporarily
+    const { Sequelize } = require('sequelize');
+    
     const whereClause = {
       companyId,
       isActive: true
@@ -152,7 +153,8 @@ class EventConfigService {
       whereClause.systemEventType = null;
     }
 
-    const events = await EventType.findAll({
+    // Get all event types for the company
+    const eventTypes = await EventType.findAll({
       where: whereClause,
       order: [
         ['priority', 'DESC'],
@@ -160,11 +162,65 @@ class EventConfigService {
       ]
     });
 
-    // Add enabled flag (all events enabled by default for now)
-    return events.map(event => ({
-      ...event.toJSON(),
-      enabled: true
-    }));
+    // For each event type, find the most specific configuration (location > branch > company)
+    const eventsWithConfig = [];
+    
+    for (const eventType of eventTypes) {
+      let enabled = true; // Default enabled if no configuration exists
+      
+      // Build configuration lookup based on resource hierarchy
+      const configQueries = [];
+      
+      // Most specific: location/table level
+      if (resourceType === 'location') {
+        configQueries.push({
+          resourceType: 'location',
+          resourceId: parseInt(resourceId),
+          eventTypeId: eventType.id
+        });
+      }
+      
+      // Branch level
+      if (branchId) {
+        configQueries.push({
+          resourceType: 'branch', 
+          resourceId: parseInt(branchId),
+          eventTypeId: eventType.id
+        });
+      }
+      
+      // Company level
+      configQueries.push({
+        resourceType: 'company',
+        resourceId: parseInt(companyId),
+        eventTypeId: eventType.id
+      });
+      
+      // Find the most specific configuration
+      let effectiveConfig = null;
+      for (const query of configQueries) {
+        const config = await EventConfiguration.findOne({ where: query });
+        if (config) {
+          effectiveConfig = config;
+          break; // Use the most specific configuration found
+        }
+      }
+      
+      // If we found a configuration, use its enabled status
+      if (effectiveConfig) {
+        enabled = effectiveConfig.enabled;
+      }
+      
+      // Only include enabled events in the result
+      if (enabled) {
+        eventsWithConfig.push({
+          ...eventType.toJSON(),
+          enabled: true
+        });
+      }
+    }
+
+    return eventsWithConfig;
   }
 
   static async getCustomerEventsForTable(tableId) {
