@@ -17,6 +17,9 @@ const BranchConfig = () => {
   const [tables, setTables] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showEventConfigModal, setShowEventConfigModal] = useState(false);
+  const [showTableEventConfigModal, setShowTableEventConfigModal] = useState(false);
+  const [selectedTableId, setSelectedTableId] = useState(null);
+  const [selectedTableName, setSelectedTableName] = useState('');
 
   const fetchData = useCallback(async () => {
     try {
@@ -178,6 +181,12 @@ const BranchConfig = () => {
     }
   };
 
+  const handleTableEventConfig = (tableId, tableName) => {
+    setSelectedTableId(tableId);
+    setSelectedTableName(tableName);
+    setShowTableEventConfigModal(true);
+  };
+
   if (loading) {
     return <div className="loading">Cargando...</div>;
   }
@@ -308,6 +317,13 @@ const BranchConfig = () => {
                                 <FaEye /> Ver
                               </button>
                               <button 
+                                className="app-button small primary"
+                                onClick={() => handleTableEventConfig(table.id, table.tableName)}
+                                title="Configurar eventos para esta mesa"
+                              >
+                                <FaCalendarAlt /> Eventos
+                              </button>
+                              <button 
                                 className="app-button small danger" 
                                 onClick={() => handleDeleteTable(table.id)}
                               >
@@ -327,14 +343,26 @@ const BranchConfig = () => {
         </div>
       </div>
 
-      {/* Event Configuration Modal */}
+      {/* Branch Event Configuration Modal */}
       <EventConfigModal
         isOpen={showEventConfigModal}
         onClose={() => setShowEventConfigModal(false)}
         resourceType="branch"
         resourceId={branchId}
         companyId={companyId}
+        branchId={branchId}
         resourceName={branch?.name || 'Branch'}
+      />
+
+      {/* Table Event Configuration Modal */}
+      <EventConfigModal
+        isOpen={showTableEventConfigModal}
+        onClose={() => setShowTableEventConfigModal(false)}
+        resourceType="location"
+        resourceId={selectedTableId}
+        companyId={companyId}
+        branchId={branchId}
+        resourceName={selectedTableName}
       />
     </div>
   );

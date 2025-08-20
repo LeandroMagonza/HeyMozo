@@ -342,6 +342,7 @@ router.get('/tables', async (req, res) => {
 });
 
 router.get('/tables/:tableId', authMiddleware.checkTablePermission, async (req, res) => {
+  console.log('🚨🚨🚨 TABLE ENDPOINT HIT FOR TABLE:', req.params.tableId);
   try {
     const table = await Table.findByPk(req.params.tableId, {
       include: [{
@@ -363,7 +364,9 @@ router.get('/tables/:tableId', authMiddleware.checkTablePermission, async (req, 
     // Get available event types for this table
     const EventConfigService = require('../services/eventConfig');
     try {
-      const availableEventTypes = await EventConfigService.getAdminEventsForTable(table.id);
+      // Use customer events for UserScreen (excludes system events and applies hierarchy correctly)
+      const availableEventTypes = await EventConfigService.getCustomerEventsForTable(table.id);
+      console.log('🎯 availableEventTypes from getCustomerEventsForTable:', availableEventTypes.length);
       
       // Get all events (including system events) to find SCAN event for UserScreen
       // First get the company ID from the table
@@ -377,10 +380,10 @@ router.get('/tables/:tableId', authMiddleware.checkTablePermission, async (req, 
       const companyId = tableWithBranch.Branch.Company.id;
       
       const allEvents = await EventConfigService.getEffectiveEventsForResource(
-        'table',
+        'location',
         table.id,
         companyId,
-        table.branchId,
+        tableWithBranch.Branch.id,
         true // Include system events
       );
       

@@ -589,6 +589,98 @@ router.get('/tables/:tableId/events/all', async (req, res) => {
   }
 });
 
+// GET /api/resources/:resourceType/:resourceId/events/config-modal - Get all data needed for config modal
+router.get('/resources/:resourceType/:resourceId/events/config-modal', async (req, res) => {
+  console.log('🔄 Config modal endpoint hit:', req.params, req.query);
+  try {
+    const { resourceType, resourceId } = req.params;
+    const { companyId, branchId } = req.query;
+    
+    // Validate resource type
+    if (!['company', 'branch', 'location'].includes(resourceType)) {
+      return res.status(400).json({ error: 'Invalid resource type' });
+    }
+
+    // Check permissions based on resource type
+    let hasPermission = req.user.isAdmin;
+    
+    if (!hasPermission) {
+      const authService = require('../services/auth');
+      switch (resourceType) {
+        case 'company':
+          hasPermission = await authService.hasPermission(req.user.id, 'company', parseInt(resourceId));
+          break;
+        case 'branch':
+          hasPermission = await authService.hasPermission(req.user.id, 'branch', parseInt(resourceId));
+          break;
+        case 'location':
+          hasPermission = await authService.hasPermission(req.user.id, 'table', parseInt(resourceId));
+          break;
+      }
+    }
+    
+    if (!hasPermission) {
+      return res.status(403).json({ error: 'Access denied to this resource' });
+    }
+
+    // Get all event types for the company
+    const eventTypes = await EventType.findAll({
+      where: {
+        companyId: parseInt(companyId),
+        isActive: true
+      },
+      order: [
+        ['priority', 'DESC'],
+        ['eventName', 'ASC']
+      ]
+    });
+
+    // Get specific configurations for this resource
+    const specificConfigs = await EventConfiguration.findAll({
+      where: {
+        resourceType,
+        resourceId: parseInt(resourceId)
+      }
+    });
+
+    // Get parent configurations for inheritance
+    let parentConfigs = [];
+    if (resourceType !== 'company') {
+      let parentResourceType, parentResourceId;
+      
+      if (resourceType === 'branch') {
+        parentResourceType = 'company';
+        parentResourceId = parseInt(companyId);
+      } else if (resourceType === 'location') {
+        parentResourceType = 'branch';
+        parentResourceId = parseInt(branchId);
+      }
+      
+      if (parentResourceType && parentResourceId) {
+        parentConfigs = await EventConfigService.getAllEventsWithConfiguration(
+          parentResourceType,
+          parentResourceId,
+          parseInt(companyId),
+          branchId ? parseInt(branchId) : null,
+          true
+        );
+      }
+    }
+
+    // Combine everything into a single response
+    const response = {
+      eventTypes: eventTypes,
+      specificConfigurations: specificConfigs,
+      parentConfigurations: parentConfigs
+    };
+    
+    res.json(response);
+  } catch (error) {
+    console.error('Error fetching config modal data:', error);
+    res.status(500).json({ error: 'Error fetching config modal data' });
+  }
+});
+
 // GET /api/resources/:resourceType/:resourceId/events/resolved - Preview resolved configuration
 router.get('/resources/:resourceType/:resourceId/events/resolved', async (req, res) => {
   try {
@@ -622,11 +714,12 @@ router.get('/resources/:resourceType/:resourceId/events/resolved', async (req, r
       return res.status(403).json({ error: 'Access denied to this resource' });
     }
 
-    const events = await EventConfigService.getEffectiveEventsForResource(
+    const events = await EventConfigService.getAllEventsWithConfiguration(
       resourceType, 
       parseInt(resourceId), 
       parseInt(companyId), 
-      branchId ? parseInt(branchId) : null
+      branchId ? parseInt(branchId) : null,
+      true // Include system events for admin configuration
     );
     
     res.json(events);

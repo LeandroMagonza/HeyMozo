@@ -135,10 +135,10 @@ app.get('/api/tables/:id', async (req, res) => {
     
     // Get all events (including system events) to find SCAN event
     const allEvents = await EventConfigService.getEffectiveEventsForResource(
-      'table',
+      'location',
       parseInt(id),
       table.Branch.Company.id,
-      null,
+      table.Branch.id,
       true // Include system events
     );
     

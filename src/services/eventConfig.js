@@ -121,6 +121,7 @@ class EventConfigService {
   }
 
   static async resolveEventsForTable(tableId, includeSystemEvents = false) {
+    console.log('🔄 resolveEventsForTable called for table:', tableId, 'includeSystemEvents:', includeSystemEvents);
     const { Table, Branch, Company } = require('../models');
     
     // Get table with its branch and company
@@ -137,11 +138,13 @@ class EventConfigService {
 
     const companyId = table.Branch.Company.id;
     const branchId = table.Branch.id;
+    
+    console.log('🏢 Table details - companyId:', companyId, 'branchId:', branchId);
 
     return await this.getEffectiveEventsForResource('location', tableId, companyId, branchId, includeSystemEvents);
   }
 
-  static async getEffectiveEventsForResource(resourceType, resourceId, companyId, branchId = null, includeSystemEvents = true) {
+  static async getAllEventsWithConfiguration(resourceType, resourceId, companyId, branchId = null, includeSystemEvents = true) {
     const { Sequelize } = require('sequelize');
     
     const whereClause = {
@@ -211,6 +214,92 @@ class EventConfigService {
         enabled = effectiveConfig.enabled;
       }
       
+      // Return ALL events with their configuration status (don't filter)
+      eventsWithConfig.push({
+        ...eventType.toJSON(),
+        enabled: enabled
+      });
+    }
+
+    return eventsWithConfig;
+  }
+
+  static async getEffectiveEventsForResource(resourceType, resourceId, companyId, branchId = null, includeSystemEvents = true) {
+    const { Sequelize } = require('sequelize');
+    
+    const whereClause = {
+      companyId,
+      isActive: true
+    };
+
+    if (!includeSystemEvents) {
+      whereClause.systemEventType = null;
+    }
+
+    // Get all event types for the company
+    const eventTypes = await EventType.findAll({
+      where: whereClause,
+      order: [
+        ['priority', 'DESC'],
+        ['eventName', 'ASC']
+      ]
+    });
+
+    // For each event type, find the most specific configuration (location > branch > company)
+    const eventsWithConfig = [];
+    
+    for (const eventType of eventTypes) {
+      let enabled = true; // Default enabled if no configuration exists
+      
+      // Build configuration lookup based on resource hierarchy
+      const configQueries = [];
+      
+      // Most specific: location/table level
+      if (resourceType === 'location') {
+        configQueries.push({
+          resourceType: 'location',
+          resourceId: parseInt(resourceId),
+          eventTypeId: eventType.id
+        });
+      }
+      
+      // Branch level
+      if (branchId) {
+        configQueries.push({
+          resourceType: 'branch', 
+          resourceId: parseInt(branchId),
+          eventTypeId: eventType.id
+        });
+      }
+      
+      // Company level
+      configQueries.push({
+        resourceType: 'company',
+        resourceId: parseInt(companyId),
+        eventTypeId: eventType.id
+      });
+      
+      console.log(`🔍 Resolving ${eventType.eventName} for ${resourceType}:${resourceId}`);
+      console.log('  Config queries:', configQueries);
+      
+      // Find the most specific configuration
+      let effectiveConfig = null;
+      for (const query of configQueries) {
+        const config = await EventConfiguration.findOne({ where: query });
+        console.log(`  Query ${query.resourceType}:${query.resourceId} -> ${config ? `enabled:${config.enabled}` : 'not found'}`);
+        if (config) {
+          effectiveConfig = config;
+          break; // Use the most specific configuration found
+        }
+      }
+      
+      // If we found a configuration, use its enabled status
+      if (effectiveConfig) {
+        enabled = effectiveConfig.enabled;
+      }
+      
+      console.log(`  Final result: ${eventType.eventName} = ${enabled ? 'ENABLED' : 'DISABLED'}`);
+      
       // Only include enabled events in the result
       if (enabled) {
         eventsWithConfig.push({
@@ -224,7 +313,10 @@ class EventConfigService {
   }
 
   static async getCustomerEventsForTable(tableId) {
-    return await this.resolveEventsForTable(tableId, false); // Exclude system events
+    console.log('📱📱📱 getCustomerEventsForTable DEFINITELY called for table:', tableId);
+    const result = await this.resolveEventsForTable(tableId, false); // Exclude system events
+    console.log('📱📱📱 getCustomerEventsForTable result count:', result.length);
+    return result;
   }
 
   static async getAdminEventsForTable(tableId) {

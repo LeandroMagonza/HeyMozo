@@ -13,8 +13,10 @@ const EventConfigModal = ({
   branchId = null,
   resourceName 
 }) => {
+  console.log('EventConfigModal rendered with props:', { isOpen, resourceType, resourceId, companyId, branchId, resourceName });
   const [eventTypes, setEventTypes] = useState([]);
   const [configurations, setConfigurations] = useState({});
+  const [effectiveConfigurations, setEffectiveConfigurations] = useState({});
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -33,7 +35,6 @@ const EventConfigModal = ({
   const [editingValue, setEditingValue] = useState('');
 
   const loadEventTypes = useCallback(async () => {
-    setLoading(true);
     try {
       const response = await fetch(`/api/companies/${companyId}/event-types`, {
         headers: {
@@ -50,11 +51,13 @@ const EventConfigModal = ({
     } catch (error) {
       console.error('Error loading event types:', error);
     }
-    setLoading(false);
   }, [companyId]);
 
   const loadConfigurations = useCallback(async () => {
+    console.log('loadConfigurations called with:', { resourceType, resourceId, companyId, branchId });
+    
     try {
+      // Load specific configurations for this resource
       const response = await fetch(`/api/resources/${resourceType}/${resourceId}/events/config`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('heymozo_token')}`
@@ -63,21 +66,69 @@ const EventConfigModal = ({
 
       if (response.ok) {
         const data = await response.json();
+        console.log('Specific configurations for', resourceType, resourceId, ':', data);
         const configMap = {};
         data.forEach(config => {
           configMap[config.eventTypeId] = config.enabled;
         });
         setConfigurations(configMap);
+        console.log('Configurations map:', configMap);
+      } else {
+        console.error('Failed to load specific configurations:', response.status);
+      }
+
+      // Load parent configurations for inheritance comparison
+      if (resourceType !== 'company') {
+        let parentResourceType, parentResourceId;
+        
+        if (resourceType === 'branch') {
+          parentResourceType = 'company';
+          parentResourceId = companyId;
+        } else if (resourceType === 'location') {
+          parentResourceType = 'branch';
+          parentResourceId = branchId;
+        }
+        
+        if (parentResourceType && parentResourceId) {
+          const parentQueryParams = new URLSearchParams({
+            companyId,
+            ...(branchId && parentResourceType !== 'company' && { branchId })
+          });
+          
+          const parentResponse = await fetch(`/api/resources/${parentResourceType}/${parentResourceId}/events/resolved?${parentQueryParams}`, {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('heymozo_token')}`
+            }
+          });
+
+          if (parentResponse.ok) {
+            const parentData = await parentResponse.json();
+            console.log('Parent configurations for', parentResourceType, parentResourceId, ':', parentData);
+            const parentMap = {};
+            parentData.forEach(event => {
+              parentMap[event.id] = event.enabled;
+            });
+            setEffectiveConfigurations(parentMap);
+            console.log('Parent configurations map:', parentMap);
+          } else {
+            console.error('Failed to load parent configurations:', parentResponse.status);
+          }
+        }
       }
     } catch (error) {
       console.error('Error loading configurations:', error);
     }
-  }, [resourceType, resourceId]);
+  }, [resourceType, resourceId, companyId, branchId]);
 
   useEffect(() => {
     if (isOpen && companyId) {
-      loadEventTypes();
-      loadConfigurations();
+      setLoading(true);
+      Promise.all([
+        loadEventTypes(),
+        loadConfigurations()
+      ]).finally(() => {
+        setLoading(false);
+      });
     }
   }, [isOpen, companyId, resourceType, resourceId, loadEventTypes, loadConfigurations]);
 
@@ -102,11 +153,11 @@ const EventConfigModal = ({
   };
 
   const getParentConfiguration = (eventType) => {
-    // For company level, there's no parent (all configs are at this level)
+    // For company level, there's no parent (default enabled)
     if (resourceType === 'company') return true;
     
-    // For branch/location, the default is enabled unless specifically configured
-    return true; // This would need to be fetched from actual parent configs in a real implementation
+    // For branch/location, get the effective configuration (which includes parent inheritance)
+    return effectiveConfigurations[eventType.id] !== undefined ? effectiveConfigurations[eventType.id] : true;
   };
 
   const removeEventConfiguration = async (eventTypeId) => {
@@ -125,10 +176,21 @@ const EventConfigModal = ({
   const handleSave = async () => {
     setSaving(true);
     try {
-      const configArray = eventTypes.map(eventType => ({
-        eventTypeId: eventType.id,
-        enabled: configurations[eventType.id] !== undefined ? configurations[eventType.id] : true
-      }));
+      // Only save configurations that are different from parent/default
+      const configArray = eventTypes
+        .filter(eventType => {
+          const currentConfig = configurations[eventType.id];
+          const parentConfig = getParentConfiguration(eventType);
+          
+          // Only include if there's a specific configuration AND it's different from parent
+          return currentConfig !== undefined && currentConfig !== parentConfig;
+        })
+        .map(eventType => ({
+          eventTypeId: eventType.id,
+          enabled: configurations[eventType.id]
+        }));
+        
+      console.log('Saving only non-redundant configurations:', configArray);
 
       const response = await fetch(`/api/resources/${resourceType}/${resourceId}/events/config`, {
         method: 'POST',
@@ -140,6 +202,8 @@ const EventConfigModal = ({
       });
 
       if (response.ok) {
+        // Reload configurations to reflect changes
+        await loadConfigurations();
         onClose();
       } else {
         console.error('Failed to save configurations');
@@ -167,6 +231,7 @@ const EventConfigModal = ({
 
       if (response.ok) {
         setConfigurations({});
+        await loadConfigurations(); // Reload to get updated effective configurations
         alert('Configurations reset successfully');
       } else {
         console.error('Failed to reset configurations');
@@ -225,8 +290,7 @@ const EventConfigModal = ({
           adminColor: '#ffc107',
           priority: 50
         });
-        await loadEventTypes(); // Reload event types
-        await loadConfigurations(); // Reload configurations
+        await Promise.all([loadEventTypes(), loadConfigurations()]); // Reload all modal data
       } else {
         const error = await response.json();
         console.error('Failed to create event type:', error);
@@ -257,7 +321,7 @@ const EventConfigModal = ({
       });
 
       if (response.ok) {
-        await loadEventTypes(); // Reload event types
+        await Promise.all([loadEventTypes(), loadConfigurations()]); // Reload all modal data
       } else {
         const error = await response.json();
         console.error('Failed to delete event type:', error);
@@ -303,7 +367,20 @@ const EventConfigModal = ({
   };
 
   const isEventEnabled = (eventType) => {
-    return configurations[eventType.id] !== undefined ? configurations[eventType.id] : true;
+    console.log(`isEventEnabled for ${eventType.eventName} (ID: ${eventType.id}):`);
+    console.log('  - configurations[eventType.id]:', configurations[eventType.id]);
+    console.log('  - effectiveConfigurations[eventType.id]:', effectiveConfigurations[eventType.id]);
+    
+    // If there's a specific configuration for this resource, use it
+    if (configurations[eventType.id] !== undefined) {
+      console.log('  - Using specific configuration:', configurations[eventType.id]);
+      return configurations[eventType.id];
+    }
+    
+    // Otherwise, fall back to the parent/effective configuration
+    const parentConfig = getParentConfiguration(eventType);
+    console.log('  - Using parent configuration:', parentConfig);
+    return parentConfig;
   };
 
   const handleEditClick = (eventTypeId, field, currentValue) => {
