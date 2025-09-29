@@ -28,7 +28,7 @@ const LoginForm = () => {
     try {
       await authService.requestLogin(email);
       setStatus('success');
-      setMessage(`¡Enlace enviado! Revisa la consola del servidor para obtener el enlace de acceso para ${email}`);
+      setMessage(`¡Enlace enviado! Hemos enviado un correo con el enlace de acceso a ${email}`);
     } catch (error) {
       console.error('Error requesting login:', error);
       setStatus('error');
@@ -100,10 +100,10 @@ const LoginForm = () => {
                   <strong>Instrucciones:</strong>
                 </p>
                 <ol>
-                  <li>Revisa la consola del servidor donde está corriendo el backend</li>
-                  <li>Busca el enlace que comience con "🔗 Full URL (Frontend)"</li>
-                  <li>Copia y pega ese enlace en tu navegador</li>
-                  <li>El enlace será válido por 15 minutos</li>
+                  <li>Revisa tu bandeja de entrada de correo electrónico</li>
+                  <li>Si no encuentras el email, revisa tu carpeta de spam</li>
+                  <li>Espera hasta 3 minutos si el correo no ha llegado</li>
+                  <li>Haz clic en el enlace del correo para acceder (válido por 15 minutos)</li>
                 </ol>
               </div>
             )}
