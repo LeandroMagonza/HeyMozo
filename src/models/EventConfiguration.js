@@ -28,6 +28,57 @@ module.exports = (sequelize) => {
       allowNull: false,
       defaultValue: true
     },
+    // Override fields - null means inherit from parent/EventType
+    eventName: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      validate: {
+        len: [1, 100]
+      }
+    },
+    stateName: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      validate: {
+        len: [1, 100]
+      }
+    },
+    userColor: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      validate: {
+        is: /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/
+      }
+    },
+    userFontColor: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      validate: {
+        is: /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/
+      }
+    },
+    userIcon: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      validate: {
+        len: [2, 50]
+      }
+    },
+    adminColor: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      validate: {
+        is: /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/
+      }
+    },
+    priority: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      validate: {
+        min: 0,
+        max: 100
+      }
+    },
     createdBy: {
       type: DataTypes.INTEGER,
       allowNull: true,

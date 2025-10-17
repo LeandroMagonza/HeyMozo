@@ -289,12 +289,19 @@ router.get('/resources/:resourceType/:resourceId/events/config', async (req, res
   }
 });
 
-// POST /api/resources/:resourceType/:resourceId/events/config - Bulk configure events
+// POST /api/resources/:resourceType/:resourceId/events/config - Bulk configure events with overrides
 router.post('/resources/:resourceType/:resourceId/events/config', async (req, res) => {
   try {
     const { resourceType, resourceId } = req.params;
-    const { configurations } = req.body; // Array of { eventTypeId, enabled }
-    
+    const { configurations } = req.body; // Array of configuration objects with overrides
+
+    console.log('📥 POST /resources/config received:', {
+      resourceType,
+      resourceId,
+      configurationsCount: configurations?.length,
+      configurations: JSON.stringify(configurations, null, 2)
+    });
+
     // Validate resource type
     if (!['company', 'branch', 'location'].includes(resourceType)) {
       return res.status(400).json({ error: 'Invalid resource type' });
@@ -302,7 +309,7 @@ router.post('/resources/:resourceType/:resourceId/events/config', async (req, re
 
     // Check permissions
     let hasPermission = req.user.isAdmin;
-    
+
     if (!hasPermission) {
       const authService = require('../services/auth');
       switch (resourceType) {
@@ -317,42 +324,92 @@ router.post('/resources/:resourceType/:resourceId/events/config', async (req, re
           break;
       }
     }
-    
+
     if (!hasPermission) {
       return res.status(403).json({ error: 'Access denied to this resource' });
     }
 
-    // Bulk update/create configurations
-    const configUpdates = configurations.map(config => ({
-      resourceType,
-      resourceId: parseInt(resourceId),
-      eventTypeId: config.eventTypeId,
-      enabled: config.enabled,
-      createdBy: req.user.id,
-      updatedBy: req.user.id
-    }));
+    // Process configurations with override support
+    for (const config of configurations) {
+      // Check if this is a system event and if we're trying to disable it
+      const eventType = await EventType.findByPk(config.eventTypeId);
+      if (!eventType) {
+        return res.status(400).json({ error: `Event type with ID ${config.eventTypeId} not found` });
+      }
 
-    // Use findOrCreate then update pattern instead of upsert to avoid constraint issues
-    for (const config of configUpdates) {
+      // Prevent disabling system events
+      if (eventType.systemEventType && config.enabled === false) {
+        return res.status(400).json({
+          error: `System event "${eventType.eventName}" cannot be disabled. System events are required for proper application functionality.`
+        });
+      }
+
+      const configData = {
+        resourceType,
+        resourceId: parseInt(resourceId),
+        eventTypeId: config.eventTypeId,
+        enabled: config.enabled !== undefined ? config.enabled : true, // Default to true if not provided
+        createdBy: req.user.id,
+        updatedBy: req.user.id
+      };
+
+      // Add override fields if provided
+      const overrideFields = ['eventName', 'stateName', 'userColor', 'userFontColor', 'userIcon', 'adminColor', 'priority'];
+      overrideFields.forEach(field => {
+        if (config[field] !== undefined) {
+          configData[field] = config[field];
+        }
+      });
+
+      console.log('💾 Saving configuration:', {
+        resourceType: configData.resourceType,
+        resourceId: configData.resourceId,
+        eventTypeId: configData.eventTypeId,
+        enabled: configData.enabled,
+        overrides: Object.fromEntries(
+          overrideFields
+            .filter(field => config[field] !== undefined)
+            .map(field => [field, config[field]])
+        )
+      });
+
       const [eventConfig, created] = await EventConfiguration.findOrCreate({
         where: {
-          resourceType: config.resourceType,
-          resourceId: config.resourceId,
-          eventTypeId: config.eventTypeId
+          resourceType: configData.resourceType,
+          resourceId: configData.resourceId,
+          eventTypeId: configData.eventTypeId
         },
-        defaults: config
+        defaults: configData
       });
-      
+
+      console.log(`💾 Configuration ${created ? 'CREATED' : 'UPDATED'} for ${resourceType}:${resourceId}, eventType:${configData.eventTypeId}`);
+
       if (!created) {
-        await eventConfig.update({
-          enabled: config.enabled,
-          updatedBy: config.updatedBy
-        });
+        // For system events, don't allow changing the enabled status to false
+        const updateData = {
+          updatedBy: configData.updatedBy,
+          ...Object.fromEntries(
+            overrideFields
+              .filter(field => config[field] !== undefined)
+              .map(field => [field, config[field]])
+          )
+        };
+
+        // Only update enabled status if it was explicitly provided in the config
+        if (config.enabled !== undefined) {
+          // Only allow updating enabled status if it's not a system event or if it's not being disabled
+          if (!eventType.systemEventType || config.enabled !== false) {
+            updateData.enabled = configData.enabled;
+          }
+        }
+
+        console.log('💾 Update data:', updateData);
+        await eventConfig.update(updateData);
       }
     }
 
     const logger = require('../utils/logger');
-    logger.info(`Updated ${configUpdates.length} event configurations for ${resourceType} ${resourceId}`);
+    logger.info(`Updated ${configurations.length} event configurations for ${resourceType} ${resourceId}`);
     res.json({ message: 'Configurations updated successfully' });
   } catch (error) {
     const logger = require('../utils/logger');

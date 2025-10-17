@@ -141,11 +141,30 @@ app.get('/api/tables/:id', async (req, res) => {
       table.Branch.id,
       true // Include system events
     );
-    
+
+    console.log('📋 allEvents returned from getEffectiveEventsForResource:', allEvents.length);
+    console.log('📋 allEvents details:', allEvents.map(e => ({
+      id: e.id,
+      eventName: e.eventName,
+      userColor: e.userColor,
+      userFontColor: e.userFontColor,
+      userIcon: e.userIcon,
+      systemEventType: e.systemEventType
+    })));
+
     // Filter to only customer-visible events (exclude system events)
-    const customerEvents = allEvents.filter(event => 
+    const customerEvents = allEvents.filter(event =>
       !event.systemEventType && event.enabled !== false
     );
+
+    console.log('📋 customerEvents after filtering:', customerEvents.length);
+    console.log('📋 customerEvents details:', customerEvents.map(e => ({
+      id: e.id,
+      eventName: e.eventName,
+      userColor: e.userColor,
+      userFontColor: e.userFontColor,
+      userIcon: e.userIcon
+    })));
 
     // Get scan event configuration
     const scanEvent = allEvents.find(event => 

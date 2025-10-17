@@ -169,6 +169,88 @@ router.get('/branches/:branchId', authMiddleware.checkBranchPermission, async (r
   }
 });
 
+// POST /api/branches/:branchId/release-all-tables - Release all tables in a branch
+router.post('/branches/:branchId/release-all-tables', authMiddleware.checkBranchPermission, async (req, res) => {
+  try {
+    const branchId = parseInt(req.params.branchId);
+
+    // Get all tables in the branch
+    const tables = await Table.findAll({
+      where: { branchId },
+      include: [{ model: Event, as: 'Events' }]
+    });
+
+    if (!tables || tables.length === 0) {
+      return res.status(404).json({ error: 'No tables found for this branch' });
+    }
+
+    // Get company ID for event types
+    const branch = await Branch.findByPk(branchId, {
+      include: [{ model: Company }]
+    });
+
+    if (!branch) {
+      return res.status(404).json({ error: 'Branch not found' });
+    }
+
+    const companyId = branch.Company.id;
+
+    // Find VACATE event type
+    const vacateEventType = await EventType.findOne({
+      where: {
+        companyId,
+        systemEventType: 'VACATE',
+        isActive: true
+      }
+    });
+
+    if (!vacateEventType) {
+      return res.status(500).json({ error: 'VACATE event type not found' });
+    }
+
+    const now = new Date();
+    const updatedTables = [];
+
+    // Process each table
+    for (const table of tables) {
+      // Mark all existing events as seen
+      await Event.update(
+        { seenAt: now },
+        { where: { tableId: table.id, seenAt: null } }
+      );
+
+      // Create VACATE event to mark table as available
+      await Event.create({
+        tableId: table.id,
+        eventTypeId: vacateEventType.id,
+        message: 'Table released by admin',
+        createdAt: now,
+        seenAt: now,
+        userId: req.user.id
+      });
+
+      // Reload table with updated events
+      const updatedTable = await Table.findByPk(table.id, {
+        include: [{
+          model: Event,
+          as: 'Events',
+          include: [{
+            model: EventType,
+            attributes: ['eventName', 'stateName', 'userColor', 'adminColor', 'systemEventType']
+          }]
+        }]
+      });
+
+      updatedTables.push(updatedTable);
+    }
+
+    res.json(updatedTables);
+  } catch (error) {
+    console.error('Error releasing all tables:', error);
+    res.status(500).json({ error: 'Error releasing all tables' });
+  }
+});
+
 router.put('/branches/:branchId', authMiddleware.checkBranchPermission, async (req, res) => {
   try {
     const branch = await Branch.findByPk(req.params.branchId);
@@ -367,6 +449,14 @@ router.get('/tables/:tableId', authMiddleware.checkTablePermission, async (req, 
       // Use customer events for UserScreen (excludes system events and applies hierarchy correctly)
       const availableEventTypes = await EventConfigService.getCustomerEventsForTable(table.id);
       console.log('🎯 availableEventTypes from getCustomerEventsForTable:', availableEventTypes.length);
+      console.log('🎯 availableEventTypes details:', availableEventTypes.map(et => ({
+        id: et.id,
+        eventName: et.eventName,
+        userColor: et.userColor,
+        userFontColor: et.userFontColor,
+        userIcon: et.userIcon,
+        enabled: et.enabled
+      })));
       
       // Get all events (including system events) to find SCAN event for UserScreen
       // First get the company ID from the table
@@ -379,7 +469,7 @@ router.get('/tables/:tableId', authMiddleware.checkTablePermission, async (req, 
       });
       const companyId = tableWithBranch.Branch.Company.id;
       
-      const allEvents = await EventConfigService.getEffectiveEventsForResource(
+      const allEvents = await EventConfigService.getAllEventsWithConfiguration(
         'location',
         table.id,
         companyId,

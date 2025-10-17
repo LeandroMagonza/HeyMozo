@@ -1,22 +1,21 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { FaTrash, FaCheck, FaEdit, FaPalette } from 'react-icons/fa';
+import { FaTrash, FaCheck, FaEdit, FaPalette, FaUndo } from 'react-icons/fa';
 import './EventConfigModal.css';
 import IconPicker from './IconPicker';
 import IconRenderer from '../services/iconRenderer';
 
-const EventConfigModal = ({ 
-  isOpen, 
-  onClose, 
-  resourceType, 
-  resourceId, 
-  companyId, 
+const EventConfigModal = ({
+  isOpen,
+  onClose,
+  resourceType,
+  resourceId,
+  companyId,
   branchId = null,
-  resourceName 
+  resourceName
 }) => {
   console.log('EventConfigModal rendered with props:', { isOpen, resourceType, resourceId, companyId, branchId, resourceName });
-  const [eventTypes, setEventTypes] = useState([]);
-  const [configurations, setConfigurations] = useState({});
-  const [effectiveConfigurations, setEffectiveConfigurations] = useState({});
+  const [eventsWithConfig, setEventsWithConfig] = useState([]);
+  const [pendingOverrides, setPendingOverrides] = useState({});
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -31,12 +30,17 @@ const EventConfigModal = ({
   });
   const [showIconPicker, setShowIconPicker] = useState(false);
   const [iconPickerTarget, setIconPickerTarget] = useState(null);
-  const [editingField, setEditingField] = useState(null);
-  const [editingValue, setEditingValue] = useState('');
 
-  const loadEventTypes = useCallback(async () => {
+  const loadEventsWithConfiguration = useCallback(async () => {
+    console.log('loadEventsWithConfiguration called with:', { resourceType, resourceId, companyId, branchId });
+
     try {
-      const response = await fetch(`/api/companies/${companyId}/event-types`, {
+      const queryParams = new URLSearchParams({
+        companyId,
+        ...(branchId && { branchId })
+      });
+
+      const response = await fetch(`/api/resources/${resourceType}/${resourceId}/events/resolved?${queryParams}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('heymozo_token')}`
         }
@@ -44,153 +48,81 @@ const EventConfigModal = ({
 
       if (response.ok) {
         const data = await response.json();
-        setEventTypes(data);
+        console.log('Events with configuration loaded:', data);
+        setEventsWithConfig(data);
       } else {
-        console.error('Failed to load event types');
+        console.error('Failed to load events with configuration:', response.status);
       }
     } catch (error) {
-      console.error('Error loading event types:', error);
-    }
-  }, [companyId]);
-
-  const loadConfigurations = useCallback(async () => {
-    console.log('loadConfigurations called with:', { resourceType, resourceId, companyId, branchId });
-    
-    try {
-      // Load specific configurations for this resource
-      const response = await fetch(`/api/resources/${resourceType}/${resourceId}/events/config`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('heymozo_token')}`
-        }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        console.log('Specific configurations for', resourceType, resourceId, ':', data);
-        const configMap = {};
-        data.forEach(config => {
-          configMap[config.eventTypeId] = config.enabled;
-        });
-        setConfigurations(configMap);
-        console.log('Configurations map:', configMap);
-      } else {
-        console.error('Failed to load specific configurations:', response.status);
-      }
-
-      // Load parent configurations for inheritance comparison
-      if (resourceType !== 'company') {
-        let parentResourceType, parentResourceId;
-        
-        if (resourceType === 'branch') {
-          parentResourceType = 'company';
-          parentResourceId = companyId;
-        } else if (resourceType === 'location') {
-          parentResourceType = 'branch';
-          parentResourceId = branchId;
-        }
-        
-        if (parentResourceType && parentResourceId) {
-          const parentQueryParams = new URLSearchParams({
-            companyId,
-            ...(branchId && parentResourceType !== 'company' && { branchId })
-          });
-          
-          const parentResponse = await fetch(`/api/resources/${parentResourceType}/${parentResourceId}/events/resolved?${parentQueryParams}`, {
-            headers: {
-              'Authorization': `Bearer ${localStorage.getItem('heymozo_token')}`
-            }
-          });
-
-          if (parentResponse.ok) {
-            const parentData = await parentResponse.json();
-            console.log('Parent configurations for', parentResourceType, parentResourceId, ':', parentData);
-            const parentMap = {};
-            parentData.forEach(event => {
-              parentMap[event.id] = event.enabled;
-            });
-            setEffectiveConfigurations(parentMap);
-            console.log('Parent configurations map:', parentMap);
-          } else {
-            console.error('Failed to load parent configurations:', parentResponse.status);
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Error loading configurations:', error);
+      console.error('Error loading events with configuration:', error);
     }
   }, [resourceType, resourceId, companyId, branchId]);
 
   useEffect(() => {
     if (isOpen && companyId) {
       setLoading(true);
-      Promise.all([
-        loadEventTypes(),
-        loadConfigurations()
-      ]).finally(() => {
+      setPendingOverrides({});
+      loadEventsWithConfiguration().finally(() => {
         setLoading(false);
       });
     }
-  }, [isOpen, companyId, resourceType, resourceId, loadEventTypes, loadConfigurations]);
+  }, [isOpen, companyId, resourceType, resourceId, loadEventsWithConfiguration]);
 
-  const handleToggleEvent = async (eventTypeId, enabled) => {
-    // Check if this creates a redundant configuration
-    const eventType = eventTypes.find(et => et.id === eventTypeId);
-    const parentEnabled = getParentConfiguration(eventType);
-    
-    if (enabled === parentEnabled && resourceType !== 'company') {
-      // Remove redundant configuration - it matches parent
-      await removeEventConfiguration(eventTypeId);
-      const newConfig = { ...configurations };
-      delete newConfig[eventTypeId];
-      setConfigurations(newConfig);
-    } else {
-      // Set specific configuration
-      setConfigurations(prev => ({
-        ...prev,
-        [eventTypeId]: enabled
-      }));
-    }
+  const handleFieldChange = (eventId, field, value) => {
+    setPendingOverrides(prev => ({
+      ...prev,
+      [eventId]: {
+        ...prev[eventId],
+        [field]: value
+      }
+    }));
   };
 
-  const getParentConfiguration = (eventType) => {
-    // For company level, there's no parent (default enabled)
-    if (resourceType === 'company') return true;
-    
-    // For branch/location, get the effective configuration (which includes parent inheritance)
-    return effectiveConfigurations[eventType.id] !== undefined ? effectiveConfigurations[eventType.id] : true;
-  };
-
-  const removeEventConfiguration = async (eventTypeId) => {
-    try {
-      await fetch(`/api/resources/${resourceType}/${resourceId}/events/config/${eventTypeId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('heymozo_token')}`
+  const handleFieldReset = (eventId, field) => {
+    setPendingOverrides(prev => {
+      const newOverrides = { ...prev };
+      if (newOverrides[eventId]) {
+        delete newOverrides[eventId][field];
+        if (Object.keys(newOverrides[eventId]).length === 0) {
+          delete newOverrides[eventId];
         }
-      });
-    } catch (error) {
-      console.error('Error removing event configuration:', error);
-    }
+      }
+      return newOverrides;
+    });
+  };
+
+  const getEffectiveValue = (event, field) => {
+    return pendingOverrides[event.id]?.[field] !== undefined
+      ? pendingOverrides[event.id][field]
+      : event[field];
+  };
+
+  const isFieldOverridden = (event, field) => {
+    return pendingOverrides[event.id]?.[field] !== undefined;
+  };
+
+  const isEventEnabled = (event) => {
+    return getEffectiveValue(event, 'enabled');
   };
 
   const handleSave = async () => {
     setSaving(true);
     try {
-      // Only save configurations that are different from parent/default
-      const configArray = eventTypes
-        .filter(eventType => {
-          const currentConfig = configurations[eventType.id];
-          const parentConfig = getParentConfiguration(eventType);
-          
-          // Only include if there's a specific configuration AND it's different from parent
-          return currentConfig !== undefined && currentConfig !== parentConfig;
-        })
-        .map(eventType => ({
-          eventTypeId: eventType.id,
-          enabled: configurations[eventType.id]
-        }));
-        
-      console.log('Saving only non-redundant configurations:', configArray);
+      const configurationsToSave = [];
+
+      for (const [eventId, overrides] of Object.entries(pendingOverrides)) {
+        const event = eventsWithConfig.find(e => e.id === parseInt(eventId));
+        if (!event) continue;
+
+        const configData = {
+          eventTypeId: event.id,
+          ...overrides
+        };
+
+        configurationsToSave.push(configData);
+      }
+
+      console.log('Saving configurations:', configurationsToSave);
 
       const response = await fetch(`/api/resources/${resourceType}/${resourceId}/events/config`, {
         method: 'POST',
@@ -198,12 +130,12 @@ const EventConfigModal = ({
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('heymozo_token')}`
         },
-        body: JSON.stringify({ configurations: configArray })
+        body: JSON.stringify({ configurations: configurationsToSave })
       });
 
       if (response.ok) {
-        // Reload configurations to reflect changes
-        await loadConfigurations();
+        setPendingOverrides({});
+        await loadEventsWithConfiguration();
         onClose();
       } else {
         console.error('Failed to save configurations');
@@ -217,7 +149,7 @@ const EventConfigModal = ({
   };
 
   const handleReset = async () => {
-    if (!window.confirm('Are you sure you want to reset all configurations for this resource? This will inherit from parent configurations.')) {
+    if (!window.confirm('¿Estás seguro de que quieres restablecer todas las configuraciones para este recurso? Esto heredará las configuraciones del nivel superior.')) {
       return;
     }
 
@@ -230,20 +162,25 @@ const EventConfigModal = ({
       });
 
       if (response.ok) {
-        setConfigurations({});
-        await loadConfigurations(); // Reload to get updated effective configurations
-        alert('Configurations reset successfully');
+        setPendingOverrides({});
+        await loadEventsWithConfiguration();
+        alert('Configuraciones restablecidas exitosamente');
       } else {
         console.error('Failed to reset configurations');
-        alert('Failed to reset configurations');
+        alert('Error al restablecer las configuraciones');
       }
     } catch (error) {
       console.error('Error resetting configurations:', error);
-      alert('Error resetting configurations');
+      alert('Error al restablecer las configuraciones');
     }
   };
 
   const handleCreateEvent = async () => {
+    if (resourceType !== 'company') {
+      alert('Los eventos personalizados solo pueden crearse a nivel de compañía');
+      return;
+    }
+
     try {
       const response = await fetch(`/api/companies/${companyId}/event-types`, {
         method: 'POST',
@@ -255,31 +192,6 @@ const EventConfigModal = ({
       });
 
       if (response.ok) {
-        const createdEventType = await response.json();
-        
-        // Create EventConfiguration for this resource
-        try {
-          const configResponse = await fetch(`/api/resources/${resourceType}/${resourceId}/events/config`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${localStorage.getItem('heymozo_token')}`
-            },
-            body: JSON.stringify({ 
-              configurations: [{ 
-                eventTypeId: createdEventType.id, 
-                enabled: true 
-              }] 
-            })
-          });
-          
-          if (!configResponse.ok) {
-            console.warn('Failed to create event configuration, but event type was created');
-          }
-        } catch (configError) {
-          console.warn('Error creating event configuration:', configError);
-        }
-        
         setShowCreateModal(false);
         setNewEvent({
           eventName: '',
@@ -290,30 +202,35 @@ const EventConfigModal = ({
           adminColor: '#ffc107',
           priority: 50
         });
-        await Promise.all([loadEventTypes(), loadConfigurations()]); // Reload all modal data
+        await loadEventsWithConfiguration();
       } else {
         const error = await response.json();
         console.error('Failed to create event type:', error);
-        alert('Failed to create event type: ' + (error.error || 'Unknown error'));
+        alert('Error creando el tipo de evento: ' + (error.error || 'Error desconocido'));
       }
     } catch (error) {
       console.error('Error creating event type:', error);
-      alert('Error creating event type');
+      alert('Error creando el tipo de evento');
     }
   };
 
-  const handleDeleteEvent = async (eventTypeId, eventType) => {
-    if (eventType.systemEventType) {
-      alert('System events cannot be deleted. They can only be renamed.');
+  const handleDeleteEvent = async (eventId, event) => {
+    if (event.systemEventType) {
+      alert('Los eventos del sistema no pueden ser eliminados. Solo pueden ser renombrados.');
       return;
     }
 
-    if (!window.confirm(`Are you sure you want to delete the event "${eventType.eventName}"?`)) {
+    if (resourceType !== 'company') {
+      alert('Los eventos personalizados solo pueden eliminarse a nivel de compañía');
+      return;
+    }
+
+    if (!window.confirm(`¿Estás seguro de que quieres eliminar el evento "${event.eventName}"?`)) {
       return;
     }
 
     try {
-      const response = await fetch(`/api/event-types/${eventTypeId}`, {
+      const response = await fetch(`/api/event-types/${eventId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('heymozo_token')}`
@@ -321,185 +238,66 @@ const EventConfigModal = ({
       });
 
       if (response.ok) {
-        await Promise.all([loadEventTypes(), loadConfigurations()]); // Reload all modal data
+        await loadEventsWithConfiguration();
       } else {
         const error = await response.json();
         console.error('Failed to delete event type:', error);
-        alert('Failed to delete event type: ' + (error.error || 'Unknown error'));
+        alert('Error eliminando el tipo de evento: ' + (error.error || 'Error desconocido'));
       }
     } catch (error) {
       console.error('Error deleting event type:', error);
-      alert('Error deleting event type');
+      alert('Error eliminando el tipo de evento');
     }
   };
 
-  const getInheritanceIcon = (eventType) => {
-    const isConfigured = configurations[eventType.id] !== undefined;
-    if (isConfigured) {
-      switch (resourceType) {
+  const getInheritanceIcon = (event) => {
+    if (event.configuredAt) {
+      switch (event.configuredAt) {
         case 'company': return '🏢';
         case 'branch': return '🏪';
         case 'location': return '📍';
         default: return '⚙️';
       }
     }
-    
-    // For company level, show company icon (no inheritance)
+
+    // Not configured at this level - show base/default
+    return resourceType === 'company' ? '🏢' : '🔄';
+  };
+
+  const getInheritanceText = (event) => {
+    if (event.configuredAt) {
+      const levelNames = {
+        company: 'compañía',
+        branch: 'sucursal',
+        location: 'mesa'
+      };
+      return `Configurado a nivel ${levelNames[event.configuredAt]}`;
+    }
+
     if (resourceType === 'company') {
-      return '🏢';
+      return 'Configuración base';
     }
-    
-    // For other levels, show where it's inherited from
-    return resourceType === 'branch' ? '🏢' : '🏪'; // Inherited from company or branch
+
+    return 'Heredado de nivel superior';
   };
 
-  const getInheritanceText = (eventType) => {
-    const isConfigured = configurations[eventType.id] !== undefined;
-    if (isConfigured) {
-      return `Configurado a nivel ${resourceType === 'company' ? 'compañía' : resourceType === 'branch' ? 'sucursal' : 'mesa'}`;
-    }
-    
-    if (resourceType === 'company') {
-      return 'Configuración de compañía';
-    }
-    
-    return resourceType === 'branch' ? 'Heredado de compañía' : 'Heredado de nivel superior';
-  };
-
-  const isEventEnabled = (eventType) => {
-    console.log(`isEventEnabled for ${eventType.eventName} (ID: ${eventType.id}):`);
-    console.log('  - configurations[eventType.id]:', configurations[eventType.id]);
-    console.log('  - effectiveConfigurations[eventType.id]:', effectiveConfigurations[eventType.id]);
-    
-    // If there's a specific configuration for this resource, use it
-    if (configurations[eventType.id] !== undefined) {
-      console.log('  - Using specific configuration:', configurations[eventType.id]);
-      return configurations[eventType.id];
-    }
-    
-    // Otherwise, fall back to the parent/effective configuration
-    const parentConfig = getParentConfiguration(eventType);
-    console.log('  - Using parent configuration:', parentConfig);
-    return parentConfig;
-  };
-
-  const handleEditClick = (eventTypeId, field, currentValue) => {
-    setEditingField(`${eventTypeId}-${field}`);
-    setEditingValue(currentValue);
-  };
-
-  const handleEditCancel = () => {
-    setEditingField(null);
-    setEditingValue('');
-  };
-
-  const handleEditSave = async (eventTypeId, field) => {
-    try {
-      const response = await fetch(`/api/event-types/${eventTypeId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('heymozo_token')}`
-        },
-        body: JSON.stringify({ [field]: editingValue })
-      });
-
-      if (response.ok) {
-        // Update the local state
-        setEventTypes(prev => prev.map(et => 
-          et.id === eventTypeId 
-            ? { ...et, [field]: editingValue }
-            : et
-        ));
-        setEditingField(null);
-        setEditingValue('');
-      } else {
-        console.error('Failed to update event type');
-        alert('Error actualizando el evento');
-      }
-    } catch (error) {
-      console.error('Error updating event type:', error);
-      alert('Error actualizando el evento');
-    }
-  };
-
-  const handleColorClick = (eventTypeId, colorField, currentColor) => {
-    setEditingField(`${eventTypeId}-${colorField}`);
-    setEditingValue(currentColor);
-  };
-
-  const handleColorSave = async (eventTypeId, colorField) => {
-    try {
-      const response = await fetch(`/api/event-types/${eventTypeId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('heymozo_token')}`
-        },
-        body: JSON.stringify({ [colorField]: editingValue })
-      });
-
-      if (response.ok) {
-        // Update the local state
-        setEventTypes(prev => prev.map(et => 
-          et.id === eventTypeId 
-            ? { ...et, [colorField]: editingValue }
-            : et
-        ));
-        setEditingField(null);
-        setEditingValue('');
-      } else {
-        console.error('Failed to update color');
-        alert('Error actualizando el color');
-      }
-    } catch (error) {
-      console.error('Error updating color:', error);
-      alert('Error actualizando el color');
-    }
-  };
-
-  const handleIconClick = (eventTypeId, currentIcon) => {
-    setIconPickerTarget({ eventTypeId, currentIcon });
+  const handleIconClick = (eventId, currentIcon) => {
+    setIconPickerTarget({ eventId, currentIcon });
     setShowIconPicker(true);
   };
 
   const handleIconSelect = async (iconName) => {
     if (!iconPickerTarget) return;
-    
+
     // Handle new event icon selection
     if (iconPickerTarget.isNewEvent) {
       setNewEvent(prev => ({ ...prev, userIcon: iconName }));
       setIconPickerTarget(null);
       return;
     }
-    
-    // Handle existing event icon update
-    try {
-      const response = await fetch(`/api/event-types/${iconPickerTarget.eventTypeId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('heymozo_token')}`
-        },
-        body: JSON.stringify({ userIcon: iconName })
-      });
 
-      if (response.ok) {
-        // Update the local state
-        setEventTypes(prev => prev.map(et => 
-          et.id === iconPickerTarget.eventTypeId 
-            ? { ...et, userIcon: iconName }
-            : et
-        ));
-      } else {
-        console.error('Failed to save icon');
-        alert('Error guardando el icono');
-      }
-    } catch (error) {
-      console.error('Error saving icon:', error);
-      alert('Error guardando el icono');
-    }
-    
+    // Handle existing event icon override
+    handleFieldChange(iconPickerTarget.eventId, 'userIcon', iconName);
     setIconPickerTarget(null);
   };
 
@@ -521,206 +319,175 @@ const EventConfigModal = ({
               <div className="events-section">
                 <div className="section-header">
                   <h3>Configuración de Eventos</h3>
-                  <button onClick={() => setShowCreateModal(true)} className="create-event-btn">
-                    + Crear Evento Personalizado
-                  </button>
+                  {resourceType === 'company' && (
+                    <button onClick={() => setShowCreateModal(true)} className="create-event-btn">
+                      + Crear Evento Personalizado
+                    </button>
+                  )}
                 </div>
 
                 <div className="events-list">
-                  {eventTypes.map(eventType => (
-                    <div 
-                      key={eventType.id} 
-                      className={`event-item ${configurations[eventType.id] !== undefined ? 'configured' : 'inherited'}`}
+                  {eventsWithConfig.map(event => (
+                    <div
+                      key={event.id}
+                      className={`event-item ${event.configuredAt ? 'configured' : 'inherited'} ${!isEventEnabled(event) ? 'disabled' : ''}`}
                     >
                       <div className="event-info">
                         <div className="event-main">
                           <div className="event-texts">
                             <div className="event-text">
-                              <span className="label">Evento:</span> 
-                              {editingField === `${eventType.id}-eventName` ? (
-                                <div className="edit-input-group">
-                                  <input
-                                    type="text"
-                                    value={editingValue}
-                                    onChange={(e) => setEditingValue(e.target.value)}
-                                    className="edit-input"
-                                    autoFocus
-                                  />
-                                  <button 
-                                    className="save-edit-btn"
-                                    onClick={() => handleEditSave(eventType.id, 'eventName')}
+                              <span className="label">Evento:</span>
+                              <div className="field-group">
+                                <input
+                                  type="text"
+                                  value={getEffectiveValue(event, 'eventName')}
+                                  onChange={(e) => handleFieldChange(event.id, 'eventName', e.target.value)}
+                                  className={`field-input ${isFieldOverridden(event, 'eventName') ? 'overridden' : ''}`}
+                                  placeholder={event.eventName}
+                                />
+                                {isFieldOverridden(event, 'eventName') && (
+                                  <button
+                                    className="reset-field-btn"
+                                    onClick={() => handleFieldReset(event.id, 'eventName')}
+                                    title="Restablecer al valor heredado"
                                   >
-                                    Guardar
+                                    <FaUndo />
                                   </button>
-                                  <button 
-                                    className="cancel-edit-btn"
-                                    onClick={handleEditCancel}
-                                  >
-                                    Cancelar
-                                  </button>
-                                </div>
-                              ) : (
-                                <>
-                                  <strong>{eventType.eventName}</strong>
-                                  <button 
-                                    className="edit-text-btn" 
-                                    title="Editar nombre del evento"
-                                    onClick={() => handleEditClick(eventType.id, 'eventName', eventType.eventName)}
-                                  >
-                                    <FaEdit />
-                                  </button>
-                                </>
-                              )}
+                                )}
+                              </div>
                             </div>
                             <div className="event-text">
-                              <span className="label">Estado:</span> 
-                              {editingField === `${eventType.id}-stateName` ? (
-                                <div className="edit-input-group">
-                                  <input
-                                    type="text"
-                                    value={editingValue}
-                                    onChange={(e) => setEditingValue(e.target.value)}
-                                    className="edit-input"
-                                    autoFocus
-                                  />
-                                  <button 
-                                    className="save-edit-btn"
-                                    onClick={() => handleEditSave(eventType.id, 'stateName')}
+                              <span className="label">Estado:</span>
+                              <div className="field-group">
+                                <input
+                                  type="text"
+                                  value={getEffectiveValue(event, 'stateName')}
+                                  onChange={(e) => handleFieldChange(event.id, 'stateName', e.target.value)}
+                                  className={`field-input ${isFieldOverridden(event, 'stateName') ? 'overridden' : ''}`}
+                                  placeholder={event.stateName}
+                                />
+                                {isFieldOverridden(event, 'stateName') && (
+                                  <button
+                                    className="reset-field-btn"
+                                    onClick={() => handleFieldReset(event.id, 'stateName')}
+                                    title="Restablecer al valor heredado"
                                   >
-                                    Guardar
+                                    <FaUndo />
                                   </button>
-                                  <button 
-                                    className="cancel-edit-btn"
-                                    onClick={handleEditCancel}
-                                  >
-                                    Cancelar
-                                  </button>
-                                </div>
-                              ) : (
-                                <>
-                                  <strong>{eventType.stateName}</strong>
-                                  <button 
-                                    className="edit-text-btn" 
-                                    title="Editar nombre del estado"
-                                    onClick={() => handleEditClick(eventType.id, 'stateName', eventType.stateName)}
-                                  >
-                                    <FaEdit />
-                                  </button>
-                                </>
-                              )}
+                                )}
+                              </div>
                             </div>
                           </div>
                           
                           <div className="event-meta">
                             <div className="event-colors">
-                              {editingField === `${eventType.id}-userColor` ? (
-                                <div className="color-edit-group">
-                                  <input
-                                    type="color"
-                                    value={editingValue}
-                                    onChange={(e) => setEditingValue(e.target.value)}
-                                    className="color-picker"
-                                  />
-                                  <button 
-                                    className="save-edit-btn"
-                                    onClick={() => handleColorSave(eventType.id, 'userColor')}
+                              <div className="color-field">
+                                <input
+                                  type="color"
+                                  value={getEffectiveValue(event, 'userColor')}
+                                  onChange={(e) => handleFieldChange(event.id, 'userColor', e.target.value)}
+                                  className={`color-picker ${isFieldOverridden(event, 'userColor') ? 'overridden' : ''}`}
+                                  title="Color del botón para clientes"
+                                />
+                                {isFieldOverridden(event, 'userColor') && (
+                                  <button
+                                    className="reset-field-btn"
+                                    onClick={() => handleFieldReset(event.id, 'userColor')}
+                                    title="Restablecer color"
                                   >
-                                    Guardar
+                                    <FaUndo />
                                   </button>
-                                  <button 
-                                    className="cancel-edit-btn"
-                                    onClick={handleEditCancel}
+                                )}
+                              </div>
+
+                              <div className="color-field">
+                                <input
+                                  type="color"
+                                  value={getEffectiveValue(event, 'userFontColor')}
+                                  onChange={(e) => handleFieldChange(event.id, 'userFontColor', e.target.value)}
+                                  className={`color-picker ${isFieldOverridden(event, 'userFontColor') ? 'overridden' : ''}`}
+                                  title="Color del texto del botón"
+                                />
+                                {isFieldOverridden(event, 'userFontColor') && (
+                                  <button
+                                    className="reset-field-btn"
+                                    onClick={() => handleFieldReset(event.id, 'userFontColor')}
+                                    title="Restablecer color del texto"
                                   >
-                                    Cancelar
+                                    <FaUndo />
                                   </button>
-                                </div>
-                              ) : (
-                                <div 
-                                  className="color-box customer-color clickable"
-                                  style={{ backgroundColor: eventType.userColor }}
-                                  title="Color del botón para clientes - Click para editar"
-                                  onClick={() => handleColorClick(eventType.id, 'userColor', eventType.userColor)}
-                                ></div>
-                              )}
-                              
-                              {editingField === `${eventType.id}-userFontColor` ? (
-                                <div className="color-edit-group">
-                                  <input
-                                    type="color"
-                                    value={editingValue}
-                                    onChange={(e) => setEditingValue(e.target.value)}
-                                    className="color-picker"
-                                  />
-                                  <button 
-                                    className="save-edit-btn"
-                                    onClick={() => handleColorSave(eventType.id, 'userFontColor')}
+                                )}
+                              </div>
+
+                              <div className="color-field">
+                                <input
+                                  type="color"
+                                  value={getEffectiveValue(event, 'adminColor')}
+                                  onChange={(e) => handleFieldChange(event.id, 'adminColor', e.target.value)}
+                                  className={`color-picker ${isFieldOverridden(event, 'adminColor') ? 'overridden' : ''}`}
+                                  title="Color de estado para administradores"
+                                />
+                                {isFieldOverridden(event, 'adminColor') && (
+                                  <button
+                                    className="reset-field-btn"
+                                    onClick={() => handleFieldReset(event.id, 'adminColor')}
+                                    title="Restablecer color admin"
                                   >
-                                    Guardar
+                                    <FaUndo />
                                   </button>
-                                  <button 
-                                    className="cancel-edit-btn"
-                                    onClick={handleEditCancel}
-                                  >
-                                    Cancelar
-                                  </button>
-                                </div>
-                              ) : (
-                                <div 
-                                  className="color-box font-color clickable"
-                                  style={{ backgroundColor: eventType.userFontColor || '#ffffff' }}
-                                  title="Color del texto del botón - Click para editar"
-                                  onClick={() => handleColorClick(eventType.id, 'userFontColor', eventType.userFontColor || '#ffffff')}
-                                ></div>
-                              )}
-                              
-                              {editingField === `${eventType.id}-adminColor` ? (
-                                <div className="color-edit-group">
-                                  <input
-                                    type="color"
-                                    value={editingValue}
-                                    onChange={(e) => setEditingValue(e.target.value)}
-                                    className="color-picker"
-                                  />
-                                  <button 
-                                    className="save-edit-btn"
-                                    onClick={() => handleColorSave(eventType.id, 'adminColor')}
-                                  >
-                                    Guardar
-                                  </button>
-                                  <button 
-                                    className="cancel-edit-btn"
-                                    onClick={handleEditCancel}
-                                  >
-                                    Cancelar
-                                  </button>
-                                </div>
-                              ) : (
-                                <div 
-                                  className="color-box admin-color clickable"
-                                  style={{ backgroundColor: eventType.adminColor }}
-                                  title="Color de estado para administradores - Click para editar"
-                                  onClick={() => handleColorClick(eventType.id, 'adminColor', eventType.adminColor)}
-                                ></div>
-                              )}
-                            </div>
-                            
-                            <div className="event-icon">
-                              <div 
-                                className="icon-display clickable"
-                                onClick={() => handleIconClick(eventType.id, eventType.userIcon)}
-                                title="Icono del botón - Click para editar"
-                              >
-                                {eventType.userIcon ? (
-                                  <IconRenderer iconName={eventType.userIcon} size="1.5em" />
-                                ) : (
-                                  <span className="no-icon-placeholder">📷</span>
                                 )}
                               </div>
                             </div>
-                            {!eventType.systemEventType && (
-                              <span className="priority">Prioridad: {eventType.priority}</span>
+
+                            <div className="event-icon">
+                              <div className="icon-field">
+                                <div
+                                  className={`icon-display clickable ${isFieldOverridden(event, 'userIcon') ? 'overridden' : ''}`}
+                                  onClick={() => handleIconClick(event.id, getEffectiveValue(event, 'userIcon'))}
+                                  title="Icono del botón - Click para cambiar"
+                                >
+                                  {getEffectiveValue(event, 'userIcon') ? (
+                                    <IconRenderer iconName={getEffectiveValue(event, 'userIcon')} size="1.5em" />
+                                  ) : (
+                                    <span className="no-icon-placeholder">📷</span>
+                                  )}
+                                </div>
+                                {isFieldOverridden(event, 'userIcon') && (
+                                  <button
+                                    className="reset-field-btn"
+                                    onClick={() => handleFieldReset(event.id, 'userIcon')}
+                                    title="Restablecer icono"
+                                  >
+                                    <FaUndo />
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+
+                            {!event.systemEventType && (
+                              <div className="priority-field">
+                                <span className="label">Prioridad:</span>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max="100"
+                                  value={getEffectiveValue(event, 'priority')}
+                                  onChange={(e) => handleFieldChange(event.id, 'priority', parseInt(e.target.value))}
+                                  className={`priority-input ${isFieldOverridden(event, 'priority') ? 'overridden' : ''}`}
+                                />
+                                {isFieldOverridden(event, 'priority') && (
+                                  <button
+                                    className="reset-field-btn"
+                                    onClick={() => handleFieldReset(event.id, 'priority')}
+                                    title="Restablecer prioridad"
+                                  >
+                                    <FaUndo />
+                                  </button>
+                                )}
+                              </div>
                             )}
-                            {eventType.systemEventType && (
+
+                            {event.systemEventType && (
                               <span className="system-badge">🔒 Sistema</span>
                             )}
                           </div>
@@ -729,29 +496,42 @@ const EventConfigModal = ({
 
                       <div className="event-controls">
                         <div className="inheritance-info">
-                          <span className="inheritance-icon" title={getInheritanceText(eventType)}>
-                            {getInheritanceIcon(eventType)}
+                          <span className="inheritance-icon" title={getInheritanceText(event)}>
+                            {getInheritanceIcon(event)}
                           </span>
                         </div>
 
-                        {!eventType.systemEventType && (
-                          <div className="event-checkbox">
+                        {event.systemEventType ? (
+                          <div className="system-event-status">
+                            <span className="system-label">🔒 Sistema (Siempre activo)</span>
+                          </div>
+                        ) : (
+                          <div className="enabled-field">
                             <label className="checkbox-container">
                               <input
                                 type="checkbox"
-                                checked={isEventEnabled(eventType)}
-                                onChange={(e) => handleToggleEvent(eventType.id, e.target.checked)}
+                                checked={isEventEnabled(event)}
+                                onChange={(e) => handleFieldChange(event.id, 'enabled', e.target.checked)}
                               />
                               <span className="checkmark">
-                                {isEventEnabled(eventType) && <FaCheck />}
+                                {isEventEnabled(event) && <FaCheck />}
                               </span>
                             </label>
+                            {isFieldOverridden(event, 'enabled') && (
+                              <button
+                                className="reset-field-btn"
+                                onClick={() => handleFieldReset(event.id, 'enabled')}
+                                title="Restablecer estado habilitado"
+                              >
+                                <FaUndo />
+                              </button>
+                            )}
                           </div>
                         )}
 
-                        {!eventType.systemEventType && (
+                        {!event.systemEventType && resourceType === 'company' && (
                           <button
-                            onClick={() => handleDeleteEvent(eventType.id, eventType)}
+                            onClick={() => handleDeleteEvent(event.id, event)}
                             className="delete-event-btn"
                             title="Eliminar evento personalizado"
                           >

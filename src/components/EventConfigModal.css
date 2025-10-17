@@ -692,3 +692,126 @@ input:checked + .toggle-slider:before {
   font-size: 12px;
   color: #495057;
 }
+
+/* Override styles for EventConfigModal v2 */
+.field-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.field-input {
+  padding: 4px 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  min-width: 0;
+  flex: 1;
+}
+
+.field-input.overridden {
+  border-color: #007bff;
+  background-color: #f8f9ff;
+  font-weight: 500;
+}
+
+.color-field {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.color-picker {
+  width: 40px;
+  height: 30px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+  padding: 0;
+}
+
+.color-picker.overridden {
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.icon-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.icon-display.overridden {
+  border: 2px solid #007bff;
+  border-radius: 4px;
+  background-color: #f8f9ff;
+}
+
+.priority-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.priority-input {
+  width: 60px;
+  padding: 4px 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.priority-input.overridden {
+  border-color: #007bff;
+  background-color: #f8f9ff;
+}
+
+.enabled-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.reset-field-btn {
+  padding: 4px;
+  border: none;
+  background: #dc3545;
+  color: white;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  transition: background-color 0.2s ease;
+}
+
+.reset-field-btn:hover {
+  background: #c82333;
+}
+
+.event-item.disabled {
+  opacity: 0.6;
+}
+
+.event-item.disabled .event-text {
+  text-decoration: line-through;
+  color: #6c757d;
+}
+
+.system-event-status {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  background-color: #e9ecef;
+  border-radius: 4px;
+  border: 1px solid #dee2e6;
+}
+
+.system-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #495057;
+}
