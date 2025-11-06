@@ -51,6 +51,52 @@ console.log('🔧 Mounting auth routes at /api/auth');
 app.use('/api/auth', authRoutes);
 console.log('🔧 Mounting users routes at /api/users');
 app.use('/api/users', usersRoutes);
+
+// PUBLIC ROUTE: Mailing list (MUST be before eventsRoutes)
+console.log('🔧 Registering PUBLIC route: POST /api/mailing-list (BEFORE other /api/* routes)');
+app.post('/api/mailing-list', async (req, res) => {
+  console.log('='.repeat(60));
+  console.log('📧 MAILING LIST ENDPOINT HIT');
+  console.log('='.repeat(60));
+  console.log('📝 Request body:', req.body);
+  console.log('🔐 Authorization header:', req.headers.authorization ? 'Present' : 'Not present');
+  console.log('🌐 Request origin:', req.headers.origin || 'No origin');
+
+  try {
+    const { name, email, message } = req.body;
+
+    console.log('✅ Attempting to create mailing list entry...');
+    console.log('   Name:', name);
+    console.log('   Email:', email);
+    console.log('   Message:', message);
+
+    const newEntry = await MailingList.create({
+      name,
+      email,
+      message,
+      createdAt: new Date()
+    });
+
+    console.log('✅ Mailing list entry created successfully:', newEntry.id);
+    console.log('='.repeat(60));
+
+    res.status(201).json({
+      success: true,
+      message: 'Registro creado exitosamente'
+    });
+  } catch (error) {
+    console.error('❌ Error creating mailing list entry:', error);
+    console.error('❌ Error message:', error.message);
+    console.error('❌ Error stack:', error.stack);
+    console.log('='.repeat(60));
+
+    res.status(500).json({
+      success: false,
+      error: 'Error al procesar la solicitud'
+    });
+  }
+});
+
 console.log('🔧 Mounting events routes at /api');
 app.use('/api', eventsRoutes);
 
@@ -241,7 +287,7 @@ app.post('/api/tables/:id/events', async (req, res) => {
         include: [{ model: Company }]
       }]
     });
-    
+
     console.log('Table found:', table ? 'YES' : 'NO');
     if (table) {
       console.log('Table structure:', {
@@ -252,7 +298,7 @@ app.post('/api/tables/:id/events', async (req, res) => {
         company: table.Branch?.Company ? 'EXISTS' : 'NULL'
       });
     }
-    
+
     if (!table) {
       return res.status(404).json({ error: 'Table not found' });
     }
@@ -278,14 +324,14 @@ app.post('/api/tables/:id/events', async (req, res) => {
       try {
         console.log(`Looking for system event: ${systemEventType} in company: ${companyId}`);
         const { EventType } = require('./src/models');
-        
+
         // First, let's see what EventTypes exist
         const allEventTypes = await EventType.findAll({
           where: { companyId, isActive: true },
           attributes: ['id', 'eventName', 'systemEventType']
         });
         console.log('All EventTypes for company:', allEventTypes.map(et => et.toJSON()));
-        
+
         const eventType = await EventType.findOne({
           where: {
             companyId,
@@ -293,13 +339,13 @@ app.post('/api/tables/:id/events', async (req, res) => {
             isActive: true
           }
         });
-        
+
         console.log('Found eventType for systemEventType:', eventType ? eventType.toJSON() : 'null');
-        
+
         if (!eventType) {
           return res.status(400).json({ error: `System event type ${systemEventType} not found for company ${companyId}` });
         }
-        
+
         finalEventTypeId = eventType.id;
         console.log(`Resolved system event '${systemEventType}' to eventTypeId: ${finalEventTypeId}`);
       } catch (error) {
@@ -357,8 +403,12 @@ app.post('/api/tables/:id/events', async (req, res) => {
   }
 });
 
+// RUTA /api/mailing-list DUPLICADA ELIMINADA - Ahora está registrada al principio del archivo (línea ~57)
+// antes de que se monte eventsRoutes, para evitar que sea interceptada por otros middlewares
+
 // Mount API routes with authentication middleware
 console.log('🔧 Mounting protected API routes at /api with authentication middleware');
+console.log('⚠️  All routes registered AFTER this point will require authentication');
 app.use('/api', authMiddleware.authenticate, apiRoutes);
 
 // Request logging is now handled above
@@ -967,30 +1017,7 @@ app.delete('/api/tables/:id', authMiddleware.authenticate, async (req, res) => {
 });
 */
 
-// Ruta para el mailing list
-app.post('/api/mailing-list', async (req, res) => {
-  try {
-    const { name, email, message } = req.body;
-    
-    const newEntry = await MailingList.create({
-      name,
-      email,
-      message,
-      createdAt: new Date()
-    });
-
-    res.status(201).json({
-      success: true,
-      message: 'Registro creado exitosamente'
-    });
-  } catch (error) {
-    console.error('Error creating mailing list entry:', error);
-    res.status(500).json({ 
-      success: false,
-      error: 'Error al procesar la solicitud'
-    });
-  }
-});
+// RUTA DUPLICADA ELIMINADA - La ruta /api/mailing-list ahora está en la sección de rutas públicas (antes del middleware de autenticación)
 
 // Servir archivos estáticos
 app.use(express.static(path.join(__dirname, 'build')));
