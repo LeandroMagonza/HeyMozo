@@ -85,9 +85,8 @@ app.post('/api/mailing-list', async (req, res) => {
       message: 'Registro creado exitosamente'
     });
   } catch (error) {
-    console.error('❌ Error creating mailing list entry:', error);
+    console.error('❌ Error creating mailing list entry:', error.name);
     console.error('❌ Error message:', error.message);
-    console.error('❌ Error stack:', error.stack);
     console.log('='.repeat(60));
 
     res.status(500).json({
