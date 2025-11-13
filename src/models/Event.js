@@ -17,7 +17,7 @@ module.exports = (sequelize) => {
     },
     eventTypeId: {
       type: DataTypes.INTEGER,
-      allowNull: false,
+      allowNull: true, // Allow NULL for backward compatibility and migration support
       references: {
         model: 'EventTypes',
         key: 'id'

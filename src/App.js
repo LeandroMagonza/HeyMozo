@@ -95,9 +95,10 @@ function LandingPage() {
       );
       setFormData({ name: "", email: "", message: "" });
     } catch (error) {
-      alert(
-        "Hubo un error al enviar el formulario. Por favor, intenta nuevamente."
-      );
+      // Handle specific error messages from the backend
+      const errorMessage = error.response?.data?.error ||
+        "Hubo un error al enviar el formulario. Por favor, intenta nuevamente.";
+      alert(errorMessage);
     }
   };
 

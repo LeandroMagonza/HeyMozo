@@ -12,21 +12,21 @@ async function migrate() {
   try {
     console.log('🔄 Starting database migration...');
     console.log('Environment:', process.env.NODE_ENV);
-    
+
     // Usar alter: true para preservar datos en todos los entornos
     // Solo usar force: true si explícitamente se requiere recrear
     const forceRecreate = process.env.FORCE_RECREATE === 'true';
-    const syncOptions = forceRecreate 
+    const syncOptions = forceRecreate
       ? { force: true }   // Solo si se especifica explícitamente
       : { alter: true };  // Por defecto, preservar datos
-    
+
     console.log('Sync options:', syncOptions);
-    
+
     // Test database connection first
     await sequelize.authenticate();
     console.log('✅ Database connection established');
 
-    // Manual fix: Remove unique constraint from MailingLists email column BEFORE sync
+    // Manual fix: Remove unique constraint from MailingLists email column
     console.log('🔄 Removing unique constraint from MailingLists email column...');
     try {
       const [constraints] = await sequelize.query(`
