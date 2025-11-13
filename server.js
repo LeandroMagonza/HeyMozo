@@ -868,14 +868,16 @@ app.post('/api/branches/:id/release-all-tables', authMiddleware.authenticate, as
   }
 });
 
-// Ruta para crear una nueva compañía
+// DISABLED: Duplicate POST /api/companies route - this functionality is handled by routes/index.js
+// which properly creates default event types for new companies
+/*
 app.post('/api/companies', authMiddleware.authenticate, async (req, res) => {
   try {
     const company = await Company.create({
       ...req.body,
       branchIds: req.body.branchIds || [] // Aseguramos que branchIds esté definido
     });
-    
+
     // Automatically give 'edit' permission to the user who created the company
     await Permission.create({
       userId: req.user.id,
@@ -883,7 +885,7 @@ app.post('/api/companies', authMiddleware.authenticate, async (req, res) => {
       resourceId: company.id,
       permissionLevel: 'edit'
     });
-    
+
     const formattedCompany = {
       ...company.toJSON(),
       branches: [] // Inicialmente sin sucursales
@@ -895,7 +897,10 @@ app.post('/api/companies', authMiddleware.authenticate, async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+*/
 
+// DISABLED: Duplicate routes - these are handled by routes/index.js with proper permission checks
+/*
 // Rutas para Company
 app.put('/api/companies/:id', authMiddleware.authenticate, async (req, res) => {
   try {
@@ -952,6 +957,7 @@ app.delete('/api/branches/:id', authMiddleware.authenticate, async (req, res) =>
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+*/
 
 // Ruta para crear una nueva mesa - COMMENTED OUT: Now handled by routes/index.js
 /*
