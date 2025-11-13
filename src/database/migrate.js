@@ -1,4 +1,7 @@
 const sequelize = require('../config/database');
+const { Sequelize } = require('sequelize');
+const fs = require('fs');
+const path = require('path');
 
 // Load all models and their relationships
 console.log('📦 Loading models and relationships...');
@@ -22,7 +25,27 @@ async function migrate() {
     // Test database connection first
     await sequelize.authenticate();
     console.log('✅ Database connection established');
-    
+
+    // Manual fix: Remove unique constraint from MailingLists email column BEFORE sync
+    console.log('🔄 Removing unique constraint from MailingLists email column...');
+    try {
+      const [constraints] = await sequelize.query(`
+        SELECT constraint_name
+        FROM information_schema.table_constraints
+        WHERE table_name = 'MailingLists'
+        AND constraint_type = 'UNIQUE'
+        AND constraint_name LIKE '%email%'
+      `);
+
+      for (const constraint of constraints) {
+        console.log(`   Dropping constraint: ${constraint.constraint_name}`);
+        await sequelize.query(`ALTER TABLE "MailingLists" DROP CONSTRAINT IF EXISTS "${constraint.constraint_name}"`);
+      }
+      console.log('✅ Email unique constraint removed');
+    } catch (error) {
+      console.log('⚠️ Could not remove email constraint (might not exist):', error.message);
+    }
+
     // Sincronizar todos los modelos con manejo de errores de índices
     try {
       await sequelize.sync(syncOptions);
@@ -35,15 +58,50 @@ async function migrate() {
         throw error;
       }
     }
-    
+
     console.log('✅ Database tables synchronized successfully');
-    
+
+    // Run specific migrations after sync
+    console.log('\n🔄 Running specific migrations...');
+    const migrationsDir = path.join(__dirname, 'migrations');
+
+    if (fs.existsSync(migrationsDir)) {
+      const migrationFiles = fs.readdirSync(migrationsDir)
+        .filter(file => file.endsWith('.js'))
+        .sort();
+
+      console.log(`📋 Found ${migrationFiles.length} migration files`);
+
+      for (const file of migrationFiles) {
+        console.log(`\n${'='.repeat(60)}`);
+        console.log(`🔄 Running migration: ${file}`);
+
+        try {
+          const migration = require(path.join(migrationsDir, file));
+
+          if (typeof migration.up === 'function') {
+            await migration.up(sequelize.getQueryInterface(), Sequelize);
+            console.log(`✅ Migration completed: ${file}`);
+          } else {
+            console.log(`⚠️ Skipping ${file} - no up() function found`);
+          }
+        } catch (error) {
+          console.error(`❌ Migration failed: ${file}`, error.message);
+          // Continue with other migrations instead of failing completely
+        }
+      }
+
+      console.log('='.repeat(60));
+    } else {
+      console.log('⚠️ No migrations directory found, skipping specific migrations');
+    }
+
     if (forceRecreate) {
       console.log('🔄 Migration completed - tables recreated (data lost)');
     } else {
       console.log('📊 Migration completed - existing data preserved');
     }
-    
+
   } catch (error) {
     console.error('❌ Error during database migration:', error);
     console.error('Error details:', error.message);

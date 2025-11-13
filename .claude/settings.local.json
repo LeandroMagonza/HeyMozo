@@ -8,7 +8,14 @@
       "Bash(PGPASSWORD=EJm2AWqXhY7wojsvaiYyjQTr1Smy9xNv pg_dump -h dpg-culqollds78s73d9oo50-a.oregon-postgres.render.com -U admin -d general_fn23 -f render_backup.sql)",
       "Bash(where psql)",
       "Read(//s/**)",
-      "Bash(npm run migrate:*)"
+      "Bash(npm run migrate:*)",
+      "Bash(npm run server:*)",
+      "Bash(curl:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(taskkill:*)",
+      "Bash(timeout:*)",
+      "Bash(powershell -Command:*)"
     ],
     "deny": [],
     "ask": []
