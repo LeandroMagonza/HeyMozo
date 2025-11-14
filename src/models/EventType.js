@@ -78,8 +78,8 @@ module.exports = (sequelize) => {
     },
     systemEventType: {
       type: DataTypes.ENUM('SCAN', 'MARK_SEEN', 'OCCUPY', 'VACATE'),
-      allowNull: true,
-      unique: ['companyId', 'systemEventType']
+      allowNull: true
+      // Unique constraint is defined in indexes below for proper composite uniqueness
     },
     isActive: {
       type: DataTypes.BOOLEAN,
