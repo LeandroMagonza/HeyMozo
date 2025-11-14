@@ -71,6 +71,15 @@ The core functionality revolves around table events defined in `src/constants.js
 - Environment-based configuration in `src/config/`
 - Auto-creates database if not exists (development)
 
+**Migration Behavior:**
+- Migrations use `alter: true` by default - **preserves all data** and only adjusts schema
+- Only uses `force: true` (recreates tables) if `FORCE_RECREATE=true` environment variable is set
+- Migrations are idempotent - safe to run multiple times
+- `npm run migrate` runs:
+  1. `sequelize.sync({ alter: true })` - syncs models to database schema
+  2. Executes all migration files in `src/database/migrations/` in order
+  3. Each migration checks if changes already exist before applying them
+
 ### Routing Structure
 
 **Public Routes:**
@@ -112,3 +121,41 @@ The system uses Resend API for sending magic link authentication emails:
 - In production mode: Emails are sent via Resend API if `RESEND_API_KEY` is configured
 - Magic links are valid for 15 minutes
 - All tokens are logged to console for testing purposes
+
+## Deployment (Render)
+
+**Build Command:**
+```bash
+npm install && npm run migrate && npm run build
+```
+
+**Why this order matters:**
+1. `npm install` - Installs all dependencies
+2. `npm run migrate` - Syncs database schema with models and runs migrations
+   - **Safe to run on every deploy** - migrations preserve data (`alter: true`)
+   - Ensures database is always in sync with code
+   - Creates tables/columns for new features automatically
+3. `npm run build` - Builds React frontend for production
+
+**Start Command:**
+```bash
+npm start
+```
+
+**Important Notes:**
+- Migrations **must** be included in build command to ensure schema stays in sync
+- Never skip migrations - they are idempotent and safe to run repeatedly
+- If you need to manually fix missing data, use emergency scripts like `src/database/fix-missing-event-types.js`
+
+**Emergency Recovery:**
+If EventTypes are missing for existing companies:
+```bash
+node src/database/fix-missing-event-types.js
+```
+
+**Environment Variables Required:**
+- `NODE_ENV=production`
+- `DATABASE_URL` or (`DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`)
+- `JWT_SECRET`
+- `RESEND_API_KEY` (for email)
+- `EMAIL_FROM` (email sender address)

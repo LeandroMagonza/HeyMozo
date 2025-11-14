@@ -239,6 +239,65 @@ npm run migrate   # Ejecutar migraciones de BD
 npm run seed      # Ejecutar seeders (datos de prueba)
 ```
 
+## 🚀 Deployment (Producción)
+
+### Configuración en Render
+
+**Build Command:**
+```bash
+npm install && npm run migrate && npm run build
+```
+
+**Start Command:**
+```bash
+npm start
+```
+
+### ¿Por qué incluir migraciones en el build?
+
+Las migraciones están diseñadas para ser **idempotentes** y **seguras**:
+
+- ✅ **Preservan datos**: Usan `alter: true` por defecto (solo ajusta esquema)
+- ✅ **No destruyen tablas**: Solo usa `force: true` si se establece `FORCE_RECREATE=true`
+- ✅ **Seguras de ejecutar múltiples veces**: Verifican si los cambios ya existen antes de aplicarlos
+- ✅ **Mantienen schema sincronizado**: Garantiza que la base de datos coincide con los modelos
+- ✅ **Automatizan el setup**: Crean tablas/columnas necesarias para nuevas features
+
+**Proceso de migración en cada deploy:**
+1. `sequelize.sync({ alter: true })` - Sincroniza modelos con esquema de BD
+2. Ejecuta migraciones específicas en `src/database/migrations/` en orden
+3. Cada migración verifica si el cambio ya fue aplicado (idempotencia)
+
+### Script de Recuperación de Emergencia
+
+Si por alguna razón las compañías existentes no tienen EventTypes:
+
+```bash
+node src/database/fix-missing-event-types.js
+```
+
+Este script:
+- Verifica qué compañías no tienen EventTypes
+- Crea automáticamente los 7 EventTypes por defecto para esas compañías
+- Es seguro ejecutar en producción (no modifica datos existentes)
+
+### Variables de Entorno Requeridas (Producción)
+
+```env
+NODE_ENV=production
+DATABASE_URL=postgresql://user:password@host:port/database
+# O alternativamente:
+DB_HOST=your-db-host
+DB_PORT=5432
+DB_USER=your-db-user
+DB_PASSWORD=your-db-password
+DB_NAME=your-db-name
+
+JWT_SECRET=your-secure-jwt-secret-min-32-chars
+RESEND_API_KEY=re_your_resend_api_key
+EMAIL_FROM=no-reply@yourdomain.com
+```
+
 ## 🚧 Estado de Implementación
 
 ### ✅ Completado
