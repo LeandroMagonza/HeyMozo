@@ -2,6 +2,8 @@ const { EventType, EventConfiguration } = require('../models');
 
 class EventConfigService {
   static async createDefaultEventTypes(companyId, createdBy = null) {
+    console.log('🚀 createDefaultEventTypes called for company:', companyId, 'createdBy:', createdBy);
+
     const defaultEventTypes = [
       // System Events (cannot be deleted)
       {
@@ -84,6 +86,8 @@ class EventConfigService {
       }
     ];
 
+    console.log('📦 Preparing', defaultEventTypes.length, 'default event types to create');
+
     const eventTypesToCreate = defaultEventTypes.map(eventType => ({
       ...eventType,
       companyId,
@@ -92,8 +96,10 @@ class EventConfigService {
       updatedBy: createdBy
     }));
 
+    console.log('💾 Creating event types with bulkCreate...');
     const createdEventTypes = await EventType.bulkCreate(eventTypesToCreate);
-    
+    console.log('✅ Created', createdEventTypes.length, 'event types');
+
     // Create default EventConfigurations for the company
     const { EventConfiguration } = require('../models');
     const eventConfigurations = createdEventTypes.map(eventType => ({
@@ -104,19 +110,32 @@ class EventConfigService {
       createdBy,
       updatedBy: createdBy
     }));
-    
+
+    console.log('💾 Creating', eventConfigurations.length, 'event configurations...');
+
     // Use individual creates instead of bulkCreate to avoid constraint issues
+    let successCount = 0;
+    let skipCount = 0;
+
     for (const config of eventConfigurations) {
       try {
         await EventConfiguration.create(config);
+        successCount++;
       } catch (error) {
         // Skip if already exists
-        if (!error.message.includes('duplicate') && !error.message.includes('unique constraint')) {
+        if (error.message.includes('duplicate') || error.message.includes('unique constraint')) {
+          console.log('⚠️  Skipping duplicate event configuration for eventTypeId:', config.eventTypeId);
+          skipCount++;
+        } else {
+          console.error('❌ Failed to create event configuration:', error.message);
           throw error;
         }
       }
     }
-    
+
+    console.log('✅ Event configurations created:', successCount, 'skipped:', skipCount);
+    console.log('🎉 createDefaultEventTypes completed successfully');
+
     return createdEventTypes;
   }
 

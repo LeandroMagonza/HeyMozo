@@ -684,24 +684,32 @@ router.get('/companies', async (req, res) => {
 // POST route to create a new company
 router.post('/companies', authMiddleware.authenticate, async (req, res) => {
   try {
+    console.log('📝 Creating company with data:', req.body);
     const company = await Company.create(req.body);
-    
+    console.log('✅ Company created:', company.id);
+
     // Create permission for the user who created the company
+    console.log('📝 Creating permission for user:', req.user.id);
     await Permission.create({
       userId: req.user.id,
       resourceType: 'company',
       resourceId: company.id,
       permissionLevel: 'edit' // Full access to the company they created
     });
-    
+    console.log('✅ Permission created');
+
     // Create default event types for the new company
+    console.log('📝 Creating default event types for company:', company.id);
     const EventConfigService = require('../services/eventConfig');
     await EventConfigService.createDefaultEventTypes(company.id, req.user.id);
-    
+    console.log('✅ Default event types created');
+
     res.status(201).json(company);
   } catch (error) {
-    console.error('Error creating company:', error);
-    res.status(500).json({ error: 'Error creating company' });
+    console.error('❌ Error creating company:', error.name);
+    console.error('❌ Error message:', error.message);
+    console.error('❌ Error stack:', error.stack);
+    res.status(500).json({ error: 'Error creating company', details: error.message });
   }
 });
 
