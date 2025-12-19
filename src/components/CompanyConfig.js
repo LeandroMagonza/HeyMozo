@@ -1,11 +1,26 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { getCompany, updateCompany, createBranch, deleteBranch, getBranches } from '../services/api';
-import './CompanyConfig.css';
-import { FaEye, FaSave, FaStore, FaCog, FaTrash, FaPlus, FaDownload, FaCalendarAlt } from 'react-icons/fa';
-import '../styles/common.css';
-import AdminHeader from './AdminHeader';
-import EventConfigModal from './EventConfigModal';
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import {
+  getCompany,
+  updateCompany,
+  createBranch,
+  deleteBranch,
+  getBranches,
+} from "../services/api";
+import "./CompanyConfig.css";
+import {
+  FaEye,
+  FaSave,
+  FaStore,
+  FaCog,
+  FaTrash,
+  FaPlus,
+  FaDownload,
+  FaCalendarAlt,
+} from "react-icons/fa";
+import "../styles/common.css";
+import AdminHeader from "./AdminHeader";
+import EventConfigModal from "./EventConfigModal";
 
 const CompanyConfig = () => {
   const { companyId } = useParams();
@@ -18,6 +33,8 @@ const CompanyConfig = () => {
     name: "",
     website: "",
     menu: "",
+    backgroundImage: "",
+    fontColor: "#ffffff",
     branchIds: [],
   });
 
@@ -46,7 +63,6 @@ const CompanyConfig = () => {
     const { name, value } = e.target;
     setEditedCompany((prev) => ({ ...prev, [name]: value }));
   };
-
 
   const handleDeleteBranch = async (branchId) => {
     // Mejor UX para móvil con confirmación más clara
@@ -119,7 +135,7 @@ const CompanyConfig = () => {
 
   return (
     <div className="admin-container">
-      <AdminHeader 
+      <AdminHeader
         title="Configuración de Compañía"
         showBackButton={true}
         backUrl="/admin/config"
@@ -157,11 +173,59 @@ const CompanyConfig = () => {
                 placeholder="Ingrese URL del menú"
               />
             </div>
+            <div className="input-group">
+              <label>Fondo del Menú QR</label>
+              <input
+                type="text"
+                name="backgroundImage"
+                value={editedCompany.backgroundImage || ""}
+                onChange={handleInputChange}
+                placeholder="URL de imagen para la pantalla del comensal"
+              />
+              {editedCompany.backgroundImage && (
+                <div className="background-preview">
+                  <img
+                    src={editedCompany.backgroundImage}
+                    alt="Vista previa del fondo"
+                    onError={(e) => {
+                      e.target.style.display = "none";
+                    }}
+                  />
+                  <span className="preview-label">Vista previa</span>
+                </div>
+              )}
+            </div>
+            <div className="input-group">
+              <label>Color de Texto del Menú QR</label>
+              <div className="color-input-wrapper">
+                <input
+                  type="color"
+                  name="fontColor"
+                  value={editedCompany.fontColor || "#ffffff"}
+                  onChange={handleInputChange}
+                  className="color-picker"
+                />
+                <input
+                  type="text"
+                  name="fontColor"
+                  value={editedCompany.fontColor || "#ffffff"}
+                  onChange={handleInputChange}
+                  placeholder="#ffffff"
+                  className="color-text-input"
+                />
+                <div
+                  className="color-preview-text"
+                  style={{ color: editedCompany.fontColor || "#ffffff" }}
+                >
+                  Vista previa del texto
+                </div>
+              </div>
+            </div>
             <div className="company-actions">
               <button className="app-button success" onClick={handleSave}>
                 <FaSave /> Guardar Cambios
               </button>
-              <button 
+              <button
                 className="app-button primary"
                 onClick={() => setShowEventConfigModal(true)}
               >
@@ -174,7 +238,10 @@ const CompanyConfig = () => {
             <div className="branches-header">
               <h3>Sucursales</h3>
               <div className="header-buttons">
-                <button className="app-button success" onClick={handleAddBranch}>
+                <button
+                  className="app-button success"
+                  onClick={handleAddBranch}
+                >
                   <FaPlus /> <FaStore /> Agregar Sucursal
                 </button>
               </div>
@@ -243,7 +310,7 @@ const CompanyConfig = () => {
         resourceType="company"
         resourceId={companyId}
         companyId={companyId}
-        resourceName={company?.name || 'Company'}
+        resourceName={company?.name || "Company"}
       />
     </div>
   );

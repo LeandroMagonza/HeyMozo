@@ -1,117 +1,130 @@
-const { EventType, EventConfiguration } = require('../models');
+const { EventType, EventConfiguration } = require("../models");
 
 class EventConfigService {
   static async createDefaultEventTypes(companyId, createdBy = null) {
-    console.log('🚀 createDefaultEventTypes called for company:', companyId, 'createdBy:', createdBy);
+    console.log(
+      "🚀 createDefaultEventTypes called for company:",
+      companyId,
+      "createdBy:",
+      createdBy
+    );
 
     const defaultEventTypes = [
       // System Events (cannot be deleted)
       {
-        eventName: 'Location Scanned',
-        stateName: 'Scanned',
-        userColor: '#6c757d',
-        userFontColor: '#ffffff',
+        eventName: "Location Scanned",
+        stateName: "Scanned",
+        userColor: "#6c757d",
+        userFontColor: "#ffffff",
         userIcon: null,
-        adminColor: '#e9ecef',
+        adminColor: "#e9ecef",
         priority: 100,
-        systemEventType: 'SCAN',
-        isDefault: true
+        systemEventType: "SCAN",
+        isDefault: true,
       },
       {
-        eventName: 'Acknowledged',
-        stateName: 'Seen',
-        userColor: '#28a745',
-        userFontColor: '#ffffff',
+        eventName: "Acknowledged",
+        stateName: "Seen",
+        userColor: "#28a745",
+        userFontColor: "#ffffff",
         userIcon: null,
-        adminColor: '#d4edda',
+        adminColor: "#d4edda",
         priority: 90,
-        systemEventType: 'MARK_SEEN',
-        isDefault: true
+        systemEventType: "MARK_SEEN",
+        isDefault: true,
       },
       {
-        eventName: 'Occupy Location',
-        stateName: 'Occupied',
-        userColor: '#ffc107',
-        userFontColor: '#000000',
+        eventName: "Occupy Location",
+        stateName: "Occupied",
+        userColor: "#ffc107",
+        userFontColor: "#000000",
         userIcon: null,
-        adminColor: '#fff3cd',
+        adminColor: "#fff3cd",
         priority: 80,
-        systemEventType: 'OCCUPY',
-        isDefault: true
+        systemEventType: "OCCUPY",
+        isDefault: true,
       },
       {
-        eventName: 'Vacate Location',
-        stateName: 'Available',
-        userColor: '#28a745',
-        userFontColor: '#ffffff',
+        eventName: "Vacate Location",
+        stateName: "Available",
+        userColor: "#28a745",
+        userFontColor: "#ffffff",
         userIcon: null,
-        adminColor: '#d1ecf1',
+        adminColor: "#d1ecf1",
         priority: 70,
-        systemEventType: 'VACATE',
-        isDefault: true
+        systemEventType: "VACATE",
+        isDefault: true,
       },
       // Default Custom Events (can be modified/deleted)
       {
-        eventName: 'Call Waiter',
-        stateName: 'Waiter Called',
-        userColor: '#007bff',
-        userFontColor: '#ffffff',
-        userIcon: 'FaUser',
-        adminColor: '#ffc107',
+        eventName: "Call Waiter",
+        stateName: "Waiter Called",
+        userColor: "#007bff",
+        userFontColor: "#ffffff",
+        userIcon: "FaUser",
+        adminColor: "#ffc107",
         priority: 50,
         systemEventType: null,
-        isDefault: true
+        isDefault: true,
       },
       {
-        eventName: 'Request Check',
-        stateName: 'Check Requested',
-        userColor: '#28a745',
-        userFontColor: '#ffffff',
-        userIcon: 'FaFileInvoiceDollar',
-        adminColor: '#17a2b8',
+        eventName: "Request Check",
+        stateName: "Check Requested",
+        userColor: "#28a745",
+        userFontColor: "#ffffff",
+        userIcon: "FaFileInvoiceDollar",
+        adminColor: "#17a2b8",
         priority: 40,
         systemEventType: null,
-        isDefault: true
+        isDefault: true,
       },
       {
-        eventName: 'Call Manager',
-        stateName: 'Manager Called',
-        userColor: '#dc3545',
-        userFontColor: '#ffffff',
-        userIcon: 'FaUserTie',
-        adminColor: '#fd7e14',
+        eventName: "Call Manager",
+        stateName: "Manager Called",
+        userColor: "#dc3545",
+        userFontColor: "#ffffff",
+        userIcon: "FaUserTie",
+        adminColor: "#fd7e14",
         priority: 60,
         systemEventType: null,
-        isDefault: true
-      }
+        isDefault: true,
+      },
     ];
 
-    console.log('📦 Preparing', defaultEventTypes.length, 'default event types to create');
+    console.log(
+      "📦 Preparing",
+      defaultEventTypes.length,
+      "default event types to create"
+    );
 
-    const eventTypesToCreate = defaultEventTypes.map(eventType => ({
+    const eventTypesToCreate = defaultEventTypes.map((eventType) => ({
       ...eventType,
       companyId,
       isActive: true,
       createdBy,
-      updatedBy: createdBy
+      updatedBy: createdBy,
     }));
 
-    console.log('💾 Creating event types with bulkCreate...');
+    console.log("💾 Creating event types with bulkCreate...");
     const createdEventTypes = await EventType.bulkCreate(eventTypesToCreate);
-    console.log('✅ Created', createdEventTypes.length, 'event types');
+    console.log("✅ Created", createdEventTypes.length, "event types");
 
     // Create default EventConfigurations for the company
-    const { EventConfiguration } = require('../models');
-    const eventConfigurations = createdEventTypes.map(eventType => ({
-      resourceType: 'company',
+    const { EventConfiguration } = require("../models");
+    const eventConfigurations = createdEventTypes.map((eventType) => ({
+      resourceType: "company",
       resourceId: companyId,
       eventTypeId: eventType.id,
       enabled: true,
       createdBy,
-      updatedBy: createdBy
+      updatedBy: createdBy,
     }));
 
-    console.log('💾 Creating', eventConfigurations.length, 'event configurations...');
+    console.log(
+      "💾 Creating",
+      eventConfigurations.length,
+      "event configurations..."
+    );
 
     // Use individual creates instead of bulkCreate to avoid constraint issues
     let successCount = 0;
@@ -123,70 +136,119 @@ class EventConfigService {
         successCount++;
       } catch (error) {
         // Skip if already exists
-        if (error.message.includes('duplicate') || error.message.includes('unique constraint')) {
-          console.log('⚠️  Skipping duplicate event configuration for eventTypeId:', config.eventTypeId);
+        if (
+          error.message.includes("duplicate") ||
+          error.message.includes("unique constraint")
+        ) {
+          console.log(
+            "⚠️  Skipping duplicate event configuration for eventTypeId:",
+            config.eventTypeId
+          );
           skipCount++;
         } else {
-          console.error('❌ Failed to create event configuration:', error.message);
+          console.error(
+            "❌ Failed to create event configuration:",
+            error.message
+          );
           throw error;
         }
       }
     }
 
-    console.log('✅ Event configurations created:', successCount, 'skipped:', skipCount);
-    console.log('🎉 createDefaultEventTypes completed successfully');
+    console.log(
+      "✅ Event configurations created:",
+      successCount,
+      "skipped:",
+      skipCount
+    );
+    console.log("🎉 createDefaultEventTypes completed successfully");
 
     return createdEventTypes;
   }
 
   static async resolveEventsForTable(tableId, includeSystemEvents = false) {
-    console.log('🔄 resolveEventsForTable called for table:', tableId, 'includeSystemEvents:', includeSystemEvents);
-    const { Table, Branch, Company } = require('../models');
+    console.log(
+      "🔄 resolveEventsForTable called for table:",
+      tableId,
+      "includeSystemEvents:",
+      includeSystemEvents
+    );
+    const { Table, Branch, Company } = require("../models");
 
     // Get table with its branch and company
     const table = await Table.findByPk(tableId, {
-      include: [{
-        model: Branch,
-        include: [{ model: Company }]
-      }]
+      include: [
+        {
+          model: Branch,
+          include: [{ model: Company }],
+        },
+      ],
     });
 
     if (!table) {
-      throw new Error('Table not found');
+      throw new Error("Table not found");
     }
 
     const companyId = table.Branch.Company.id;
     const branchId = table.Branch.id;
 
-    console.log('🏢 Table details - companyId:', companyId, 'branchId:', branchId);
+    console.log(
+      "🏢 Table details - companyId:",
+      companyId,
+      "branchId:",
+      branchId
+    );
 
-    return await this.getAllEventsWithConfiguration('location', tableId, companyId, branchId, includeSystemEvents);
+    return await this.getAllEventsWithConfiguration(
+      "location",
+      tableId,
+      companyId,
+      branchId,
+      includeSystemEvents
+    );
   }
 
-  static async getAllEventsWithConfiguration(resourceType, resourceId, companyId, branchId = null, includeSystemEvents = true) {
-    const { Sequelize } = require('sequelize');
+  static async getAllEventsWithConfiguration(
+    resourceType,
+    resourceId,
+    companyId,
+    branchId = null,
+    includeSystemEvents = true
+  ) {
+    const { Sequelize, Op } = require("sequelize");
 
-    console.log(`📋 getAllEventsWithConfiguration called for ${resourceType}:${resourceId}, companyId:${companyId}, branchId:${branchId}, includeSystemEvents:${includeSystemEvents}`);
+    console.log(
+      `📋 getAllEventsWithConfiguration called for ${resourceType}:${resourceId}, companyId:${companyId}, branchId:${branchId}, includeSystemEvents:${includeSystemEvents}`
+    );
 
+    // Build where clause to get:
+    // 1. Company-level events (branchId is null)
+    // 2. Branch-specific events (branchId matches current branch)
     const whereClause = {
       companyId,
-      isActive: true
+      isActive: true,
+      [Op.or]: [
+        { branchId: null }, // Company-level events
+        ...(branchId ? [{ branchId: parseInt(branchId) }] : []), // Branch-specific events
+      ],
     };
 
     if (!includeSystemEvents) {
       whereClause.systemEventType = null;
     }
 
-    // Get all event types for the company
+    // Get all event types for the company (and branch if applicable)
     const eventTypes = await EventType.findAll({
       where: whereClause,
       order: [
-        ['priority', 'DESC'],
-        ['eventName', 'ASC']
-      ]
+        ["priority", "DESC"],
+        ["eventName", "ASC"],
+      ],
     });
 
-    console.log(`📋 Found ${eventTypes.length} event types for company ${companyId}`);
+    console.log(
+      `📋 Found ${eventTypes.length} event types for company ${companyId}`
+    );
 
     // For each event type, find the most specific configuration (location > branch > company)
     const eventsWithConfig = [];
@@ -196,28 +258,28 @@ class EventConfigService {
       const configQueries = [];
 
       // Most specific: location/table level
-      if (resourceType === 'location') {
+      if (resourceType === "location") {
         configQueries.push({
-          resourceType: 'location',
+          resourceType: "location",
           resourceId: parseInt(resourceId),
-          eventTypeId: eventType.id
+          eventTypeId: eventType.id,
         });
       }
 
       // Branch level
       if (branchId) {
         configQueries.push({
-          resourceType: 'branch',
+          resourceType: "branch",
           resourceId: parseInt(branchId),
-          eventTypeId: eventType.id
+          eventTypeId: eventType.id,
         });
       }
 
       // Company level
       configQueries.push({
-        resourceType: 'company',
+        resourceType: "company",
         resourceId: parseInt(companyId),
-        eventTypeId: eventType.id
+        eventTypeId: eventType.id,
       });
 
       // Find the most specific configuration
@@ -235,13 +297,13 @@ class EventConfigService {
         ...eventType.toJSON(),
         enabled: effectiveConfig ? effectiveConfig.enabled : true,
         configuredAt: effectiveConfig ? effectiveConfig.resourceType : null,
-        configurationId: effectiveConfig ? effectiveConfig.id : null
+        configurationId: effectiveConfig ? effectiveConfig.id : null,
       };
 
       console.log(`  📦 Base event ${eventType.eventName}:`, {
         userColor: eventType.userColor,
         userFontColor: eventType.userFontColor,
-        userIcon: eventType.userIcon
+        userIcon: eventType.userIcon,
       });
 
       // Apply overrides from configuration if they exist
@@ -250,7 +312,7 @@ class EventConfigService {
           userColor: effectiveConfig.userColor,
           userFontColor: effectiveConfig.userFontColor,
           userIcon: effectiveConfig.userIcon,
-          enabled: effectiveConfig.enabled
+          enabled: effectiveConfig.enabled,
         });
 
         // Override fields only if they are explicitly set in the configuration
@@ -281,7 +343,7 @@ class EventConfigService {
         userColor: resolvedEvent.userColor,
         userFontColor: resolvedEvent.userFontColor,
         userIcon: resolvedEvent.userIcon,
-        enabled: resolvedEvent.enabled
+        enabled: resolvedEvent.enabled,
       });
 
       eventsWithConfig.push(resolvedEvent);
@@ -290,36 +352,42 @@ class EventConfigService {
     return eventsWithConfig;
   }
 
-  static async getEventWithOverrides(eventTypeId, resourceType, resourceId, companyId, branchId = null) {
+  static async getEventWithOverrides(
+    eventTypeId,
+    resourceType,
+    resourceId,
+    companyId,
+    branchId = null
+  ) {
     // Get the base EventType
     const eventType = await EventType.findByPk(eventTypeId);
     if (!eventType) {
-      throw new Error('EventType not found');
+      throw new Error("EventType not found");
     }
 
     // Build configuration lookup hierarchy
     const configQueries = [];
 
-    if (resourceType === 'location') {
+    if (resourceType === "location") {
       configQueries.push({
-        resourceType: 'location',
+        resourceType: "location",
         resourceId: parseInt(resourceId),
-        eventTypeId: eventTypeId
+        eventTypeId: eventTypeId,
       });
     }
 
     if (branchId) {
       configQueries.push({
-        resourceType: 'branch',
+        resourceType: "branch",
         resourceId: parseInt(branchId),
-        eventTypeId: eventTypeId
+        eventTypeId: eventTypeId,
       });
     }
 
     configQueries.push({
-      resourceType: 'company',
+      resourceType: "company",
       resourceId: parseInt(companyId),
-      eventTypeId: eventTypeId
+      eventTypeId: eventTypeId,
     });
 
     // Find the most specific configuration
@@ -336,13 +404,21 @@ class EventConfigService {
     const resolvedEvent = {
       ...eventType.toJSON(),
       enabled: effectiveConfig ? effectiveConfig.enabled : true,
-      configuredAt: effectiveConfig ? effectiveConfig.resourceType : null
+      configuredAt: effectiveConfig ? effectiveConfig.resourceType : null,
     };
 
     // Apply overrides if they exist
     if (effectiveConfig) {
-      const overrideFields = ['eventName', 'stateName', 'userColor', 'userFontColor', 'userIcon', 'adminColor', 'priority'];
-      overrideFields.forEach(field => {
+      const overrideFields = [
+        "eventName",
+        "stateName",
+        "userColor",
+        "userFontColor",
+        "userIcon",
+        "adminColor",
+        "priority",
+      ];
+      overrideFields.forEach((field) => {
         if (effectiveConfig[field] !== null) {
           resolvedEvent[field] = effectiveConfig[field];
         }
@@ -352,81 +428,100 @@ class EventConfigService {
     return resolvedEvent;
   }
 
-  static async getEffectiveEventsForResource(resourceType, resourceId, companyId, branchId = null, includeSystemEvents = true) {
-    const { Sequelize } = require('sequelize');
-    
+  static async getEffectiveEventsForResource(
+    resourceType,
+    resourceId,
+    companyId,
+    branchId = null,
+    includeSystemEvents = true
+  ) {
+    const { Sequelize, Op } = require("sequelize");
+
+    // Build where clause to get:
+    // 1. Company-level events (branchId is null)
+    // 2. Branch-specific events (branchId matches current branch)
     const whereClause = {
       companyId,
-      isActive: true
+      isActive: true,
+      [Op.or]: [
+        { branchId: null }, // Company-level events
+        ...(branchId ? [{ branchId: parseInt(branchId) }] : []), // Branch-specific events
+      ],
     };
 
     if (!includeSystemEvents) {
       whereClause.systemEventType = null;
     }
 
-    // Get all event types for the company
+    // Get all event types for the company (and branch if applicable)
     const eventTypes = await EventType.findAll({
       where: whereClause,
       order: [
-        ['priority', 'DESC'],
-        ['eventName', 'ASC']
-      ]
+        ["priority", "DESC"],
+        ["eventName", "ASC"],
+      ],
     });
 
     // For each event type, find the most specific configuration (location > branch > company)
     const eventsWithConfig = [];
-    
+
     for (const eventType of eventTypes) {
       let enabled = true; // Default enabled if no configuration exists
-      
+
       // Build configuration lookup based on resource hierarchy
       const configQueries = [];
-      
+
       // Most specific: location/table level
-      if (resourceType === 'location') {
+      if (resourceType === "location") {
         configQueries.push({
-          resourceType: 'location',
+          resourceType: "location",
           resourceId: parseInt(resourceId),
-          eventTypeId: eventType.id
+          eventTypeId: eventType.id,
         });
       }
-      
+
       // Branch level
       if (branchId) {
         configQueries.push({
-          resourceType: 'branch', 
+          resourceType: "branch",
           resourceId: parseInt(branchId),
-          eventTypeId: eventType.id
+          eventTypeId: eventType.id,
         });
       }
-      
+
       // Company level
       configQueries.push({
-        resourceType: 'company',
+        resourceType: "company",
         resourceId: parseInt(companyId),
-        eventTypeId: eventType.id
+        eventTypeId: eventType.id,
       });
-      
-      console.log(`🔍 Resolving ${eventType.eventName} for ${resourceType}:${resourceId}`);
-      console.log('  Config queries:', configQueries);
-      
+
+      console.log(
+        `🔍 Resolving ${eventType.eventName} for ${resourceType}:${resourceId}`
+      );
+      console.log("  Config queries:", configQueries);
+
       // Find the most specific configuration
       let effectiveConfig = null;
       for (const query of configQueries) {
         const config = await EventConfiguration.findOne({ where: query });
-        console.log(`  Query ${query.resourceType}:${query.resourceId} -> ${config ? `enabled:${config.enabled}` : 'not found'}`);
+        console.log(
+          `  Query ${query.resourceType}:${query.resourceId} -> ${config ? `enabled:${config.enabled}` : "not found"}`
+        );
         if (config) {
           effectiveConfig = config;
           break; // Use the most specific configuration found
         }
       }
-      
+
       // If we found a configuration, use its enabled status
       if (effectiveConfig) {
         enabled = effectiveConfig.enabled;
       }
 
-      console.log(`  Final result: ${eventType.eventName} = ${enabled ? 'ENABLED' : 'DISABLED'}`);
+      console.log(
+        `  Final result: ${eventType.eventName} = ${enabled ? "ENABLED" : "DISABLED"}`
+      );
 
       // Only include enabled events in the result
       if (enabled) {
@@ -434,7 +529,7 @@ class EventConfigService {
         const resolvedEvent = {
           ...eventType.toJSON(),
           enabled: true,
-          configuredAt: effectiveConfig ? effectiveConfig.resourceType : null
+          configuredAt: effectiveConfig ? effectiveConfig.resourceType : null,
         };
 
         // Apply overrides from configuration if they exist
@@ -471,9 +566,15 @@ class EventConfigService {
   }
 
   static async getCustomerEventsForTable(tableId) {
-    console.log('📱📱📱 getCustomerEventsForTable DEFINITELY called for table:', tableId);
+    console.log(
+      "📱📱📱 getCustomerEventsForTable DEFINITELY called for table:",
+      tableId
+    );
     const result = await this.resolveEventsForTable(tableId, false); // Exclude system events
-    console.log('📱📱📱 getCustomerEventsForTable result count:', result.length);
+    console.log(
+      "📱📱📱 getCustomerEventsForTable result count:",
+      result.length
+    );
     return result;
   }
 
@@ -482,31 +583,44 @@ class EventConfigService {
   }
 
   // Alias method for backward compatibility
-  static async getEffectiveEvents(resourceType, resourceId, companyId, branchId = null) {
+  static async getEffectiveEvents(
+    resourceType,
+    resourceId,
+    companyId,
+    branchId = null
+  ) {
     // For table resources, we need to get the branchId if not provided
-    if (resourceType === 'table' && !branchId) {
-      const { Table, Branch } = require('../models');
+    if (resourceType === "table" && !branchId) {
+      const { Table, Branch } = require("../models");
       const table = await Table.findByPk(resourceId, {
-        include: [{ model: Branch }]
+        include: [{ model: Branch }],
       });
       if (table) {
         branchId = table.Branch.id;
       }
     }
-    
-    return await this.getEffectiveEventsForResource(resourceType, resourceId, companyId, branchId, false);
+
+    return await this.getEffectiveEventsForResource(
+      resourceType,
+      resourceId,
+      companyId,
+      branchId,
+      false
+    );
   }
 
   static async findEventTypeByLegacyType(legacyType, companyId) {
-    console.log(`Looking for legacy event type: ${legacyType} in company ${companyId}`);
-    
+    console.log(
+      `Looking for legacy event type: ${legacyType} in company ${companyId}`
+    );
+
     // Helper method to migrate existing events
     const legacyMapping = {
-      'CALL_WAITER': { eventName: 'Call Waiter', systemEventType: null },
-      'REQUEST_CHECK': { eventName: 'Request Check', systemEventType: null },
-      'CALL_MANAGER': { eventName: 'Call Manager', systemEventType: null },
-      'MARK_SEEN': { eventName: null, systemEventType: 'MARK_SEEN' },
-      'SCAN': { eventName: null, systemEventType: 'SCAN' }
+      CALL_WAITER: { eventName: "Call Waiter", systemEventType: null },
+      REQUEST_CHECK: { eventName: "Request Check", systemEventType: null },
+      CALL_MANAGER: { eventName: "Call Manager", systemEventType: null },
+      MARK_SEEN: { eventName: null, systemEventType: "MARK_SEEN" },
+      SCAN: { eventName: null, systemEventType: "SCAN" },
     };
 
     const mapping = legacyMapping[legacyType];
@@ -516,7 +630,7 @@ class EventConfigService {
 
     const whereClause = {
       companyId,
-      isActive: true
+      isActive: true,
     };
 
     // For system events, search by systemEventType
@@ -527,23 +641,28 @@ class EventConfigService {
       whereClause.eventName = mapping.eventName;
     }
 
-    console.log('Where clause:', whereClause);
+    console.log("Where clause:", whereClause);
 
     const eventType = await EventType.findOne({
-      where: whereClause
+      where: whereClause,
     });
 
-    console.log('Found eventType:', eventType ? eventType.id : 'null');
+    console.log("Found eventType:", eventType ? eventType.id : "null");
 
     if (!eventType) {
       // Let's see what EventTypes exist for this company
       const allEventTypes = await EventType.findAll({
         where: { companyId, isActive: true },
-        attributes: ['id', 'eventName', 'systemEventType']
+        attributes: ["id", "eventName", "systemEventType"],
       });
-      console.log('All EventTypes for company:', allEventTypes.map(et => et.toJSON()));
-      
-      throw new Error(`EventType not found for legacy type: ${legacyType} in company ${companyId}`);
+      console.log(
+        "All EventTypes for company:",
+        allEventTypes.map((et) => et.toJSON())
+      );
+
+      throw new Error(
+        `EventType not found for legacy type: ${legacyType} in company ${companyId}`
+      );
     }
 
     return eventType;
