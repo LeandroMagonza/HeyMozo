@@ -319,8 +319,8 @@ EMAIL_FROM=no-reply@yourdomain.com
 - [ ] Optimización de rendimiento en carga de eventos
 
 ### ⏳ Pendiente
+- [ ] **Notificaciones Push (PWA)** - [Ver plan de implementación](docs/PUSH_NOTIFICATIONS_PLAN.md)
 - [ ] Dashboard de analytics
-- [ ] Notificaciones push/websockets
 - [ ] Mobile responsiveness completo
 - [ ] Tests automatizados
 - [ ] Documentación de API completa
