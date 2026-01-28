@@ -1,15 +1,20 @@
 // src/components/UserScreen.js
 
-import React, { useEffect, useState, useRef } from 'react';
-import { useParams } from 'react-router-dom';
-import { FaUtensils, FaUser, FaFileInvoiceDollar, FaHistory } from 'react-icons/fa';
-import ButtonsGroup from './ButtonsGroup';
-import EventModal from './EventModal';
-import HistoryModal from './HistoryModal';
-import './UserScreen.css';
-import { getCompany, getBranch, getTable, sendEvent } from '../services/api';
-import backgroundImage from '../images/background-image.jpg';  // Importa la imagen
-import { EventTypes } from '../constants';
+import React, { useEffect, useState, useRef } from "react";
+import { useParams } from "react-router-dom";
+import {
+  FaUtensils,
+  FaUser,
+  FaFileInvoiceDollar,
+  FaHistory,
+} from "react-icons/fa";
+import ButtonsGroup from "./ButtonsGroup";
+import EventModal from "./EventModal";
+import HistoryModal from "./HistoryModal";
+import "./UserScreen.css";
+import { getCompany, getBranch, getTable, sendEvent } from "../services/api";
+import backgroundImage from "../images/background-image.jpg"; // Importa la imagen
+import { EventTypes } from "../constants";
 
 const UserScreen = () => {
   const { companyId, branchId, tableId } = useParams();
@@ -19,11 +24,11 @@ const UserScreen = () => {
   const [events, setEvents] = useState([]);
   const [userEvents, setUserEvents] = useState([]); // Track only user-generated events locally
   const [availableEventTypes, setAvailableEventTypes] = useState([]);
-  const [menuLink, setMenuLink] = useState('');
+  const [menuLink, setMenuLink] = useState("");
   const [texts, setTexts] = useState({
-    showMenu: 'Mostrar Menú',
-    callWaiter: 'Llamar al Mesero',
-    requestCheck: 'Solicitar Cuenta',
+    showMenu: "Mostrar Menú",
+    callWaiter: "Llamar al Mesero",
+    requestCheck: "Solicitar Cuenta",
   });
   const pageLoadTime = useRef(null);
   const [showModal, setShowModal] = useState(false);
@@ -41,14 +46,14 @@ const UserScreen = () => {
       id: Date.now() + Math.random(), // Unique ID for local events
       timestamp: new Date().toISOString(),
       eventName: eventType?.eventName || eventType,
-      eventColor: eventType?.userColor || eventType?.eventColor || '#007bff',
-      fontColor: eventType?.userFontColor || eventType?.fontColor || '#ffffff',
+      eventColor: eventType?.userColor || eventType?.eventColor || "#007bff",
+      fontColor: eventType?.userFontColor || eventType?.fontColor || "#ffffff",
       message: message,
-      type: 'user_generated'
+      type: "user_generated",
     };
-    
-    console.log('Adding event to local history:', historyEvent);
-    setUserEvents(prevEvents => [historyEvent, ...prevEvents]);
+
+    console.log("Adding event to local history:", historyEvent);
+    setUserEvents((prevEvents) => [historyEvent, ...prevEvents]);
   };
 
   useEffect(() => {
@@ -58,10 +63,10 @@ const UserScreen = () => {
         const [companyData, branchData, tableData] = await Promise.all([
           getCompany(companyId),
           getBranch(branchId),
-          getTable(tableId)
+          getTable(tableId),
         ]);
 
-        console.log('Table data received:', tableData.data);
+        console.log("Table data received:", tableData.data);
 
         setCompany(companyData.data);
         setBranch(branchData.data);
@@ -70,13 +75,16 @@ const UserScreen = () => {
         // Get available event types from table response
         const availableEvents = tableData.data.availableEventTypes || [];
         setAvailableEventTypes(availableEvents);
-        console.log('Available event types:', availableEvents);
+        console.log("Available event types:", availableEvents);
 
         // Check for scan event configuration in the response
-        console.log('Full table data response:', tableData.data);
+        console.log("Full table data response:", tableData.data);
         const scanEventConfig = tableData.data.scanEvent;
-        console.log('Scan event config:', scanEventConfig);
-        console.log('scanEvent property exists:', 'scanEvent' in tableData.data);
+        console.log("Scan event config:", scanEventConfig);
+        console.log(
+          "scanEvent property exists:",
+          "scanEvent" in tableData.data
+        );
 
         // Set events from table response
         if (tableData.data.events) {
@@ -89,9 +97,9 @@ const UserScreen = () => {
         } else {
           // Fallback if no scan event config is provided
           const fallbackScanEvent = {
-            eventName: 'Página Escaneada',
-            eventColor: '#28a745',
-            fontColor: '#ffffff'
+            eventName: "Página Escaneada",
+            eventColor: "#28a745",
+            fontColor: "#ffffff",
           };
           addToLocalHistory(fallbackScanEvent);
         }
@@ -99,18 +107,18 @@ const UserScreen = () => {
         // Send SCAN event automatically (customers scan QR to access page)
         try {
           const scanEvent = {
-            systemEventType: 'SCAN',
-            message: null
+            systemEventType: "SCAN",
+            message: null,
           };
 
           const scanResponse = await sendEvent(tableId, scanEvent);
-          console.log('Scan event sent successfully');
-          
+          console.log("Scan event sent successfully");
+
           if (scanResponse.data && scanResponse.data.events) {
             setEvents(scanResponse.data.events);
           }
         } catch (error) {
-          console.error('Error sending scan event:', error);
+          console.error("Error sending scan event:", error);
         }
 
         // Solo establecer el menuLink si existe una URL en la sucursal o compañía
@@ -119,10 +127,10 @@ const UserScreen = () => {
         if (branchMenu || companyMenu) {
           setMenuLink(branchMenu || companyMenu);
         } else {
-          setMenuLink(''); // Asegurarnos que sea vacío si no hay menú
+          setMenuLink(""); // Asegurarnos que sea vacío si no hay menú
         }
       } catch (error) {
-        console.error('Error loading data:', error);
+        console.error("Error loading data:", error);
       }
     };
 
@@ -142,59 +150,69 @@ const UserScreen = () => {
   const handleModalSubmit = async (message) => {
     try {
       // modalEventType is now the full event type object
-      const eventType = modalEventType && modalEventType.id 
-        ? modalEventType 
-        : availableEventTypes.find(et => et.id === modalEventType || et.eventName === modalEventType);
-      
-      const newEvent = eventType ? {
-        eventTypeId: eventType.id,
-        message: message || null
-      } : {
-        type: modalEventType,
-        message: message || null
-      };
+      const eventType =
+        modalEventType && modalEventType.id
+          ? modalEventType
+          : availableEventTypes.find(
+              (et) =>
+                et.id === modalEventType || et.eventName === modalEventType
+            );
+
+      const newEvent = eventType
+        ? {
+            eventTypeId: eventType.id,
+            message: message || null,
+          }
+        : {
+            type: modalEventType,
+            message: message || null,
+          };
 
       const response = await sendEvent(tableId, newEvent);
-      console.log('Event response:', response.data);
-      
+      console.log("Event response:", response.data);
+
       // Update events from server response
       if (response.data && response.data.events) {
         setEvents(response.data.events);
       }
-      
+
       // Add to local history with styling information
       addToLocalHistory(eventType, message);
       handleCloseModal();
     } catch (error) {
-      console.error('Error sending event:', error);
+      console.error("Error sending event:", error);
     }
   };
 
   const handleDirectEvent = async (eventType) => {
     try {
       // Find the event type object from available events or use legacy format
-      const eventTypeObj = availableEventTypes.find(et => et.id === eventType || et.eventName === eventType);
-      
-      const eventData = eventTypeObj ? {
-        eventTypeId: eventTypeObj.id,
-        message: null
-      } : {
-        type: eventType,
-        message: null
-      };
+      const eventTypeObj = availableEventTypes.find(
+        (et) => et.id === eventType || et.eventName === eventType
+      );
+
+      const eventData = eventTypeObj
+        ? {
+            eventTypeId: eventTypeObj.id,
+            message: null,
+          }
+        : {
+            type: eventType,
+            message: null,
+          };
 
       const response = await sendEvent(tableId, eventData);
 
-      console.log('Direct event response:', response.data);
+      console.log("Direct event response:", response.data);
       if (response.data) {
         setTable(response.data);
         setEvents(response.data.events || []);
       }
-      
+
       // Add to local history with styling information
       addToLocalHistory(eventTypeObj);
     } catch (error) {
-      console.error('Error sending event:', error);
+      console.error("Error sending event:", error);
     }
   };
 
@@ -206,33 +224,60 @@ const UserScreen = () => {
     setShowEventsModal(false);
   };
 
+  // Jerarquía: Branch > Company > Default
+  // Usar imagen de fondo: primero de sucursal, luego de compañía, luego default
+  const customBackground =
+    branch?.qrBackgroundImage || company?.backgroundImage;
   const backgroundStyle = {
-    backgroundImage: `url(${backgroundImage})`,
-    backgroundSize: 'cover',
-    backgroundPosition: 'center',
-    backgroundRepeat: 'no-repeat',
+    backgroundImage: `url(${customBackground || backgroundImage})`,
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+    backgroundRepeat: "no-repeat",
   };
 
-  console.log('Current table state:', table); // Debug log
+  // Color de fuente: primero de sucursal, luego de compañía, luego default
+  const fontColor = branch?.textColor || company?.fontColor || "#ffffff";
+
+  console.log("Current table state:", table); // Debug log
 
   return (
     <div className="user-screen" style={backgroundStyle}>
       <div className="content-wrapper">
-        <div className="location-info">
-          <h1 className="company-name">{company?.name || 'Cargando...'}</h1>
-          <h2 className="branch-name">{branch?.name || ''}</h2>
-          <h3 className="table-name">{table?.tableName || ''}</h3>
+        <div className="location-info" style={{ color: fontColor }}>
+          <h1 className="company-name">{company?.name || "Cargando..."}</h1>
+          <h2 className="branch-name">{branch?.name || ""}</h2>
+          <h3 className="table-name">{table?.tableName || ""}</h3>
         </div>
 
         <div className="buttons-wrapper">
           <ButtonsGroup
             menuLink={menuLink}
             texts={{
-              showMenu: <><FaUtensils /> {texts.showMenu}</>,
-              callWaiter: <><FaUser /> {texts.callWaiter}</>,
-              requestCheck: <><FaFileInvoiceDollar /> {texts.requestCheck}</>,
-              showEvents: <><FaHistory /> Histórico</>,
-              callManager: <><FaUser /> Llamar Encargado</>
+              showMenu: (
+                <>
+                  <FaUtensils /> {texts.showMenu}
+                </>
+              ),
+              callWaiter: (
+                <>
+                  <FaUser /> {texts.callWaiter}
+                </>
+              ),
+              requestCheck: (
+                <>
+                  <FaFileInvoiceDollar /> {texts.requestCheck}
+                </>
+              ),
+              showEvents: (
+                <>
+                  <FaHistory /> Histórico
+                </>
+              ),
+              callManager: (
+                <>
+                  <FaUser /> Llamar Encargado
+                </>
+              ),
             }}
             onEventSubmit={(eventType) => handleOpenModal(eventType)}
             onShowEvents={handleOpenEventsModal}
@@ -252,11 +297,11 @@ const UserScreen = () => {
           onClose={handleCloseModal}
           onSubmit={handleModalSubmit}
           title={
-            modalEventType && modalEventType.eventName 
+            modalEventType && modalEventType.eventName
               ? modalEventType.eventName
-              : modalEventType === EventTypes.CALL_WAITER 
-                ? "Llamar al Mesero" 
-                : modalEventType === EventTypes.REQUEST_CHECK 
+              : modalEventType === EventTypes.CALL_WAITER
+                ? "Llamar al Mesero"
+                : modalEventType === EventTypes.REQUEST_CHECK
                   ? "Solicitar Cuenta"
                   : "Llamar al Encargado"
           }

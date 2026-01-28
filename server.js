@@ -26,7 +26,7 @@ const apiRoutes = require('./src/routes/index');
 const authMiddleware = require('./src/middleware/auth');
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.SERVER_PORT || 3002;
 
 console.log('Starting server setup');
 
@@ -96,10 +96,8 @@ app.post('/api/mailing-list', async (req, res) => {
   }
 });
 
-console.log('🔧 Mounting events routes at /api');
-app.use('/api', eventsRoutes);
-
 // PUBLIC ROUTES FOR USERSCREEN (before authentication middleware)
+// NOTE: eventsRoutes is mounted AFTER these public routes to ensure customer access works
 // Obtener una compañía específica (pública para UserScreen)
 app.get('/api/companies/:id', async (req, res) => {
   try {
@@ -404,6 +402,10 @@ app.post('/api/tables/:id/events', async (req, res) => {
 
 // RUTA /api/mailing-list DUPLICADA ELIMINADA - Ahora está registrada al principio del archivo (línea ~57)
 // antes de que se monte eventsRoutes, para evitar que sea interceptada por otros middlewares
+
+// Mount events routes AFTER public routes but these have their own auth middleware
+console.log('🔧 Mounting events routes at /api (has internal auth middleware)');
+app.use('/api', eventsRoutes);
 
 // Mount API routes with authentication middleware
 console.log('🔧 Mounting protected API routes at /api with authentication middleware');
@@ -822,6 +824,25 @@ app.post('/api/branches/:id/release-all-tables', authMiddleware.authenticate, as
     const { id: branchId } = req.params;
     const currentTime = new Date();
 
+    // Obtener la branch para saber el companyId
+    const branch = await Branch.findByPk(branchId);
+    if (!branch) {
+      return res.status(404).json({ error: 'Branch not found' });
+    }
+
+    // Buscar el EventType para MARK_AVAILABLE en esta company
+    const markAvailableEventType = await EventType.findOne({
+      where: {
+        companyId: branch.companyId,
+        systemEventType: 'MARK_AVAILABLE',
+        isActive: true
+      }
+    });
+
+    if (!markAvailableEventType) {
+      return res.status(400).json({ error: 'MARK_AVAILABLE event type not found for this company' });
+    }
+
     // Obtener todas las mesas de la sucursal
     const tables = await Table.findAll({
       where: { branchId }
@@ -840,10 +861,11 @@ app.post('/api/branches/:id/release-all-tables', authMiddleware.authenticate, as
         }
       );
 
-      // Crear evento MARK_AVAILABLE
+      // Crear evento MARK_AVAILABLE con eventTypeId
       await Event.create({
         tableId: table.id,
-        type: EventTypes.MARK_AVAILABLE,
+        eventTypeId: markAvailableEventType.id,
+        type: EventTypes.MARK_AVAILABLE, // Keep for backward compatibility
         createdAt: currentTime,
         seenAt: currentTime
       });

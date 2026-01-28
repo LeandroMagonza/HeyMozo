@@ -17,23 +17,24 @@ const ButtonsGroup = ({
   };
 
   // Function to render dynamic event buttons - NO FALLBACKS
+  // Sort by priority ascending (lowest priority at top, highest at bottom)
   const renderEventButtons = () => {
     if (availableEvents && availableEvents.length > 0) {
-      // Use dynamic events from API
-      return availableEvents.map((eventType) => (
+      const sorted = [...availableEvents].sort((a, b) => (a.priority || 0) - (b.priority || 0));
+      return sorted.map((eventType) => (
         <div key={eventType.id} className="button-container">
-          <button 
-            className="user-button dynamic-event-button" 
-            style={{ 
+          <button
+            className="user-button dynamic-event-button"
+            style={{
               '--event-color': eventType.userColor,
               '--event-font-color': eventType.userFontColor || '#ffffff'
             }}
             onClick={() => onEventSubmit(eventType)}
           >
             {eventType.userIcon && (
-              <IconRenderer 
-                iconName={eventType.userIcon} 
-                className="button-icon" 
+              <IconRenderer
+                iconName={eventType.userIcon}
+                className="button-icon"
                 size="1.2em"
               />
             )}
@@ -42,7 +43,6 @@ const ButtonsGroup = ({
         </div>
       ));
     } else {
-      // NO FALLBACK BUTTONS - Show nothing if no events are loaded
       return null;
     }
   };
@@ -51,17 +51,17 @@ const ButtonsGroup = ({
     <div className="buttons-group">
       {showMenuButton && menuLink && (
         <div className="button-container">
-          <button 
-            className="user-button menu-button" 
+          <button
+            className="user-button menu-button"
             onClick={handleMenuClick}
           >
             {texts.showMenu}
           </button>
         </div>
       )}
-      
+
       {renderEventButtons()}
-      
+
       <div className="button-container">
         <button className="user-button history-button" onClick={onShowEvents}>
           {texts.showEvents}
