@@ -26,7 +26,9 @@ const apiRoutes = require('./src/routes/index');
 const authMiddleware = require('./src/middleware/auth');
 
 const app = express();
-const PORT = process.env.SERVER_PORT || 3002;
+// In development, SERVER_PORT avoids conflict with React dev server (which uses PORT)
+// In production (Render, etc.), the platform sets PORT for the server to listen on
+const PORT = process.env.SERVER_PORT || process.env.PORT || 3002;
 
 console.log('Starting server setup');
 

@@ -33,10 +33,10 @@ const LoginForm = () => {
       console.error('Error requesting login:', error);
       setStatus('error');
       
-      if (error.response?.status === 404) {
-        setMessage('No se encontró un usuario con ese email. Contacta al administrador.');
-      } else if (error.response?.status === 429) {
+      if (error.response?.status === 429) {
         setMessage('Demasiados intentos. Espera unos minutos antes de intentar nuevamente.');
+      } else if (error.response?.data?.error) {
+        setMessage(error.response.data.error);
       } else {
         setMessage('Error al enviar el enlace. Intenta nuevamente.');
       }
