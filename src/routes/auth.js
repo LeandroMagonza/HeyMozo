@@ -68,16 +68,22 @@ router.post('/test-post', (req, res) => {
 
 // Base URL for the login link
 const getLoginBaseUrl = (req) => {
-  const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
-  
-  // In development, use the frontend URL (port 3000)
-  if (process.env.NODE_ENV !== 'production') {
-    return `${protocol}://localhost:3000/login`;
+  // Use FRONTEND_URL from environment if available
+  if (process.env.FRONTEND_URL) {
+    return `${process.env.FRONTEND_URL}/login`;
   }
-  
+
+  const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
+
   // In production, use the request host
-  const host = req.get('host');
-  return `${protocol}://${host}/login`;
+  if (process.env.NODE_ENV === 'production') {
+    const host = req.get('host');
+    return `${protocol}://${host}/login`;
+  }
+
+  // Fallback for development (should use FRONTEND_URL instead)
+  const port = process.env.PORT || 3003;
+  return `${protocol}://localhost:${port}/login`;
 };
 
 /**

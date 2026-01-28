@@ -596,36 +596,34 @@ const EventConfigModal = ({
                               </div>
                             </div>
 
-                            {!event.systemEventType && (
-                              <div className="priority-field">
-                                <span className="label">Prioridad:</span>
-                                <input
-                                  type="number"
-                                  min="0"
-                                  max="100"
-                                  value={getEffectiveValue(event, "priority")}
-                                  onChange={(e) =>
-                                    handleFieldChange(
-                                      event.id,
-                                      "priority",
-                                      parseInt(e.target.value)
-                                    )
+                            <div className="priority-field">
+                              <span className="label">Prioridad:</span>
+                              <input
+                                type="number"
+                                min="0"
+                                max="100"
+                                value={getEffectiveValue(event, "priority")}
+                                onChange={(e) =>
+                                  handleFieldChange(
+                                    event.id,
+                                    "priority",
+                                    parseInt(e.target.value)
+                                  )
+                                }
+                                className={`priority-input ${isFieldOverridden(event, "priority") ? "overridden" : ""}`}
+                              />
+                              {isFieldOverridden(event, "priority") && (
+                                <button
+                                  className="reset-field-btn"
+                                  onClick={() =>
+                                    handleFieldReset(event.id, "priority")
                                   }
-                                  className={`priority-input ${isFieldOverridden(event, "priority") ? "overridden" : ""}`}
-                                />
-                                {isFieldOverridden(event, "priority") && (
-                                  <button
-                                    className="reset-field-btn"
-                                    onClick={() =>
-                                      handleFieldReset(event.id, "priority")
-                                    }
-                                    title="Restablecer prioridad"
-                                  >
-                                    <FaUndo />
-                                  </button>
-                                )}
-                              </div>
-                            )}
+                                  title="Restablecer prioridad"
+                                >
+                                  <FaUndo />
+                                </button>
+                              )}
+                            </div>
 
                             {event.systemEventType && (
                               <span className="system-badge">🔒 Sistema</span>

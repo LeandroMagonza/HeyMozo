@@ -15,7 +15,9 @@
       "Bash(findstr:*)",
       "Bash(taskkill:*)",
       "Bash(timeout:*)",
-      "Bash(powershell -Command:*)"
+      "Bash(powershell -Command:*)",
+      "Bash(git show:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nfix\\(security\\): address vulnerabilities and improve code quality\n\n- Fix mass assignment vulnerability in event type creation endpoints\n  by sanitizing input with allowed field lists\n- Add URL validation \\(http/https only\\) to Company and Branch models\n  for website, menu, backgroundImage, logo, qrBackgroundImage fields\n- Add hex color validation to fontColor and textColor fields\n- Fix IDOR vulnerability in DELETE /resources/.../config endpoint\n  by adding permission checks via checkResourcePermission middleware\n- Create reusable checkResourcePermission\\(\\) middleware and parseResourceId\\(\\)\n  helper to reduce code duplication\n- Add ResourceTypes constants and VALIDATION_PATTERNS for consistency\n- Optimize N+1 query problem in eventConfig service by batch-loading\n  all configurations in a single query with O\\(1\\) Map lookup\n- Add database transaction support to createDefaultEventTypes for atomicity\n- Reduce verbose logging in production with debugLog\\(\\) helper\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")"
     ],
     "deny": [],
     "ask": []

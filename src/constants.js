@@ -42,13 +42,15 @@ const ALLOWED_EVENT_TYPE_FIELDS = [
 ];
 
 // Campos permitidos para actualizar eventos del sistema
+// Incluye 'priority' para permitir reordenar eventos de sistema
 const ALLOWED_SYSTEM_EVENT_FIELDS = [
     'eventName',
     'userColor',
     'userFontColor',
     'userIcon',
     'stateName',
-    'adminColor'
+    'adminColor',
+    'priority'
 ];
 
 // Regex para validación

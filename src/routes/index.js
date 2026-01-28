@@ -6,11 +6,12 @@ const authMiddleware = require('../middleware/auth');
 const { Op } = require('sequelize');
 
 // Import models
-const { 
-  Company, 
-  Branch, 
-  Table, 
+const {
+  Company,
+  Branch,
+  Table,
   Event,
+  EventType,
   Permission
 } = require('../models');
 
@@ -177,7 +178,7 @@ router.post('/branches/:branchId/release-all-tables', authMiddleware.checkBranch
     // Get all tables in the branch
     const tables = await Table.findAll({
       where: { branchId },
-      include: [{ model: Event, as: 'Events' }]
+      include: [{ model: Event, as: 'events' }]
     });
 
     if (!tables || tables.length === 0) {
@@ -233,9 +234,10 @@ router.post('/branches/:branchId/release-all-tables', authMiddleware.checkBranch
       const updatedTable = await Table.findByPk(table.id, {
         include: [{
           model: Event,
-          as: 'Events',
+          as: 'events',
           include: [{
             model: EventType,
+            as: 'eventType',
             attributes: ['eventName', 'stateName', 'userColor', 'adminColor', 'systemEventType']
           }]
         }]
