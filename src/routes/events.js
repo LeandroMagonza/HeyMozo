@@ -9,6 +9,30 @@ const {
   Table,
 } = require("../models");
 const EventConfigService = require("../services/eventConfig");
+const {
+  VALID_RESOURCE_TYPES,
+  ALLOWED_EVENT_TYPE_FIELDS,
+  ALLOWED_SYSTEM_EVENT_FIELDS,
+} = require("../constants");
+
+// Helper to sanitize input fields (prevents mass assignment)
+const sanitizeFields = (body, allowedFields) => {
+  const sanitized = {};
+  for (const field of allowedFields) {
+    if (body[field] !== undefined) {
+      sanitized[field] = body[field];
+    }
+  }
+  return sanitized;
+};
+
+// Environment check for verbose logging
+const isProduction = process.env.NODE_ENV === 'production';
+const debugLog = (...args) => {
+  if (!isProduction) {
+    console.log(...args);
+  }
+};
 
 // Apply authentication middleware to all routes
 router.use(authMiddleware.authenticate);
@@ -44,13 +68,17 @@ router.post(
   authMiddleware.checkCompanyPermission,
   async (req, res) => {
     try {
+      // Sanitize input to prevent mass assignment
+      const sanitizedData = sanitizeFields(req.body, ALLOWED_EVENT_TYPE_FIELDS);
+
       const eventType = await EventType.create({
-        ...req.body,
+        ...sanitizedData,
         companyId: req.params.companyId,
         branchId: null, // Company-level events have no branchId
         createdBy: req.user.id,
         updatedBy: req.user.id,
         systemEventType: null, // Only allow custom events through this endpoint
+        isDefault: false, // Never allow creating default events through API
       });
 
       res.status(201).json(eventType);
@@ -70,8 +98,13 @@ router.post(
 // POST /api/branches/:branchId/event-types - Create new event type at branch level
 router.post("/branches/:branchId/event-types", async (req, res) => {
   try {
+    const branchId = authMiddleware.parseResourceId(req.params.branchId);
+    if (!branchId) {
+      return res.status(400).json({ error: "Invalid branch ID" });
+    }
+
     // Get the branch to find its companyId
-    const branch = await Branch.findByPk(req.params.branchId);
+    const branch = await Branch.findByPk(branchId);
     if (!branch) {
       return res.status(404).json({ error: "Branch not found" });
     }
@@ -89,13 +122,17 @@ router.post("/branches/:branchId/event-types", async (req, res) => {
       return res.status(403).json({ error: "Access denied to this branch" });
     }
 
+    // Sanitize input to prevent mass assignment
+    const sanitizedData = sanitizeFields(req.body, ALLOWED_EVENT_TYPE_FIELDS);
+
     const eventType = await EventType.create({
-      ...req.body,
+      ...sanitizedData,
       companyId: branch.companyId,
-      branchId: req.params.branchId,
+      branchId: branchId,
       createdBy: req.user.id,
       updatedBy: req.user.id,
       systemEventType: null, // Only allow custom events through this endpoint
+      isDefault: false, // Never allow creating default events through API
     });
 
     res.status(201).json(eventType);
@@ -114,7 +151,12 @@ router.post("/branches/:branchId/event-types", async (req, res) => {
 // PATCH /api/event-types/:eventId - Partial update event type (with system protection)
 router.patch("/event-types/:eventId", async (req, res) => {
   try {
-    const eventType = await EventType.findByPk(req.params.eventId);
+    const eventId = authMiddleware.parseResourceId(req.params.eventId);
+    if (!eventId) {
+      return res.status(400).json({ error: "Invalid event type ID" });
+    }
+
+    const eventType = await EventType.findByPk(eventId);
 
     if (!eventType) {
       return res.status(404).json({ error: "Event type not found" });
@@ -135,31 +177,15 @@ router.patch("/event-types/:eventId", async (req, res) => {
 
     // System event protection - only allow text, color, and icon changes
     if (eventType.systemEventType) {
-      const allowedFields = [
-        "eventName",
-        "userColor",
-        "userFontColor",
-        "userIcon",
-        "stateName",
-        "adminColor",
-      ];
-      const updateData = {};
-
-      for (const field of allowedFields) {
-        if (req.body[field] !== undefined) {
-          updateData[field] = req.body[field];
-        }
-      }
-
+      const updateData = sanitizeFields(req.body, ALLOWED_SYSTEM_EVENT_FIELDS);
       updateData.updatedBy = req.user.id;
       await eventType.update(updateData);
     } else {
-      // Custom events can be fully updated
-      const updateData = {
-        ...req.body,
-        updatedBy: req.user.id,
-        systemEventType: eventType.systemEventType, // Preserve system type
-      };
+      // Custom events can be updated with allowed fields only
+      const updateData = sanitizeFields(req.body, ALLOWED_EVENT_TYPE_FIELDS);
+      updateData.updatedBy = req.user.id;
+      // Prevent changing system event type
+      delete updateData.systemEventType;
       await eventType.update(updateData);
     }
 
@@ -173,7 +199,12 @@ router.patch("/event-types/:eventId", async (req, res) => {
 // PUT /api/event-types/:eventId - Update event type (with system protection)
 router.put("/event-types/:eventId", async (req, res) => {
   try {
-    const eventType = await EventType.findByPk(req.params.eventId);
+    const eventId = authMiddleware.parseResourceId(req.params.eventId);
+    if (!eventId) {
+      return res.status(400).json({ error: "Invalid event type ID" });
+    }
+
+    const eventType = await EventType.findByPk(eventId);
 
     if (!eventType) {
       return res.status(404).json({ error: "Event type not found" });
@@ -194,31 +225,16 @@ router.put("/event-types/:eventId", async (req, res) => {
 
     // System event protection - only allow text, color, and icon changes
     if (eventType.systemEventType) {
-      const allowedFields = [
-        "eventName",
-        "userColor",
-        "userFontColor",
-        "userIcon",
-        "stateName",
-        "adminColor",
-      ];
-      const updateData = {};
-
-      for (const field of allowedFields) {
-        if (req.body[field] !== undefined) {
-          updateData[field] = req.body[field];
-        }
-      }
-
+      const updateData = sanitizeFields(req.body, ALLOWED_SYSTEM_EVENT_FIELDS);
       updateData.updatedBy = req.user.id;
       await eventType.update(updateData);
     } else {
-      // Custom events can be fully updated
-      await eventType.update({
-        ...req.body,
-        updatedBy: req.user.id,
-        systemEventType: eventType.systemEventType, // Preserve system type
-      });
+      // Custom events can be updated with allowed fields only
+      const updateData = sanitizeFields(req.body, ALLOWED_EVENT_TYPE_FIELDS);
+      updateData.updatedBy = req.user.id;
+      // Prevent changing system event type
+      delete updateData.systemEventType;
+      await eventType.update(updateData);
     }
 
     res.json(eventType);
@@ -420,11 +436,10 @@ router.post(
       const { resourceType, resourceId } = req.params;
       const { configurations } = req.body; // Array of configuration objects with overrides
 
-      console.log("📥 POST /resources/config received:", {
+      debugLog("📥 POST /resources/config received:", {
         resourceType,
         resourceId,
         configurationsCount: configurations?.length,
-        configurations: JSON.stringify(configurations, null, 2),
       });
 
       // Validate resource type
@@ -512,16 +527,10 @@ router.post(
           }
         });
 
-        console.log("💾 Saving configuration:", {
+        debugLog("💾 Saving configuration:", {
           resourceType: configData.resourceType,
           resourceId: configData.resourceId,
           eventTypeId: configData.eventTypeId,
-          enabled: configData.enabled,
-          overrides: Object.fromEntries(
-            overrideFields
-              .filter((field) => config[field] !== undefined)
-              .map((field) => [field, config[field]])
-          ),
         });
 
         const [eventConfig, created] = await EventConfiguration.findOrCreate({
@@ -533,7 +542,7 @@ router.post(
           defaults: configData,
         });
 
-        console.log(
+        debugLog(
           `💾 Configuration ${created ? "CREATED" : "UPDATED"} for ${resourceType}:${resourceId}, eventType:${configData.eventTypeId}`
         );
 
@@ -556,7 +565,7 @@ router.post(
             }
           }
 
-          console.log("💾 Update data:", updateData);
+          debugLog("💾 Update data:", updateData);
           await eventConfig.update(updateData);
         }
       }
@@ -577,15 +586,23 @@ router.post(
 // DELETE /api/resources/:resourceType/:resourceId/events/config/:eventTypeId - Remove specific event configuration
 router.delete(
   "/resources/:resourceType/:resourceId/events/config/:eventTypeId",
+  authMiddleware.checkResourcePermission(),
   async (req, res) => {
     try {
       const { resourceType, resourceId, eventTypeId } = req.params;
 
+      const parsedResourceId = authMiddleware.parseResourceId(resourceId);
+      const parsedEventTypeId = authMiddleware.parseResourceId(eventTypeId);
+
+      if (!parsedResourceId || !parsedEventTypeId) {
+        return res.status(400).json({ error: "Invalid resource or event type ID" });
+      }
+
       const deleted = await EventConfiguration.destroy({
         where: {
           resourceType,
-          resourceId: parseInt(resourceId),
-          eventTypeId: parseInt(eventTypeId),
+          resourceId: parsedResourceId,
+          eventTypeId: parsedEventTypeId,
         },
       });
 
@@ -883,7 +900,7 @@ router.get("/tables/:tableId/events/all", async (req, res) => {
 router.get(
   "/resources/:resourceType/:resourceId/events/config-modal",
   async (req, res) => {
-    console.log("🔄 Config modal endpoint hit:", req.params, req.query);
+    debugLog("🔄 Config modal endpoint hit:", req.params, req.query);
     try {
       const { resourceType, resourceId } = req.params;
       const { companyId, branchId } = req.query;

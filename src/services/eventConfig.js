@@ -1,8 +1,17 @@
 const { EventType, EventConfiguration } = require("../models");
+const sequelize = require("../config/database");
+
+// Environment check for verbose logging
+const isProduction = process.env.NODE_ENV === 'production';
+const debugLog = (...args) => {
+  if (!isProduction) {
+    console.log(...args);
+  }
+};
 
 class EventConfigService {
   static async createDefaultEventTypes(companyId, createdBy = null) {
-    console.log(
+    debugLog(
       "🚀 createDefaultEventTypes called for company:",
       companyId,
       "createdBy:",
@@ -91,79 +100,87 @@ class EventConfigService {
       },
     ];
 
-    console.log(
+    debugLog(
       "📦 Preparing",
       defaultEventTypes.length,
       "default event types to create"
     );
 
-    const eventTypesToCreate = defaultEventTypes.map((eventType) => ({
-      ...eventType,
-      companyId,
-      isActive: true,
-      createdBy,
-      updatedBy: createdBy,
-    }));
+    // Use transaction for atomicity
+    const transaction = await sequelize.transaction();
 
-    console.log("💾 Creating event types with bulkCreate...");
-    const createdEventTypes = await EventType.bulkCreate(eventTypesToCreate);
-    console.log("✅ Created", createdEventTypes.length, "event types");
+    try {
+      const eventTypesToCreate = defaultEventTypes.map((eventType) => ({
+        ...eventType,
+        companyId,
+        isActive: true,
+        createdBy,
+        updatedBy: createdBy,
+      }));
 
-    // Create default EventConfigurations for the company
-    const { EventConfiguration } = require("../models");
-    const eventConfigurations = createdEventTypes.map((eventType) => ({
-      resourceType: "company",
-      resourceId: companyId,
-      eventTypeId: eventType.id,
-      enabled: true,
-      createdBy,
-      updatedBy: createdBy,
-    }));
+      debugLog("💾 Creating event types with bulkCreate...");
+      const createdEventTypes = await EventType.bulkCreate(eventTypesToCreate, { transaction });
+      debugLog("✅ Created", createdEventTypes.length, "event types");
 
-    console.log(
-      "💾 Creating",
-      eventConfigurations.length,
-      "event configurations..."
-    );
+      // Create default EventConfigurations for the company
+      const eventConfigurations = createdEventTypes.map((eventType) => ({
+        resourceType: "company",
+        resourceId: companyId,
+        eventTypeId: eventType.id,
+        enabled: true,
+        createdBy,
+        updatedBy: createdBy,
+      }));
 
-    // Use individual creates instead of bulkCreate to avoid constraint issues
-    let successCount = 0;
-    let skipCount = 0;
+      debugLog(
+        "💾 Creating",
+        eventConfigurations.length,
+        "event configurations..."
+      );
 
-    for (const config of eventConfigurations) {
-      try {
-        await EventConfiguration.create(config);
-        successCount++;
-      } catch (error) {
-        // Skip if already exists
-        if (
-          error.message.includes("duplicate") ||
-          error.message.includes("unique constraint")
-        ) {
-          console.log(
-            "⚠️  Skipping duplicate event configuration for eventTypeId:",
-            config.eventTypeId
-          );
-          skipCount++;
-        } else {
-          console.error(
-            "❌ Failed to create event configuration:",
-            error.message
-          );
-          throw error;
+      // Use individual creates instead of bulkCreate to handle duplicates gracefully
+      let successCount = 0;
+      let skipCount = 0;
+
+      for (const config of eventConfigurations) {
+        try {
+          await EventConfiguration.create(config, { transaction });
+          successCount++;
+        } catch (error) {
+          // Skip if already exists (idempotent operation)
+          if (
+            error.message.includes("duplicate") ||
+            error.message.includes("unique constraint")
+          ) {
+            debugLog(
+              "⚠️  Skipping duplicate event configuration for eventTypeId:",
+              config.eventTypeId
+            );
+            skipCount++;
+          } else {
+            throw error; // Re-throw to trigger rollback
+          }
         }
       }
+
+      // Commit transaction
+      await transaction.commit();
+
+      debugLog(
+        "✅ Event configurations created:",
+        successCount,
+        "skipped:",
+        skipCount
+      );
+      debugLog("🎉 createDefaultEventTypes completed successfully");
+
+      return createdEventTypes;
+    } catch (error) {
+      // Rollback on any error
+      await transaction.rollback();
+      console.error("❌ createDefaultEventTypes failed, rolled back:", error.message);
+      throw error;
     }
-
-    console.log(
-      "✅ Event configurations created:",
-      successCount,
-      "skipped:",
-      skipCount
-    );
-    console.log("🎉 createDefaultEventTypes completed successfully");
-
-    return createdEventTypes;
   }
 
   static async resolveEventsForTable(tableId, includeSystemEvents = false) {
@@ -217,8 +234,8 @@ class EventConfigService {
   ) {
     const { Sequelize, Op } = require("sequelize");
 
-    console.log(
-      `📋 getAllEventsWithConfiguration called for ${resourceType}:${resourceId}, companyId:${companyId}, branchId:${branchId}, includeSystemEvents:${includeSystemEvents}`
+    debugLog(
+      `📋 getAllEventsWithConfiguration called for ${resourceType}:${resourceId}, companyId:${companyId}, branchId:${branchId}`
     );
 
     // Build where clause to get:
@@ -246,51 +263,62 @@ class EventConfigService {
       ],
     });
 
-    console.log(
-      `📋 Found ${eventTypes.length} event types for company ${companyId}`
-    );
+    debugLog(`📋 Found ${eventTypes.length} event types for company ${companyId}`);
 
-    // For each event type, find the most specific configuration (location > branch > company)
-    const eventsWithConfig = [];
+    // OPTIMIZATION: Load all configurations at once instead of N+1 queries
+    const eventTypeIds = eventTypes.map(et => et.id);
 
-    for (const eventType of eventTypes) {
-      // Build configuration lookup based on resource hierarchy
-      const configQueries = [];
+    // Build resource conditions for all hierarchy levels
+    const resourceConditions = [
+      { resourceType: "company", resourceId: parseInt(companyId) }
+    ];
 
-      // Most specific: location/table level
+    if (branchId) {
+      resourceConditions.push({ resourceType: "branch", resourceId: parseInt(branchId) });
+    }
+
+    if (resourceType === "location") {
+      resourceConditions.push({ resourceType: "location", resourceId: parseInt(resourceId) });
+    }
+
+    // Single query to get all relevant configurations
+    const allConfigs = await EventConfiguration.findAll({
+      where: {
+        eventTypeId: { [Op.in]: eventTypeIds },
+        [Op.or]: resourceConditions
+      }
+    });
+
+    // Index configurations for O(1) lookup
+    const configIndex = new Map();
+    for (const config of allConfigs) {
+      const key = `${config.resourceType}:${config.resourceId}:${config.eventTypeId}`;
+      configIndex.set(key, config);
+    }
+
+    // Helper to find most specific config
+    const findEffectiveConfig = (eventTypeId) => {
+      // Priority: location > branch > company
+      const lookupOrder = [];
+
       if (resourceType === "location") {
-        configQueries.push({
-          resourceType: "location",
-          resourceId: parseInt(resourceId),
-          eventTypeId: eventType.id,
-        });
+        lookupOrder.push(`location:${parseInt(resourceId)}:${eventTypeId}`);
       }
-
-      // Branch level
       if (branchId) {
-        configQueries.push({
-          resourceType: "branch",
-          resourceId: parseInt(branchId),
-          eventTypeId: eventType.id,
-        });
+        lookupOrder.push(`branch:${parseInt(branchId)}:${eventTypeId}`);
       }
+      lookupOrder.push(`company:${parseInt(companyId)}:${eventTypeId}`);
 
-      // Company level
-      configQueries.push({
-        resourceType: "company",
-        resourceId: parseInt(companyId),
-        eventTypeId: eventType.id,
-      });
-
-      // Find the most specific configuration
-      let effectiveConfig = null;
-      for (const query of configQueries) {
-        const config = await EventConfiguration.findOne({ where: query });
-        if (config) {
-          effectiveConfig = config;
-          break; // Use the most specific configuration found
-        }
+      for (const key of lookupOrder) {
+        const config = configIndex.get(key);
+        if (config) return config;
       }
+      return null;
+    };
+
+    // Process all event types with pre-loaded configurations
+    const eventsWithConfig = eventTypes.map(eventType => {
+      const effectiveConfig = findEffectiveConfig(eventType.id);
 
       // Start with the base EventType values
       const resolvedEvent = {
@@ -300,54 +328,22 @@ class EventConfigService {
         configurationId: effectiveConfig ? effectiveConfig.id : null,
       };
 
-      console.log(`  📦 Base event ${eventType.eventName}:`, {
-        userColor: eventType.userColor,
-        userFontColor: eventType.userFontColor,
-        userIcon: eventType.userIcon,
-      });
-
       // Apply overrides from configuration if they exist
       if (effectiveConfig) {
-        console.log(`  🔧 Config found for ${eventType.eventName}:`, {
-          userColor: effectiveConfig.userColor,
-          userFontColor: effectiveConfig.userFontColor,
-          userIcon: effectiveConfig.userIcon,
-          enabled: effectiveConfig.enabled,
-        });
+        const overrideFields = [
+          'eventName', 'stateName', 'userColor', 'userFontColor',
+          'userIcon', 'adminColor', 'priority'
+        ];
 
-        // Override fields only if they are explicitly set in the configuration
-        if (effectiveConfig.eventName !== null) {
-          resolvedEvent.eventName = effectiveConfig.eventName;
-        }
-        if (effectiveConfig.stateName !== null) {
-          resolvedEvent.stateName = effectiveConfig.stateName;
-        }
-        if (effectiveConfig.userColor !== null) {
-          resolvedEvent.userColor = effectiveConfig.userColor;
-        }
-        if (effectiveConfig.userFontColor !== null) {
-          resolvedEvent.userFontColor = effectiveConfig.userFontColor;
-        }
-        if (effectiveConfig.userIcon !== null) {
-          resolvedEvent.userIcon = effectiveConfig.userIcon;
-        }
-        if (effectiveConfig.adminColor !== null) {
-          resolvedEvent.adminColor = effectiveConfig.adminColor;
-        }
-        if (effectiveConfig.priority !== null) {
-          resolvedEvent.priority = effectiveConfig.priority;
+        for (const field of overrideFields) {
+          if (effectiveConfig[field] !== null) {
+            resolvedEvent[field] = effectiveConfig[field];
+          }
         }
       }
 
-      console.log(`  ✅ Final resolved event ${eventType.eventName}:`, {
-        userColor: resolvedEvent.userColor,
-        userFontColor: resolvedEvent.userFontColor,
-        userIcon: resolvedEvent.userIcon,
-        enabled: resolvedEvent.enabled,
-      });
-
-      eventsWithConfig.push(resolvedEvent);
-    }
+      return resolvedEvent;
+    });
 
     return eventsWithConfig;
   }
@@ -462,66 +458,63 @@ class EventConfigService {
       ],
     });
 
-    // For each event type, find the most specific configuration (location > branch > company)
+    // OPTIMIZATION: Load all configurations at once instead of N+1 queries
+    const eventTypeIds = eventTypes.map(et => et.id);
+
+    // Build resource conditions for all hierarchy levels
+    const resourceConditions = [
+      { resourceType: "company", resourceId: parseInt(companyId) }
+    ];
+
+    if (branchId) {
+      resourceConditions.push({ resourceType: "branch", resourceId: parseInt(branchId) });
+    }
+
+    if (resourceType === "location") {
+      resourceConditions.push({ resourceType: "location", resourceId: parseInt(resourceId) });
+    }
+
+    // Single query to get all relevant configurations
+    const allConfigs = await EventConfiguration.findAll({
+      where: {
+        eventTypeId: { [Op.in]: eventTypeIds },
+        [Op.or]: resourceConditions
+      }
+    });
+
+    // Index configurations for O(1) lookup
+    const configIndex = new Map();
+    for (const config of allConfigs) {
+      const key = `${config.resourceType}:${config.resourceId}:${config.eventTypeId}`;
+      configIndex.set(key, config);
+    }
+
+    // Helper to find most specific config
+    const findEffectiveConfig = (eventTypeId) => {
+      // Priority: location > branch > company
+      const lookupOrder = [];
+
+      if (resourceType === "location") {
+        lookupOrder.push(`location:${parseInt(resourceId)}:${eventTypeId}`);
+      }
+      if (branchId) {
+        lookupOrder.push(`branch:${parseInt(branchId)}:${eventTypeId}`);
+      }
+      lookupOrder.push(`company:${parseInt(companyId)}:${eventTypeId}`);
+
+      for (const key of lookupOrder) {
+        const config = configIndex.get(key);
+        if (config) return config;
+      }
+      return null;
+    };
+
+    // Process all event types with pre-loaded configurations
     const eventsWithConfig = [];
 
     for (const eventType of eventTypes) {
-      let enabled = true; // Default enabled if no configuration exists
-
-      // Build configuration lookup based on resource hierarchy
-      const configQueries = [];
-
-      // Most specific: location/table level
-      if (resourceType === "location") {
-        configQueries.push({
-          resourceType: "location",
-          resourceId: parseInt(resourceId),
-          eventTypeId: eventType.id,
-        });
-      }
-
-      // Branch level
-      if (branchId) {
-        configQueries.push({
-          resourceType: "branch",
-          resourceId: parseInt(branchId),
-          eventTypeId: eventType.id,
-        });
-      }
-
-      // Company level
-      configQueries.push({
-        resourceType: "company",
-        resourceId: parseInt(companyId),
-        eventTypeId: eventType.id,
-      });
-
-      console.log(
-        `🔍 Resolving ${eventType.eventName} for ${resourceType}:${resourceId}`
-      );
-      console.log("  Config queries:", configQueries);
-
-      // Find the most specific configuration
-      let effectiveConfig = null;
-      for (const query of configQueries) {
-        const config = await EventConfiguration.findOne({ where: query });
-        console.log(
-          `  Query ${query.resourceType}:${query.resourceId} -> ${config ? `enabled:${config.enabled}` : "not found"}`
-        );
-        if (config) {
-          effectiveConfig = config;
-          break; // Use the most specific configuration found
-        }
-      }
-
-      // If we found a configuration, use its enabled status
-      if (effectiveConfig) {
-        enabled = effectiveConfig.enabled;
-      }
-
-      console.log(
-        `  Final result: ${eventType.eventName} = ${enabled ? "ENABLED" : "DISABLED"}`
-      );
+      const effectiveConfig = findEffectiveConfig(eventType.id);
+      const enabled = effectiveConfig ? effectiveConfig.enabled : true;
 
       // Only include enabled events in the result
       if (enabled) {
@@ -534,27 +527,15 @@ class EventConfigService {
 
         // Apply overrides from configuration if they exist
         if (effectiveConfig) {
-          // Override fields only if they are explicitly set in the configuration
-          if (effectiveConfig.eventName !== null) {
-            resolvedEvent.eventName = effectiveConfig.eventName;
-          }
-          if (effectiveConfig.stateName !== null) {
-            resolvedEvent.stateName = effectiveConfig.stateName;
-          }
-          if (effectiveConfig.userColor !== null) {
-            resolvedEvent.userColor = effectiveConfig.userColor;
-          }
-          if (effectiveConfig.userFontColor !== null) {
-            resolvedEvent.userFontColor = effectiveConfig.userFontColor;
-          }
-          if (effectiveConfig.userIcon !== null) {
-            resolvedEvent.userIcon = effectiveConfig.userIcon;
-          }
-          if (effectiveConfig.adminColor !== null) {
-            resolvedEvent.adminColor = effectiveConfig.adminColor;
-          }
-          if (effectiveConfig.priority !== null) {
-            resolvedEvent.priority = effectiveConfig.priority;
+          const overrideFields = [
+            'eventName', 'stateName', 'userColor', 'userFontColor',
+            'userIcon', 'adminColor', 'priority'
+          ];
+
+          for (const field of overrideFields) {
+            if (effectiveConfig[field] !== null) {
+              resolvedEvent[field] = effectiveConfig[field];
+            }
           }
         }
 
