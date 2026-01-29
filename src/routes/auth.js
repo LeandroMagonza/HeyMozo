@@ -68,22 +68,22 @@ router.post('/test-post', (req, res) => {
 
 // Base URL for the login link
 const getLoginBaseUrl = (req) => {
-  // Use FRONTEND_URL from environment if available
-  if (process.env.FRONTEND_URL) {
-    return `${process.env.FRONTEND_URL}/login`;
-  }
-
-  const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
-
-  // In production, use the request host
+  // In production, always use the request host (ignore FRONTEND_URL if it points to localhost)
   if (process.env.NODE_ENV === 'production') {
+    if (process.env.FRONTEND_URL && !process.env.FRONTEND_URL.includes('localhost')) {
+      return `${process.env.FRONTEND_URL}/login`;
+    }
+    const protocol = req.get('x-forwarded-proto') || 'https';
     const host = req.get('host');
     return `${protocol}://${host}/login`;
   }
 
-  // Fallback for development (should use FRONTEND_URL instead)
+  // In development, use FRONTEND_URL or fallback to localhost
+  if (process.env.FRONTEND_URL) {
+    return `${process.env.FRONTEND_URL}/login`;
+  }
   const port = process.env.PORT || 3003;
-  return `${protocol}://localhost:${port}/login`;
+  return `http://localhost:${port}/login`;
 };
 
 /**
