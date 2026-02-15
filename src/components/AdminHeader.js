@@ -2,9 +2,10 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaSignOutAlt, FaUser } from 'react-icons/fa';
 import authService from '../services/authService';
+import PushNotificationToggle from './PushNotificationToggle';
 import './AdminHeader.css';
 
-const AdminHeader = ({ title, showBackButton = false, backUrl = '/' }) => {
+const AdminHeader = ({ title, showBackButton = false, backUrl = '/', branchId = null }) => {
   const navigate = useNavigate();
   const currentUser = authService.getCurrentUser();
 
@@ -38,6 +39,7 @@ const AdminHeader = ({ title, showBackButton = false, backUrl = '/' }) => {
       <div className="admin-header-right">
         {currentUser && (
           <div className="user-info">
+            <PushNotificationToggle branchId={branchId} compact />
             <div className="user-details">
               <FaUser className="user-icon" />
               <div className="user-text">

@@ -603,6 +603,30 @@ router.post('/tables/:tableId/events', async (req, res) => {
 
     console.log('EVENTS.JS - Event created successfully:', event.id);
 
+    // Send push notification to branch staff (non-blocking)
+    try {
+      const pushService = require('../services/pushNotification');
+      const sysType = eventType.systemEventType || eventType.eventName;
+      console.log(`🔔 PUSH (events.js): Event type: ${sysType}, branchId: ${table.Branch.id}`);
+      
+      const skipPushFor = ['MARK_SEEN', 'VACATE', 'MARK_AVAILABLE', 'SCAN', 'OCCUPY'];
+      if (!skipPushFor.includes(sysType)) {
+        const payload = pushService.buildEventPayload(
+          sysType,
+          table,
+          table.Branch,
+          table.Branch.Company
+        );
+        console.log('🔔 PUSH (events.js): Sending push notification...');
+        await pushService.notifyBranchStaff(table.Branch.id, payload);
+        console.log('🔔 PUSH (events.js): Push notification sent');
+      } else {
+        console.log(`🔔 PUSH (events.js): Skipping push for event: ${sysType}`);
+      }
+    } catch (pushError) {
+      console.error('🔔 PUSH ERROR (events.js):', pushError);
+    }
+
     // Return the created event with its type information
     const eventWithType = await Event.findByPk(event.id, {
       include: [{

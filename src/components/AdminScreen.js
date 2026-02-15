@@ -498,6 +498,7 @@ const AdminScreen = () => {
         title={loading ? 'Cargando...' : error ? 'Error' : `${company?.name} - ${branch?.name}`}
         showBackButton={true}
         backUrl={`/admin/${companyId}/${branchId}/config`}
+        branchId={branchId}
       />
       <div className="refresh-timer">
         Refrescando en {refreshCountdown} segundos

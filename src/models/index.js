@@ -8,6 +8,7 @@ const Company = require('./Company');
 const Branch = require('./Branch');
 const Table = require('./Table');
 const MailingList = require('./MailingList');
+const PushSubscription = require('./PushSubscription');
 
 // Import new model factories
 const eventTypeFactory = require('./EventType');
@@ -20,7 +21,7 @@ const EventConfiguration = eventConfigurationFactory(sequelize);
 const Event = eventFactory(sequelize);
 
 // Set up new model associations
-const models = { User, Permission, AuthToken, Company, Branch, Table, Event, MailingList, EventType, EventConfiguration };
+const models = { User, Permission, AuthToken, Company, Branch, Table, Event, MailingList, EventType, EventConfiguration, PushSubscription };
 Object.keys(models).forEach(modelName => {
   if (models[modelName].associate) {
     models[modelName].associate(models);
@@ -45,6 +46,12 @@ Branch.hasMany(Table, { foreignKey: 'branchId' });
 Table.belongsTo(Branch, { foreignKey: 'branchId' });
 Table.hasMany(Event, { foreignKey: 'tableId', as: 'events' });
 
+// Push subscription associations
+User.hasMany(PushSubscription, { foreignKey: 'userId' });
+PushSubscription.belongsTo(User, { foreignKey: 'userId' });
+Branch.hasMany(PushSubscription, { foreignKey: 'branchId' });
+PushSubscription.belongsTo(Branch, { foreignKey: 'branchId' });
+
 module.exports = {
   User,
   Permission,
@@ -55,5 +62,6 @@ module.exports = {
   Event,
   MailingList,
   EventType,
-  EventConfiguration
+  EventConfiguration,
+  PushSubscription
 }; 

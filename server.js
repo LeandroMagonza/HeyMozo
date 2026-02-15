@@ -23,6 +23,7 @@ const authRoutes = require('./src/routes/auth');
 const usersRoutes = require('./src/routes/users');
 const eventsRoutes = require('./src/routes/events');
 const apiRoutes = require('./src/routes/index');
+const pushRoutes = require('./src/routes/push');
 const authMiddleware = require('./src/middleware/auth');
 
 const app = express();
@@ -51,6 +52,8 @@ console.log('🔧 Mounting auth routes at /api/auth');
 app.use('/api/auth', authRoutes);
 console.log('🔧 Mounting users routes at /api/users');
 app.use('/api/users', usersRoutes);
+console.log('🔧 Mounting push routes at /api/push');
+app.use('/api/push', pushRoutes);
 
 // PUBLIC ROUTE: Mailing list (MUST be before eventsRoutes)
 console.log('🔧 Registering PUBLIC route: POST /api/mailing-list (BEFORE other /api/* routes)');
@@ -378,6 +381,33 @@ app.post('/api/tables/:id/events', async (req, res) => {
       createdAt: currentTime,
       seenAt: null
     });
+
+    // Send push notification to branch staff (non-blocking)
+    try {
+      console.log('🔔 PUSH: Starting push notification flow...');
+      const pushService = require('./src/services/pushNotification');
+      const resolvedEventType = await require('./src/models').EventType.findByPk(finalEventTypeId);
+      const sysType = resolvedEventType?.systemEventType || resolvedEventType?.eventName || type;
+      console.log(`🔔 PUSH: Event type resolved: ${sysType}, branchId: ${table.Branch.id}`);
+      
+      // Only send push for customer-facing events (not MARK_SEEN, VACATE, etc.)
+      const skipPushFor = ['MARK_SEEN', 'VACATE', 'MARK_AVAILABLE'];
+      if (!skipPushFor.includes(sysType)) {
+        const payload = pushService.buildEventPayload(
+          sysType,
+          table,
+          table.Branch,
+          table.Branch.Company
+        );
+        console.log('🔔 PUSH: Payload built, calling notifyBranchStaff...');
+        await pushService.notifyBranchStaff(table.Branch.id, payload);
+        console.log('🔔 PUSH: notifyBranchStaff completed');
+      } else {
+        console.log(`🔔 PUSH: Skipping push for system event: ${sysType}`);
+      }
+    } catch (pushError) {
+      console.error('🔔 PUSH ERROR:', pushError);
+    }
 
     // Obtener la mesa actualizada con todos sus eventos
     const updatedTable = await Table.findByPk(tableId, {

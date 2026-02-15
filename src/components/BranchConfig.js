@@ -7,6 +7,7 @@ import { FaEye, FaQrcode, FaChair, FaSave, FaTrash, FaPlus, FaCalendarAlt } from
 import '../styles/common.css';
 import AdminHeader from './AdminHeader';
 import EventConfigModal from './EventConfigModal';
+import PushNotificationToggle from './PushNotificationToggle';
 
 const BranchConfig = () => {
   const { companyId, branchId } = useParams();
@@ -262,6 +263,13 @@ const BranchConfig = () => {
             >
               <FaCalendarAlt /> Configurar Eventos
             </button>
+          </div>
+
+          <hr className="section-divider" />
+
+          <div className="notifications-section" style={{ marginBottom: '20px' }}>
+            <h3 style={{ marginBottom: '12px' }}>Notificaciones</h3>
+            <PushNotificationToggle branchId={branchId} />
           </div>
 
           <hr className="section-divider" />
