@@ -1,8 +1,8 @@
 import axios from 'axios';
 
-const API_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? '/api' 
-  : 'http://localhost:3001/api';
+// REACT_APP_API_URL is set in .env.development for local dev
+// In production builds, it's not set so it falls back to '/api' (relative)
+const API_BASE_URL = process.env.REACT_APP_API_URL || '/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
