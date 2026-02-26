@@ -23,6 +23,7 @@ const authRoutes = require('./src/routes/auth');
 const usersRoutes = require('./src/routes/users');
 const eventsRoutes = require('./src/routes/events');
 const apiRoutes = require('./src/routes/index');
+const pushRoutes = require('./src/routes/push');
 const authMiddleware = require('./src/middleware/auth');
 
 const app = express();
@@ -53,6 +54,8 @@ console.log('🔧 Mounting auth routes at /api/auth');
 app.use('/api/auth', authRoutes);
 console.log('🔧 Mounting users routes at /api/users');
 app.use('/api/users', usersRoutes);
+console.log('🔧 Mounting push routes at /api/push');
+app.use('/api/push', pushRoutes);
 
 // PUBLIC ROUTE: Mailing list (MUST be before eventsRoutes)
 console.log('🔧 Registering PUBLIC route: POST /api/mailing-list (BEFORE other /api/* routes)');
@@ -378,6 +381,16 @@ app.post('/api/tables/:id/events', async (req, res) => {
       createdAt: currentTime,
       seenAt: null
     });
+
+    // Send push notification to branch staff (non-blocking)
+    try {
+      const pushService = require('./src/services/pushNotification');
+      const resolvedEventType = await EventType.findByPk(finalEventTypeId);
+      const sysType = resolvedEventType?.systemEventType || resolvedEventType?.eventName || type;
+      pushService.triggerEventPush(sysType, table);
+    } catch (pushError) {
+      console.error('Push notification error:', pushError);
+    }
 
     // Obtener la mesa actualizada con todos sus eventos
     const updatedTable = await Table.findByPk(tableId, {

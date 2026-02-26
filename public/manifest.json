@@ -1,6 +1,6 @@
 {
   "short_name": "HeyMozo",
-  "name": "HeyMozo",
+  "name": "HeyMozo - Gestion de Restaurantes",
   "icons": [
     {
       "src": "images/heymozo-logo.png",
@@ -10,7 +10,8 @@
     {
       "src": "images/heymozo-logo.png",
       "type": "image/png",
-      "sizes": "192x192"
+      "sizes": "192x192",
+      "purpose": "any maskable"
     }
   ],
   "start_url": ".",

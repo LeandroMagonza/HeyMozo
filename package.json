@@ -30,6 +30,7 @@
     "request": "^2.88.2",
     "resend": "^4.8.0",
     "sequelize": "^6.37.1",
+    "web-push": "^3.6.7",
     "web-vitals": "^2.1.4"
   },
   "devDependencies": {

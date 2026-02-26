@@ -847,6 +847,16 @@ router.post("/tables/:tableId/events", async (req, res) => {
 
     console.log("EVENTS.JS - Event created successfully:", event.id);
 
+    // Send push notification to branch staff (non-blocking)
+    try {
+      const pushService = require('../services/pushNotification');
+      const resolvedEventType = await EventType.findByPk(finalEventTypeId);
+      const sysType = resolvedEventType?.systemEventType || resolvedEventType?.eventName;
+      pushService.triggerEventPush(sysType, table);
+    } catch (pushError) {
+      console.error('Push notification error:', pushError);
+    }
+
     // Return the created event with its type information
     const eventWithType = await Event.findByPk(event.id, {
       include: [
