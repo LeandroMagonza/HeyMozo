@@ -465,8 +465,8 @@ const AdminScreen = () => {
 
     if (confirmed) {
       try {
-        const response = await releaseAllTables(branchId);
-        setTables(response.data);
+        await releaseAllTables(branchId);
+        await fetchData();
       } catch (error) {
         console.error('Error liberando todas las mesas:', error);
       }

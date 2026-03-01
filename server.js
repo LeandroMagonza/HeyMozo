@@ -816,57 +816,7 @@ app.put('/api/tables/:id/mark-occupied', authMiddleware.authenticate, async (req
 
 // RUTAS DUPLICADAS ELIMINADAS - MOVIDAS A SECCIÓN PÚBLICA ARRIBA
 
-// Ruta para liberar todas las mesas de una sucursal
-app.post('/api/branches/:id/release-all-tables', authMiddleware.authenticate, async (req, res) => {
-  try {
-    const { id: branchId } = req.params;
-    const currentTime = new Date();
-
-    // Obtener todas las mesas de la sucursal
-    const tables = await Table.findAll({
-      where: { branchId }
-    });
-
-    // Para cada mesa, crear un evento MARK_AVAILABLE y marcar todos los eventos como vistos
-    await Promise.all(tables.map(async (table) => {
-      // Marcar todos los eventos como vistos
-      await Event.update(
-        { seenAt: currentTime },
-        {
-          where: {
-            tableId: table.id,
-            seenAt: null
-          }
-        }
-      );
-
-      // Crear evento MARK_AVAILABLE
-      await Event.create({
-        tableId: table.id,
-        type: EventTypes.MARK_AVAILABLE,
-        createdAt: currentTime,
-        seenAt: currentTime
-      });
-    }));
-
-    // Obtener las mesas actualizadas
-    const updatedTables = await Table.findAll({
-      where: { branchId },
-      include: [{
-        model: Event,
-        as: 'events',
-        attributes: ['type', 'message', 'createdAt', 'seenAt'],
-      }],
-      order: [['events', 'createdAt', 'DESC']]
-    });
-
-    const formattedTables = updatedTables.map(formatTableWithEvents);
-    res.json(formattedTables);
-  } catch (error) {
-    console.error('Error releasing all tables:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+// DISABLED: Duplicate release-all-tables route - this functionality is handled by routes/index.js
 
 // DISABLED: Duplicate POST /api/companies route - this functionality is handled by routes/index.js
 // which properly creates default event types for new companies

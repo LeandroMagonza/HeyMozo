@@ -6,11 +6,12 @@ const authMiddleware = require('../middleware/auth');
 const { Op } = require('sequelize');
 
 // Import models
-const { 
-  Company, 
-  Branch, 
-  Table, 
+const {
+  Company,
+  Branch,
+  Table,
   Event,
+  EventType,
   Permission
 } = require('../models');
 
@@ -177,7 +178,7 @@ router.post('/branches/:branchId/release-all-tables', authMiddleware.checkBranch
     // Get all tables in the branch
     const tables = await Table.findAll({
       where: { branchId },
-      include: [{ model: Event, as: 'Events' }]
+      include: [{ model: Event, as: 'events' }]
     });
 
     if (!tables || tables.length === 0) {
@@ -209,7 +210,6 @@ router.post('/branches/:branchId/release-all-tables', authMiddleware.checkBranch
     }
 
     const now = new Date();
-    const updatedTables = [];
 
     // Process each table
     for (const table of tables) {
@@ -223,28 +223,14 @@ router.post('/branches/:branchId/release-all-tables', authMiddleware.checkBranch
       await Event.create({
         tableId: table.id,
         eventTypeId: vacateEventType.id,
-        message: 'Table released by admin',
+        message: null,
         createdAt: now,
         seenAt: now,
         userId: req.user.id
       });
-
-      // Reload table with updated events
-      const updatedTable = await Table.findByPk(table.id, {
-        include: [{
-          model: Event,
-          as: 'Events',
-          include: [{
-            model: EventType,
-            attributes: ['eventName', 'stateName', 'userColor', 'adminColor', 'systemEventType']
-          }]
-        }]
-      });
-
-      updatedTables.push(updatedTable);
     }
 
-    res.json(updatedTables);
+    res.json({ success: true });
   } catch (error) {
     console.error('Error releasing all tables:', error);
     res.status(500).json({ error: 'Error releasing all tables' });
@@ -590,7 +576,7 @@ router.post('/tables', async (req, res) => {
         tableId: table.id,
         eventTypeId: vacateEventType.id,
         type: 'VACATE', // Legacy support
-        message: 'Table initialized as available'
+        message: null
       });
       logger.info(`Created initial VACATE event for table ${table.id}`);
     } else {
