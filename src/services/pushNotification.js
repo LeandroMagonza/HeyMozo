@@ -8,13 +8,19 @@ const logger = require('../utils/logger');
 const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY;
 const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY;
 
+let vapidConfigured = false;
 if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
-  webpush.setVapidDetails(
-    'mailto:no-reply@heymozo.com',
-    VAPID_PUBLIC_KEY,
-    VAPID_PRIVATE_KEY
-  );
-  console.log('Web Push VAPID keys configured');
+  try {
+    webpush.setVapidDetails(
+      'mailto:no-reply@heymozo.com',
+      VAPID_PUBLIC_KEY,
+      VAPID_PRIVATE_KEY
+    );
+    vapidConfigured = true;
+    console.log('Web Push VAPID keys configured');
+  } catch (error) {
+    console.error('Invalid VAPID keys - push notifications disabled:', error.message);
+  }
 } else {
   console.warn('VAPID keys not configured - push notifications disabled');
 }
@@ -117,7 +123,7 @@ async function sendToSubscription(subscription, payload) {
  * Uses efficient queries instead of N+1 pattern.
  */
 async function notifyBranchStaff(branchId, payload) {
-  if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
+  if (!vapidConfigured) {
     logger.warn('Push notifications not configured, skipping');
     return;
   }
