@@ -1,0 +1,185 @@
+/*
+ * Design tokens for the UI redesign (feature/ui-redesign).
+ *
+ * Variables are scoped to :root so they are available everywhere without
+ * affecting existing styles. Components opt in via var(--rd-*).
+ *
+ * Naming: --rd-<category>-<role>. The "rd" prefix avoids collisions with
+ * legacy stylesheets. See MOCKUP_HANDOFF.md section 5 for the source palette.
+ */
+
+:root {
+  /* ===== Backgrounds — cliente (dark) ===== */
+  --rd-bg: #1c1c1e;
+  --rd-bg-sheet: #1c1c24;
+  --rd-bg-card: #2c2c2e;
+  --rd-bg-card-elevated: #2a2a2c;
+  --rd-bg-card-strong: #3a3a3c;
+  --rd-bg-input: #1f1f21;
+  --rd-bg-input-alt: #323440;
+  --rd-bg-sticky: #131315;
+
+  /* ===== Backgrounds — cajero (azulado) ===== */
+  --rd-bg-cajero: #13151f;
+  --rd-bg-cajero-panel: #1a1c29;
+  --rd-bg-cajero-deep: #11131e;
+  --rd-bg-cajero-modal: #1d1f2a;
+
+  /* ===== Borders / dividers ===== */
+  --rd-border: #3a3a3c;
+  --rd-border-subtle: #2c2c2e;
+  --rd-border-cajero: #1e293b;
+  --rd-border-purple: rgba(147, 51, 234, 0.25);
+  --rd-border-green: rgba(22, 163, 74, 0.3);
+  --rd-border-green-cajero: rgba(16, 185, 129, 0.3);
+  --rd-border-red: rgba(239, 68, 68, 0.3);
+
+  /* ===== Brand accents (semánticos) ===== */
+  --rd-brand-red: #e8362a;
+  --rd-brand-red-dark: #d62d20;
+  --rd-brand-purple: #9333ea;
+  --rd-brand-purple-light: #a855f7;
+  --rd-brand-purple-soft: #c084fc;
+  --rd-brand-purple-text: #ddb8ff;
+  --rd-brand-orange: #e07b00;
+  --rd-brand-orange-light: #f97316;
+  --rd-brand-orange-card: #f07020;
+  --rd-brand-green: #16a34a;
+  --rd-brand-green-light: #22c55e;
+  --rd-brand-green-soft: #4ade80;
+  --rd-brand-green-cajero: #13eca7;
+  --rd-brand-green-emerald: #10b981;
+  --rd-brand-yellow: #fbbf24;
+  --rd-brand-yellow-card: #f5c518;
+  --rd-brand-error: #ef4444;
+  --rd-brand-error-dark: #dc2626;
+  --rd-brand-blue: #0a84ff;
+  --rd-brand-blue-info: #3478f6;
+  --rd-brand-mp: #009ee3;
+  --rd-brand-whatsapp: #25d366;
+
+  /* ===== Text ===== */
+  --rd-text: #ffffff;
+  --rd-text-secondary: #e4e2e4;
+  --rd-text-tertiary: #9ca3af;
+  --rd-text-quaternary: #94a3b8;
+  --rd-text-disabled: #6b7280;
+  --rd-text-muted: #636366;
+  --rd-text-on-yellow: #1a1a1a;
+  --rd-text-vip: #ddb8ff;
+
+  /* ===== Shadows (tinte de marca) ===== */
+  --rd-shadow-purple: 0 10px 25px rgba(147, 51, 234, 0.4);
+  --rd-shadow-purple-soft: 0 8px 24px rgba(147, 51, 234, 0.25);
+  --rd-shadow-orange: 0 10px 25px rgba(224, 123, 0, 0.4);
+  --rd-shadow-green: 0 10px 25px rgba(22, 163, 74, 0.4);
+  --rd-shadow-whatsapp: 0 6px 20px rgba(37, 211, 102, 0.3);
+  --rd-shadow-card: 0 4px 20px rgba(0, 0, 0, 0.25);
+  --rd-shadow-modal: 0 20px 60px rgba(0, 0, 0, 0.8);
+  --rd-shadow-dropdown: 0 8px 32px rgba(0, 0, 0, 0.5);
+  --rd-shadow-icon: 0 20px 40px rgba(0, 0, 0, 0.4);
+
+  /* ===== Radii ===== */
+  --rd-radius-sm: 6px;
+  --rd-radius-md: 8px;
+  --rd-radius-lg: 12px;
+  --rd-radius-xl: 16px;
+  --rd-radius-2xl: 24px;
+  --rd-radius-full: 9999px;
+  --rd-radius-sheet-top: 24px 24px 0 0;
+
+  /* ===== Fonts ===== */
+  --rd-font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif;
+  --rd-font-icon: 'Material Symbols Outlined';
+
+  /* ===== Easings ===== */
+  --rd-ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --rd-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* ===== Z-index escala ===== */
+  --rd-z-glow: 0;
+  --rd-z-content: 1;
+  --rd-z-sticky: 10;
+  --rd-z-dropdown: 50;
+  --rd-z-modal: 100;
+}
+
+/* ===== Global animations (rd- prefijo para evitar colisiones) ===== */
+
+@keyframes rd-modal-in {
+  from {
+    transform: scale(0.85);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes rd-slide-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes rd-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes rd-ring-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.45);
+  }
+  100% {
+    box-shadow: 0 0 0 15px rgba(34, 197, 94, 0);
+  }
+}
+
+@keyframes rd-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes rd-glow-pulse {
+  0%,
+  100% {
+    opacity: 0.8;
+    filter: brightness(1);
+  }
+  50% {
+    opacity: 1;
+    filter: brightness(1.15);
+  }
+}
+
+/* ===== Utility classes ===== */
+
+/* Tap feedback (active:scale-95) */
+.rd-tap-scale {
+  transition: transform 0.1s ease;
+}
+.rd-tap-scale:active {
+  transform: scale(0.95);
+}
+
+/* Reset typical for the redesign tree */
+.rd-reset *,
+.rd-reset *::before,
+.rd-reset *::after {
+  box-sizing: border-box;
+}

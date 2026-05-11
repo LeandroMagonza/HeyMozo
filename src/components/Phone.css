@@ -1,0 +1,15 @@
+.phone-frame {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--rd-bg);
+  color: var(--rd-text);
+  font-family: var(--rd-font-sans);
+  position: relative;
+  overflow-x: hidden;
+}
+
+.phone-frame * {
+  box-sizing: border-box;
+}

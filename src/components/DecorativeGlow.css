@@ -1,0 +1,19 @@
+.decorative-glow {
+  position: fixed;
+  width: 40%;
+  height: 40%;
+  border-radius: var(--rd-radius-full);
+  filter: blur(100px);
+  pointer-events: none;
+  z-index: var(--rd-z-glow);
+}
+
+.decorative-glow--top-left {
+  top: -10%;
+  left: -10%;
+}
+
+.decorative-glow--bottom-right {
+  bottom: -10%;
+  right: -10%;
+}
