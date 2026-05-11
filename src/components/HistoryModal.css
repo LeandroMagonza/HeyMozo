@@ -1,30 +1,34 @@
+/* src/components/HistoryModal.css */
+
 .history-modal-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.7);
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.75);
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
-  z-index: 1000;
+  z-index: var(--rd-z-modal);
+  animation: rd-fade-in 0.2s ease-out;
+  font-family: var(--rd-font-sans);
 }
 
 .history-modal {
-  background-color: white;
-  border-radius: 10px;
-  width: 85%;
-  max-width: 800px;
+  background: var(--rd-bg-sheet);
+  color: var(--rd-text);
+  border-radius: var(--rd-radius-sheet-top);
+  width: 100%;
+  max-width: 32rem;
   height: 85vh;
   max-height: 90vh;
   display: flex;
   flex-direction: column;
+  animation: rd-slide-up 0.3s var(--rd-ease-out) forwards;
+  box-shadow: var(--rd-shadow-modal);
 }
 
 .history-modal-header {
-  padding: 20px;
-  border-bottom: 1px solid #e0e0e0;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--rd-border);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -32,64 +36,82 @@
 
 .history-modal-header h2 {
   margin: 0;
+  font-size: 1.125rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--rd-text);
 }
 
 .history-modal-content {
   flex-grow: 1;
   overflow-y: auto;
-  padding: 20px;
+  padding: 1rem 1.25rem 1.5rem;
 }
 
 .close-button {
-  background: none;
+  background: transparent;
   border: none;
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   cursor: pointer;
-  color: #333;
+  color: var(--rd-text-tertiary);
+  width: 2.25rem;
+  height: 2.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--rd-radius-full);
+  transition: background 0.15s ease, color 0.15s ease;
 }
 
 .close-button:hover {
-  color: #007bff;
+  background: var(--rd-bg-card);
+  color: var(--rd-text);
 }
 
-.seen-icon {
-  display: flex;
-  align-items: center;
-  color: #4CAF50;
-  font-size: 0.9em;
+/* ===== Overrides for EventsList rendered inside HistoryModal ===== */
+/* EventsList is shared with admin (light theme); we only re-paint */
+/* its instance scoped inside .history-modal.                       */
+
+.history-modal .events-list {
+  background-color: transparent;
+  padding: 0;
 }
 
-.event-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px;
-  border-bottom: 1px solid #eee;
+.history-modal .events-list li {
+  background-color: var(--rd-bg-card);
+  color: var(--rd-text-secondary);
+  box-shadow: none;
+  border: 1px solid var(--rd-border-subtle);
+  border-radius: var(--rd-radius-lg);
+  padding: 0.75rem 0.875rem;
+  margin-bottom: 0.5rem;
 }
 
-.event-info {
-  flex-grow: 1;
-  margin-right: 10px;
+.history-modal .events-list li strong {
+  color: var(--rd-text);
 }
 
-.event-type {
-  font-weight: bold;
-  margin-right: 10px;
+.history-modal .events-list li p {
+  color: var(--rd-text-tertiary);
 }
 
-.event-message {
-  color: #666;
-  margin: 0 10px;
+.history-modal .event-message {
+  color: var(--rd-text-tertiary);
 }
 
-.event-time {
-  color: #999;
-  font-size: 0.9em;
+.history-modal .event-time {
+  color: var(--rd-text-disabled);
 }
 
-@media (max-width: 768px) {
+.history-modal .floating-date {
+  background-color: rgba(0, 0, 0, 0.85);
+  border: 1px solid var(--rd-border);
+  color: var(--rd-text);
+}
+
+/* Fallback shrink on tiny screens */
+@media (max-width: 360px) {
   .history-modal {
-    width: 85%;
-    height: 90vh;
+    height: 92vh;
   }
 }

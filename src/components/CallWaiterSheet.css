@@ -1,0 +1,124 @@
+/* src/components/CallWaiterSheet.css */
+
+.call-waiter-sheet__overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: var(--rd-z-modal);
+  animation: rd-fade-in 0.2s ease-out;
+  font-family: var(--rd-font-sans);
+}
+
+.call-waiter-sheet {
+  width: 100%;
+  max-width: 32rem;
+  background: var(--rd-bg-sheet);
+  border-radius: var(--rd-radius-sheet-top);
+  padding: 1rem 1.5rem 1.75rem;
+  color: var(--rd-text);
+  animation: rd-slide-up 0.3s var(--rd-ease-out) forwards;
+  box-shadow: var(--rd-shadow-modal);
+}
+
+.call-waiter-sheet__handle {
+  width: 3rem;
+  height: 0.375rem;
+  background: var(--rd-text-disabled);
+  border-radius: var(--rd-radius-full);
+  margin: 0 auto 1rem;
+  opacity: 0.6;
+}
+
+.call-waiter-sheet__title {
+  margin: 0;
+  text-align: center;
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.call-waiter-sheet__subtitle {
+  margin: 0.5rem 0 0;
+  text-align: center;
+  font-size: 0.8125rem;
+  color: var(--rd-text-tertiary);
+}
+
+.call-waiter-sheet__empty {
+  margin: 1.5rem 0 1rem;
+  padding: 1rem;
+  text-align: center;
+  font-size: 0.875rem;
+  color: var(--rd-text-tertiary);
+  background: var(--rd-bg-card);
+  border: 1px dashed var(--rd-border);
+  border-radius: var(--rd-radius-lg);
+}
+
+.call-waiter-sheet__grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.875rem;
+  margin: 1.5rem 0 1rem;
+}
+
+.call-waiter-sheet__action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1.125rem 0.75rem;
+  border: none;
+  border-radius: var(--rd-radius-xl);
+  font-family: var(--rd-font-sans);
+  font-size: 0.9375rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: center;
+  min-height: 6rem;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  transition: filter 0.15s ease;
+}
+
+.call-waiter-sheet__action:hover {
+  filter: brightness(1.05);
+}
+
+.call-waiter-sheet__action-icon {
+  font-size: 1.75rem;
+}
+
+.call-waiter-sheet__action-label {
+  word-break: break-word;
+  line-height: 1.2;
+}
+
+.call-waiter-sheet__cancel {
+  width: 100%;
+  margin-top: 0.5rem;
+  padding: 0.875rem 1rem;
+  background: var(--rd-bg-card);
+  color: var(--rd-text-secondary);
+  font-family: var(--rd-font-sans);
+  font-size: 0.9375rem;
+  font-weight: 700;
+  border: none;
+  border-radius: var(--rd-radius-lg);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.call-waiter-sheet__cancel:hover {
+  background: var(--rd-bg-card-strong);
+}
+
+/* Single-column on tiny screens */
+@media (max-width: 360px) {
+  .call-waiter-sheet__grid {
+    grid-template-columns: 1fr;
+  }
+}
