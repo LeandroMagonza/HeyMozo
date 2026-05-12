@@ -432,17 +432,16 @@ router.get('/tables/:tableId', authMiddleware.checkTablePermission, async (req, 
     // Get available event types for this table
     const EventConfigService = require('../services/eventConfig');
     try {
-      // Use customer events for UserScreen (excludes system events and applies hierarchy correctly)
+      // Use customer events for UserScreen (excludes system events and applies hierarchy correctly).
+      // Shape: { quickActions, mainActions, all } — see EventConfigService.getCustomerEventsForTable.
       const availableEventTypes = await EventConfigService.getCustomerEventsForTable(table.id);
-      console.log('🎯 availableEventTypes from getCustomerEventsForTable:', availableEventTypes.length);
-      console.log('🎯 availableEventTypes details:', availableEventTypes.map(et => ({
-        id: et.id,
-        eventName: et.eventName,
-        userColor: et.userColor,
-        userFontColor: et.userFontColor,
-        userIcon: et.userIcon,
-        enabled: et.enabled
-      })));
+      console.log(
+        '🎯 availableEventTypes:',
+        availableEventTypes.quickActions.length,
+        'quick,',
+        availableEventTypes.mainActions.length,
+        'main'
+      );
       
       // Get all events (including system events) to find SCAN event for UserScreen
       // First get the company ID from the table

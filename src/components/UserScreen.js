@@ -15,12 +15,14 @@ import HistoryModal from './HistoryModal';
 import { getCompany, getBranch, getTable, sendEvent } from '../services/api';
 import './UserScreen.css';
 
+const EMPTY_GROUPS = { quickActions: [], mainActions: [], all: [] };
+
 const UserScreen = () => {
   const { companyId, branchId, tableId } = useParams();
   const [company, setCompany] = useState(null);
   const [branch, setBranch] = useState(null);
   const [table, setTable] = useState(null);
-  const [availableEventTypes, setAvailableEventTypes] = useState([]);
+  const [availableEventTypes, setAvailableEventTypes] = useState(EMPTY_GROUPS);
   const [menuLink, setMenuLink] = useState('');
   const [userEvents, setUserEvents] = useState([]); // session-only history
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -56,8 +58,13 @@ const UserScreen = () => {
         setBranch(branchData.data);
         setTable(tableData.data);
 
-        const available = tableData.data.availableEventTypes || [];
-        setAvailableEventTypes(available);
+        // Back devuelve { quickActions, mainActions, all }. Toleramos también
+        // el formato array por compat con respuestas viejas.
+        const raw = tableData.data.availableEventTypes;
+        const groups = Array.isArray(raw)
+          ? { quickActions: raw, mainActions: [], all: raw }
+          : raw || EMPTY_GROUPS;
+        setAvailableEventTypes(groups);
 
         const scanEventConfig = tableData.data.scanEvent;
         if (scanEventConfig) {
@@ -154,7 +161,10 @@ const UserScreen = () => {
             type="button"
             className="user-screen__cta user-screen__cta--waiter rd-tap-scale"
             onClick={() => setSheetOpen(true)}
-            disabled={availableEventTypes.length === 0}
+            disabled={
+              availableEventTypes.quickActions.length === 0 &&
+              availableEventTypes.mainActions.length === 0
+            }
           >
             <span className="material-symbols-outlined user-screen__cta-icon">notifications_active</span>
             <span className="user-screen__cta-label">Llamar al Mozo</span>
@@ -198,7 +208,8 @@ const UserScreen = () => {
 
       <CallWaiterSheet
         open={sheetOpen}
-        eventTypes={availableEventTypes}
+        quickActions={availableEventTypes.quickActions}
+        mainActions={availableEventTypes.mainActions}
         onSelect={handleEventTypeSelected}
         onClose={() => setSheetOpen(false)}
       />
@@ -207,7 +218,7 @@ const UserScreen = () => {
         show={historyOpen}
         onClose={() => setHistoryOpen(false)}
         events={userEvents}
-        eventTypes={availableEventTypes}
+        eventTypes={availableEventTypes.all}
       />
     </Phone>
   );

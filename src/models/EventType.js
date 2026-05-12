@@ -81,6 +81,16 @@ module.exports = (sequelize) => {
       allowNull: true,
       unique: ['companyId', 'systemEventType']
     },
+    // Controla dónde aparece el EventType en la UI del cliente.
+    // - 'quick_action': aparece en el grid 2x2 del modal "Llamar al Mozo"
+    // - 'main_action':  aparece como botón alargado debajo del grid
+    // - 'hidden':       no se muestra al cliente (uso admin / pago / etc.)
+    // null se trata como 'quick_action' por compatibilidad.
+    customerDisplay: {
+      type: DataTypes.ENUM('quick_action', 'main_action', 'hidden'),
+      allowNull: true,
+      defaultValue: null
+    },
     isActive: {
       type: DataTypes.BOOLEAN,
       defaultValue: true

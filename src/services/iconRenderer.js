@@ -6,9 +6,10 @@ import {
   FaInfoCircle, FaCog, FaHome, FaSearch, FaPlus, FaMinus, FaEdit, FaTrash,
   
   // Restaurant Icons
-  
+
   FaUtensils, FaWineGlassAlt, FaCoffee, FaPizzaSlice, FaConciergeBell,
   FaGlassCheers, FaBreadSlice, FaFish, FaAppleAlt, FaCarrot,
+  FaSnowflake, FaPepperHot, FaScroll, FaBroom,
   
   // Medical Icons
   FaUserMd, FaNotesMedical, FaAmbulance, FaHeartbeat, FaPrescriptionBottle,
@@ -63,8 +64,12 @@ const iconMap = {
   'FaBreadSlice': FaBreadSlice,
   'FaFish': FaFish,
   'FaAppleAlt': FaAppleAlt,
-  'FaCarrot': FaCarrot,  
+  'FaCarrot': FaCarrot,
   'FaConciergeBell': FaConciergeBell,
+  'FaSnowflake': FaSnowflake,
+  'FaPepperHot': FaPepperHot,
+  'FaScroll': FaScroll,
+  'FaBroom': FaBroom,
 
   
   // Medical
@@ -146,7 +151,7 @@ export const iconCategories = {
   },
   restaurant: {
     name: 'Restaurant',
-    icons: ['FaUtensils', 'FaWineGlassAlt', 'FaConciergeBell', 'FaCoffee', 'FaPizzaSlice', 'FaGlassCheers', 'FaBreadSlice', 'FaFish', 'FaAppleAlt', 'FaCarrot']
+    icons: ['FaUtensils', 'FaWineGlassAlt', 'FaConciergeBell', 'FaCoffee', 'FaPizzaSlice', 'FaGlassCheers', 'FaBreadSlice', 'FaFish', 'FaAppleAlt', 'FaCarrot', 'FaSnowflake', 'FaPepperHot', 'FaScroll', 'FaBroom']
   },
   medical: {
     name: 'Medical',

@@ -1,15 +1,25 @@
 // src/components/CallWaiterSheet.js
 //
-// Bottom sheet that opens when the customer taps "Llamar al Mozo".
-// Renders a grid with all availableEventTypes (already filtered server-side
-// by EventConfigService.getCustomerEventsForTable) as colored quick-action
-// buttons. Tapping one dispatches the event and closes the sheet.
+// Bottom sheet del flujo cliente. Estructura:
+//   • Grid 2×2 con los EventTypes `customerDisplay = 'quick_action'`
+//     (configurables por el dueño desde admin — F2).
+//   • Debajo, botón alargado con el EventType `customerDisplay = 'main_action'`
+//     (típicamente "Llamar al Mozo" genérico, sin razón específica).
+//
+// El back ya resuelve la jerarquía y filtra hidden/system events
+// vía EventConfigService.getCustomerEventsForTable.
 
 import React, { useEffect } from 'react';
 import IconRenderer from '../services/iconRenderer';
 import './CallWaiterSheet.css';
 
-const CallWaiterSheet = ({ open, eventTypes = [], onSelect, onClose }) => {
+const CallWaiterSheet = ({
+  open,
+  quickActions = [],
+  mainActions = [],
+  onSelect,
+  onClose,
+}) => {
   useEffect(() => {
     if (!open) return undefined;
     const onKey = (e) => {
@@ -20,6 +30,8 @@ const CallWaiterSheet = ({ open, eventTypes = [], onSelect, onClose }) => {
   }, [open, onClose]);
 
   if (!open) return null;
+
+  const hasAny = quickActions.length > 0 || mainActions.length > 0;
 
   return (
     <div
@@ -41,14 +53,16 @@ const CallWaiterSheet = ({ open, eventTypes = [], onSelect, onClose }) => {
           Tocá una opción y avisamos al mozo
         </p>
 
-        {eventTypes.length === 0 ? (
+        {!hasAny && (
           <div className="call-waiter-sheet__empty">
-            No hay opciones configuradas. Pedile al mozo que las configure
-            desde el panel.
+            No hay opciones configuradas. El dueño puede activarlas desde el
+            panel de administración.
           </div>
-        ) : (
+        )}
+
+        {quickActions.length > 0 && (
           <div className="call-waiter-sheet__grid">
-            {eventTypes.map((eventType) => (
+            {quickActions.map((eventType) => (
               <button
                 key={eventType.id}
                 type="button"
@@ -73,6 +87,29 @@ const CallWaiterSheet = ({ open, eventTypes = [], onSelect, onClose }) => {
             ))}
           </div>
         )}
+
+        {mainActions.map((eventType) => (
+          <button
+            key={eventType.id}
+            type="button"
+            className="call-waiter-sheet__main-action rd-tap-scale"
+            style={{
+              background: eventType.userColor || 'var(--rd-brand-orange)',
+              color: eventType.userFontColor || 'var(--rd-text)',
+              boxShadow: 'var(--rd-shadow-orange)',
+            }}
+            onClick={() => onSelect?.(eventType)}
+          >
+            {eventType.userIcon && (
+              <IconRenderer
+                iconName={eventType.userIcon}
+                size="1.25rem"
+                className="call-waiter-sheet__main-action-icon"
+              />
+            )}
+            <span>{eventType.eventName}</span>
+          </button>
+        ))}
 
         <button
           type="button"
