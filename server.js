@@ -175,63 +175,46 @@ app.get('/api/tables/:id', async (req, res) => {
       return res.status(404).json({ error: 'Table not found' });
     }
 
-    // Get effective event types for this table
+    // Get effective event types for this table.
+    // - customerEvents: agrupado por customerDisplay (quickActions / mainActions / all),
+    //   ya filtra los 'hidden' y los system events.
+    // - allEvents (with system): sólo lo necesitamos para extraer el SCAN event
+    //   y devolver su config visual al UserScreen.
     const EventConfigService = require('./src/services/eventConfig');
-    
-    // Get all events (including system events) to find SCAN event
-    const allEvents = await EventConfigService.getEffectiveEventsForResource(
-      'location',
-      parseInt(id),
-      table.Branch.Company.id,
-      table.Branch.id,
-      true // Include system events
+
+    const [customerEvents, allEventsWithSystem] = await Promise.all([
+      EventConfigService.getCustomerEventsForTable(id),
+      EventConfigService.getEffectiveEventsForResource(
+        'location',
+        parseInt(id),
+        table.Branch.Company.id,
+        table.Branch.id,
+        true // include system events to find SCAN
+      ),
+    ]);
+
+    console.log(
+      '📋 customerEvents:',
+      customerEvents.quickActions.length, 'quick,',
+      customerEvents.mainActions.length, 'main'
     );
 
-    console.log('📋 allEvents returned from getEffectiveEventsForResource:', allEvents.length);
-    console.log('📋 allEvents details:', allEvents.map(e => ({
-      id: e.id,
-      eventName: e.eventName,
-      userColor: e.userColor,
-      userFontColor: e.userFontColor,
-      userIcon: e.userIcon,
-      systemEventType: e.systemEventType
-    })));
-
-    // Filter to only customer-visible events (exclude system events)
-    const customerEvents = allEvents.filter(event =>
-      !event.systemEventType && event.enabled !== false
+    const scanEvent = allEventsWithSystem.find(
+      (event) => event.systemEventType === 'SCAN'
     );
 
-    console.log('📋 customerEvents after filtering:', customerEvents.length);
-    console.log('📋 customerEvents details:', customerEvents.map(e => ({
-      id: e.id,
-      eventName: e.eventName,
-      userColor: e.userColor,
-      userFontColor: e.userFontColor,
-      userIcon: e.userIcon
-    })));
-
-    // Get scan event configuration
-    const scanEvent = allEvents.find(event => 
-      event.systemEventType === 'SCAN'
-    );
-    console.log('SCAN event found in table API:', scanEvent ? 'YES' : 'NO');
-    if (scanEvent) {
-      console.log('SCAN event details:', scanEvent);
-    }
-    
-    const scanEventConfig = scanEvent ? {
-      eventName: scanEvent.eventName || 'Página Escaneada',
-      eventColor: scanEvent.userColor || '#28a745',
-      fontColor: scanEvent.userFontColor || '#ffffff'
-    } : null;
-    
-    console.log('scanEventConfig being returned:', scanEventConfig);
+    const scanEventConfig = scanEvent
+      ? {
+          eventName: scanEvent.eventName || 'Página Escaneada',
+          eventColor: scanEvent.userColor || '#28a745',
+          fontColor: scanEvent.userFontColor || '#ffffff',
+        }
+      : null;
 
     const response = {
       ...table.toJSON(),
       availableEventTypes: customerEvents,
-      scanEvent: scanEventConfig
+      scanEvent: scanEventConfig,
     };
 
     // Only include events array if user is authenticated (admin users)
