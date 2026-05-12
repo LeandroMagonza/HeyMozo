@@ -59,7 +59,7 @@ class EventConfigService {
         stateName: 'Mozo llamado',
         userColor: '#e07b00',
         userFontColor: '#ffffff',
-        userIcon: 'FaUser',
+        userIcon: '🙋',
         adminColor: '#ffc107',
         priority: 50,
         systemEventType: null,
@@ -97,11 +97,11 @@ class EventConfigService {
 
       // ─── Quick actions configurables (grid 2x2 del modal) ───────────────
       {
-        eventName: 'Pedir Hielo',
+        eventName: 'Hielo',
         stateName: 'Solicitado',
         userColor: '#06b6d4',
         userFontColor: '#ffffff',
-        userIcon: 'FaSnowflake',
+        userIcon: '🧊',
         adminColor: '#fef3c7',
         priority: 35,
         systemEventType: null,
@@ -109,11 +109,11 @@ class EventConfigService {
         isDefault: true
       },
       {
-        eventName: 'Pedir Condimentos',
+        eventName: 'Condimentos',
         stateName: 'Solicitado',
         userColor: '#f59e0b',
         userFontColor: '#ffffff',
-        userIcon: 'FaPepperHot',
+        userIcon: '🧂',
         adminColor: '#fef3c7',
         priority: 32,
         systemEventType: null,
@@ -121,11 +121,11 @@ class EventConfigService {
         isDefault: true
       },
       {
-        eventName: 'Pedir Servilletas',
+        eventName: 'Servilletas',
         stateName: 'Solicitado',
         userColor: '#94a3b8',
         userFontColor: '#ffffff',
-        userIcon: 'FaScroll',
+        userIcon: '📄',
         adminColor: '#fef3c7',
         priority: 30,
         systemEventType: null,
@@ -133,11 +133,11 @@ class EventConfigService {
         isDefault: true
       },
       {
-        eventName: 'Limpiar Mesa',
+        eventName: 'Limpiar mesa',
         stateName: 'Solicitado',
         userColor: '#10b981',
         userFontColor: '#ffffff',
-        userIcon: 'FaBroom',
+        userIcon: '🧽',
         adminColor: '#fef3c7',
         priority: 28,
         systemEventType: null,

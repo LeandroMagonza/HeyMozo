@@ -199,20 +199,43 @@ export const getIconsByCategory = (category) => {
   return iconCategories[category]?.icons || [];
 };
 
-// Main icon renderer component
+// Main icon renderer component.
+//
+// - Si iconName matchea un componente FontAwesome registrado, lo renderiza.
+// - Sino, lo trata como texto plano (emoji o caracter Unicode arbitrario).
+//   Esto permite que el dueño configure '🧊', '🍔', 'A', etc. como userIcon
+//   desde el admin sin necesidad de mantener un mapping de iconos.
 const IconRenderer = ({ iconName, className = '', style = {}, size = '1em', ...props }) => {
-  if (!iconName || !iconMap[iconName]) {
+  if (!iconName) {
     return null;
   }
-  
-  const IconComponent = iconMap[iconName];
-  
+
+  if (iconMap[iconName]) {
+    const IconComponent = iconMap[iconName];
+    return (
+      <IconComponent
+        className={`event-icon ${className}`}
+        style={{ fontSize: size, ...style }}
+        {...props}
+      />
+    );
+  }
+
+  // Fallback: render as text (emoji or arbitrary character).
   return (
-    <IconComponent
-      className={`event-icon ${className}`}
-      style={{ fontSize: size, ...style }}
-      {...props}
-    />
+    <span
+      className={`event-icon event-icon--text ${className}`}
+      style={{
+        fontSize: size,
+        lineHeight: 1,
+        display: 'inline-block',
+        ...style,
+      }}
+      role="img"
+      aria-label={typeof iconName === 'string' ? iconName : undefined}
+    >
+      {iconName}
+    </span>
   );
 };
 

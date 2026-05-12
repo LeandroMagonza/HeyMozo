@@ -67,16 +67,12 @@ const CallWaiterSheet = ({
                 key={eventType.id}
                 type="button"
                 className="call-waiter-sheet__action rd-tap-scale"
-                style={{
-                  background: eventType.userColor || 'var(--rd-brand-purple)',
-                  color: eventType.userFontColor || 'var(--rd-text)',
-                }}
                 onClick={() => onSelect?.(eventType)}
               >
                 {eventType.userIcon && (
                   <IconRenderer
                     iconName={eventType.userIcon}
-                    size="1.75rem"
+                    size="2.5rem"
                     className="call-waiter-sheet__action-icon"
                   />
                 )}
