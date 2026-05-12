@@ -96,9 +96,6 @@ app.post('/api/mailing-list', async (req, res) => {
   }
 });
 
-console.log('🔧 Mounting events routes at /api');
-app.use('/api', eventsRoutes);
-
 // PUBLIC ROUTES FOR USERSCREEN (before authentication middleware)
 // Obtener una compañía específica (pública para UserScreen)
 app.get('/api/companies/:id', async (req, res) => {
@@ -159,11 +156,11 @@ app.get('/api/tables/:id', async (req, res) => {
   console.log('TABLE GET API - Fetching table:', req.params.id);
   try {
     const { id } = req.params;
-    
+
     // Check if user is authenticated by looking for authorization header
     const isAuthenticated = req.headers.authorization && req.headers.authorization.startsWith('Bearer ');
     console.log('Request is authenticated:', isAuthenticated);
-    
+
     const table = await Table.findByPk(id, {
       include: [{
         model: Branch,
@@ -236,7 +233,7 @@ app.get('/api/tables/:id', async (req, res) => {
         }],
         order: [['events', 'createdAt', 'DESC']]
       });
-      
+
       if (tableWithEvents) {
         response.events = tableWithEvents.events || [];
       }
@@ -384,6 +381,9 @@ app.post('/api/tables/:id/events', async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
+console.log('🔧 Mounting events routes at /api');
+app.use('/api', eventsRoutes);
 
 // RUTA /api/mailing-list DUPLICADA ELIMINADA - Ahora está registrada al principio del archivo (línea ~57)
 // antes de que se monte eventsRoutes, para evitar que sea interceptada por otros middlewares
