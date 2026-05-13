@@ -26,8 +26,14 @@ const SPANISH_STATE_NAMES = {
   'Manager Called': 'Encargado llamado',
 };
 
+// Cada quick action lista TODOS los nombres bajo los que pudo haber sido
+// creado a lo largo de las migrations: el original ("Pedir Hielo") y el
+// renombrado por 20260512 ("Hielo"). El check de existencia mira por
+// CUALQUIERA — sin esto, runs subsiguientes de `npm run migrate` crearían
+// duplicados.
 const QUICK_ACTION_DEFAULTS = [
   {
+    aliases: ['Pedir Hielo', 'Hielo'],
     eventName: 'Pedir Hielo',
     stateName: 'Solicitado',
     userColor: '#06b6d4',
@@ -37,6 +43,7 @@ const QUICK_ACTION_DEFAULTS = [
     priority: 35,
   },
   {
+    aliases: ['Pedir Condimentos', 'Condimentos'],
     eventName: 'Pedir Condimentos',
     stateName: 'Solicitado',
     userColor: '#f59e0b',
@@ -46,6 +53,7 @@ const QUICK_ACTION_DEFAULTS = [
     priority: 32,
   },
   {
+    aliases: ['Pedir Servilletas', 'Servilletas'],
     eventName: 'Pedir Servilletas',
     stateName: 'Solicitado',
     userColor: '#94a3b8',
@@ -55,6 +63,7 @@ const QUICK_ACTION_DEFAULTS = [
     priority: 30,
   },
   {
+    aliases: ['Limpiar Mesa', 'Limpiar mesa'],
     eventName: 'Limpiar Mesa',
     stateName: 'Solicitado',
     userColor: '#10b981',
@@ -166,18 +175,24 @@ module.exports = {
         const companyId = company.id;
 
         for (const qa of QUICK_ACTION_DEFAULTS) {
+          // Chequea por TODOS los nombres conocidos (originales y renombrados
+          // por migrations posteriores). Sin esto cada `npm run migrate`
+          // crearía un duplicado más, porque 20260512 renombra "Pedir X" → "X".
           const existing = await queryInterface.sequelize.query(
-            `SELECT id FROM "EventTypes"
+            `SELECT id, "eventName" FROM "EventTypes"
               WHERE "companyId" = :companyId
-                AND "eventName" = :name
+                AND "eventName" IN (:aliases)
+                AND "deletedAt" IS NULL
               LIMIT 1`,
             {
-              replacements: { companyId, name: qa.eventName },
+              replacements: { companyId, aliases: qa.aliases },
               type: Sequelize.QueryTypes.SELECT,
             }
           );
           if (existing.length > 0) {
-            console.log(`   ↩️  company ${companyId}: "${qa.eventName}" already exists, skipping`);
+            console.log(
+              `   ↩️  company ${companyId}: "${existing[0].eventName}" already exists (id=${existing[0].id}), skipping`
+            );
             continue;
           }
 
