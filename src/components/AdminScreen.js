@@ -1,12 +1,10 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { getCompany, getBranch, getTables, updateTable, markTableEventsSeen, releaseAllTables, markTableAsAvailable, markTableAsOccupied } from '../services/api';
+import { getCompany, getBranch, getTables, markTableEventsSeen, releaseAllTables, markTableAsAvailable, markTableAsOccupied } from '../services/api';
 import './AdminScreen.css';
 import './AdminModal.css';
-import EventsList from './EventsList';
-import { TableStates, TableColors } from '../theme';
-import { FaHistory, FaCheckCircle, FaSignOutAlt, FaSignInAlt, FaUser, FaFileInvoiceDollar, FaTimes, FaVolumeMute, FaVolumeUp } from 'react-icons/fa';
-import { translateState, translateEvent } from '../utils/translations';
+import { FaSignOutAlt } from 'react-icons/fa';
+import { translateState } from '../utils/translations';
 import { EventTypes } from '../constants';
 import AdminHistoryModal from './AdminHistoryModal';
 import notificationSound from '../sounds/notification.mp3';
