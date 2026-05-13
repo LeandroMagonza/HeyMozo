@@ -1,32 +1,99 @@
+/* TableUrls.css — pantalla de URLs de mesas / generador de QR.
+ * Versión dark del redesign.
+ */
+
 .table-urls {
-  padding: 20px;
+  min-height: 100vh;
+  background: var(--rd-bg, #1c1c1e);
+  color: var(--rd-text, #ffffff);
+  font-family: var(--rd-font-sans);
+  padding: 0;
+}
+
+.table-urls .actions {
+  display: flex;
+  justify-content: flex-start;
+  padding: 1.25rem;
+}
+
+.table-urls .generate-qr-button.app-button {
+  margin: 0;
 }
 
 .table-urls table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 20px;
+  width: calc(100% - 2.5rem);
+  margin: 0 1.25rem 2rem;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: var(--rd-bg-card, #2c2c2e);
+  border: 1px solid var(--rd-border, #3a3a3c);
+  border-radius: var(--rd-radius-lg, 12px);
+  overflow: hidden;
 }
 
-.table-urls th, .table-urls td {
-  border: 1px solid #ddd;
-  padding: 8px;
+.table-urls th,
+.table-urls td {
+  padding: 0.75rem 1rem;
   text-align: left;
+  border-bottom: 1px solid var(--rd-border, #3a3a3c);
+  font-size: 0.9375rem;
+}
+
+.table-urls tr:last-child td {
+  border-bottom: none;
 }
 
 .table-urls th {
-  background-color: #f2f2f2;
+  background: var(--rd-bg, #1c1c1e);
+  color: var(--rd-text-tertiary, #9ca3af);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
-.table-urls tr:nth-child(even) {
-  background-color: #f9f9f9;
+.table-urls tr:nth-child(even) td {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.table-urls td:first-child {
+  font-weight: 600;
+  color: var(--rd-text, #ffffff);
 }
 
 .table-urls a {
-  color: #007bff;
+  color: var(--rd-brand-purple-soft, #c084fc);
   text-decoration: none;
+  word-break: break-all;
+  transition: color 0.15s ease;
 }
 
 .table-urls a:hover {
+  color: var(--rd-brand-purple, #9333ea);
   text-decoration: underline;
+}
+
+@media (max-width: 768px) {
+  .table-urls .actions {
+    padding: 1rem 0.875rem;
+  }
+
+  .table-urls .generate-qr-button.app-button {
+    width: 100%;
+  }
+
+  .table-urls table {
+    width: calc(100% - 1.75rem);
+    margin: 0 0.875rem 1.5rem;
+  }
+
+  .table-urls th,
+  .table-urls td {
+    padding: 0.625rem 0.75rem;
+    font-size: 0.875rem;
+  }
+
+  .table-urls a {
+    font-size: 0.75rem;
+  }
 }

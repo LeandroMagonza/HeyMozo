@@ -1,23 +1,35 @@
+/* src/styles/common.css — wrappers compartidos de pantallas admin
+ * (CompanyCreate, CompanyConfig, BranchConfig). Versión dark del redesign.
+ */
+
 .admin-container {
-  background-color: #f8f9fa;
+  background: var(--rd-bg, #1c1c1e);
+  color: var(--rd-text, #ffffff);
+  font-family: var(--rd-font-sans);
   min-height: 100vh;
-  padding: 2rem;
+  padding: 0;
 }
 
 .admin-content {
-  background-color: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  padding: 2rem;
+  background: var(--rd-bg, #1c1c1e);
+  padding: 1.25rem;
   margin: 0 auto;
   max-width: 1400px;
 }
 
 .admin-content h2 {
-  color: #2c3e50;
+  color: var(--rd-text, #ffffff);
   margin-top: 0;
+  font-weight: 800;
+  letter-spacing: -0.01em;
 }
 
 .last-message {
   text-align: left !important;
+}
+
+@media (max-width: 768px) {
+  .admin-content {
+    padding: 0.875rem;
+  }
 }
