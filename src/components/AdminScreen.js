@@ -56,6 +56,27 @@ const AdminScreen = () => {
   const [selectedTable, setSelectedTable] = useState(null);
   const [sortType, setSortType] = useState('priority'); // Nuevo estado para el tipo de ordenamiento
   const [isSoundEnabled, setIsSoundEnabled] = useState(true);
+  // Vista activa: 'alerts' = solo cards con unseenCount > 0 (default — feed
+  // del mozo); 'tables' = grid completo con ocupar/liberar/historial para
+  // gestión manual. Persistido en localStorage por sucursal para no resetear
+  // entre recargas.
+  const [viewMode, setViewMode] = useState(() => {
+    try {
+      const saved = localStorage.getItem(`heymozo_admin_view_${branchId}`);
+      return saved === 'tables' ? 'tables' : 'alerts';
+    } catch {
+      return 'alerts';
+    }
+  });
+
+  const handleViewModeChange = useCallback((next) => {
+    setViewMode(next);
+    try {
+      localStorage.setItem(`heymozo_admin_view_${branchId}`, next);
+    } catch {
+      /* ignore — quota / private mode */
+    }
+  }, [branchId]);
 
   const TableStates = {
     AVAILABLE: 'AVAILABLE',
@@ -526,6 +547,30 @@ const AdminScreen = () => {
         backUrl={`/admin/${companyId}/${branchId}/config`}
       />
 
+      <div className="admin-screen__tabs" role="tablist">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={viewMode === 'alerts'}
+          className={`admin-screen__tab ${viewMode === 'alerts' ? 'admin-screen__tab--active' : ''}`}
+          onClick={() => handleViewModeChange('alerts')}
+        >
+          Alertas
+          {totalUnseenMessages > 0 && (
+            <span className="admin-screen__tab-badge">{totalUnseenMessages}</span>
+          )}
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={viewMode === 'tables'}
+          className={`admin-screen__tab ${viewMode === 'tables' ? 'admin-screen__tab--active' : ''}`}
+          onClick={() => handleViewModeChange('tables')}
+        >
+          Mesas
+        </button>
+      </div>
+
       <div className="admin-screen__controls">
         <div className="admin-screen__controls-left">
           <span className="admin-screen__refresh-pill">
@@ -556,19 +601,23 @@ const AdminScreen = () => {
       </div>
 
       {(() => {
-        // Solo aparecen mesas con alertas pendientes reales (unseenCount > 0).
-        // Las mesas ocupadas sin alertas y las disponibles no se muestran:
-        // serían ruido en la sección "alertas" para el mozo. Para gestión
-        // manual de ocupar/liberar se usa "Liberar todas" o vistas auxiliares
-        // que se sumarán en F2.
-        const visibleTables = sortedTables.filter(
-          (t) => (t.unseenCount || 0) > 0
-        );
+        // Vista "Alertas": solo mesas con unseenCount > 0. Feed del mozo,
+        // foco en acción. "¡LISTO!" marca todos los eventos como vistos.
+        //
+        // Vista "Mesas": todas las mesas. Útil para gestión manual:
+        //  - mesa con alertas → action "¡LISTO!" (markEventsAsSeen)
+        //  - mesa ocupada sin alertas → action "Liberar" (markAsAvailable)
+        //  - mesa disponible → action "Ocupar" (markAsOccupied)
+        const visibleTables = viewMode === 'alerts'
+          ? sortedTables.filter((t) => (t.unseenCount || 0) > 0)
+          : sortedTables;
 
         if (visibleTables.length === 0) {
           return (
             <div className="admin-screen__empty">
-              No hay alertas pendientes. Todo bajo control.
+              {viewMode === 'alerts'
+                ? 'No hay alertas pendientes. Todo bajo control.'
+                : 'No hay mesas configuradas en esta sucursal.'}
             </div>
           );
         }
@@ -576,26 +625,41 @@ const AdminScreen = () => {
         return (
           <div className="admin-screen__grid">
             {visibleTables.map((table) => {
+              const hasAlerts = (table.unseenCount || 0) > 0;
+              const isAvailable = table.currentState === 'AVAILABLE';
               const variant = getVariant(table);
-              // El body de la card muestra el nombre del evento que disparó
-              // la alerta ("Llamar al Encargado", "Hielo"), no el state name
-              // de la mesa.
               const title =
-                table.eventType?.eventName ||
-                table.eventType?.stateName ||
-                translateState(table.currentState);
+                hasAlerts && table.eventType?.eventName
+                  ? table.eventType.eventName
+                  : table.eventType?.stateName ||
+                    translateState(table.currentState);
+
+              // Action y handler según vista y estado.
+              let actionLabel = '¡LISTO!';
+              let onActionClick = () => markEventsAsSeen(table.id);
+              if (viewMode === 'tables' && !hasAlerts) {
+                if (isAvailable) {
+                  actionLabel = 'Ocupar';
+                  onActionClick = () => markAsOccupied(table.id);
+                } else {
+                  actionLabel = 'Liberar';
+                  onActionClick = () => markAsAvailable(table.id);
+                }
+              }
+
               return (
                 <AlertCard
                   key={table.id}
                   tableName={table.tableName || '-'}
                   variant={variant}
                   title={title}
-                  waitTime={formatWait(table.waitingTime)}
+                  waitTime={hasAlerts || !isAvailable ? formatWait(table.waitingTime) : ''}
                   icon={table.eventType?.userIcon}
-                  actionLabel="¡LISTO!"
-                  badgeCount={table.unseenCount}
+                  actionLabel={actionLabel}
+                  badgeCount={hasAlerts ? table.unseenCount : null}
+                  dimmed={viewMode === 'tables' && !hasAlerts}
                   onClick={() => viewEventHistory(table.id)}
-                  onActionClick={() => markEventsAsSeen(table.id)}
+                  onActionClick={onActionClick}
                 />
               );
             })}
