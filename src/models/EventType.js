@@ -91,6 +91,20 @@ module.exports = (sequelize) => {
       allowNull: true,
       defaultValue: null
     },
+    // Variant de color que usa la AlertCard del mozo cuando este EventType
+    // dispara una alerta. Drivea el background semántico de la card.
+    //   - 'red'    → urgente / pago pendiente
+    //   - 'orange' → quick action (Hielo, Condimentos, etc.)
+    //   - 'yellow' → llamado de mozo genérico / espera
+    //   - 'paid'   → confirmado / mesa liberada (verde)
+    //   - 'purple' → nuevo pedido (F2)
+    //   - 'blue'   → info / secundario
+    // null = system event (SCAN/MARK_SEEN/OCCUPY) que no se renderea como card.
+    cardVariant: {
+      type: DataTypes.ENUM('red', 'orange', 'yellow', 'paid', 'purple', 'blue'),
+      allowNull: true,
+      defaultValue: null
+    },
     isActive: {
       type: DataTypes.BOOLEAN,
       defaultValue: true

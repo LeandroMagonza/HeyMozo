@@ -3,9 +3,9 @@
 .events-list {
   flex: 1;
   overflow-y: auto;
-  padding: 10px;
-  background-color: rgba(255, 255, 255, 0.8);
-  border-radius: 10px;
+  padding: 0.625rem;
+  background: transparent;
+  border-radius: 0.625rem;
   box-sizing: border-box;
   list-style: none;
   margin: 0;
@@ -13,21 +13,17 @@
 }
 
 .events-list ul {
-  list-style-type: none;
+  list-style: none;
   padding: 0;
   margin: 0;
 }
 
 .events-list li {
-  margin-bottom: 10px;
-  padding: 10px;
-  background-color: white;
-  border-radius: 5px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.events-list h2 {
-  margin-bottom: 15px;
+  margin-bottom: 0.625rem;
+  padding: 0.75rem 0.875rem;
+  background: #ffffff;
+  border-radius: 0.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
 }
 
 .events-list li strong {
@@ -35,24 +31,66 @@
 }
 
 .events-list li p {
-  margin: 5px 0 0 0;
+  margin: 0.3125rem 0 0 0;
 }
 
-/* Media queries para móvil */
-@media (max-width: 768px) {
-  .events-list {
-    /* Eliminar max-height */
-  }
+/* ============================================================
+ * Overrides para uso dentro del AdminModal redesign (dark theme).
+ * Selector scoped al contenedor del modal admin.
+ * El color del EventType viene del inline style (background) y se
+ * deja como acento (border-left), sobreescribiendo el background
+ * a un panel oscuro para que el texto blanco se lea bien.
+ * ============================================================ */
+
+.events-list-container .events-list {
+  background: transparent;
+  padding: 0.25rem 0;
 }
 
-/* Estilos para las fechas flotantes estilo WhatsApp */
+.events-list-container .events-list li {
+  position: relative;
+  margin-bottom: 0.625rem;
+  padding: 0.75rem 0.875rem 0.75rem 1.125rem;
+  background: var(--rd-bg-card, #2c2c2e) !important;
+  color: var(--rd-text, #ffffff) !important;
+  border: 1px solid var(--rd-border, #3a3a3c);
+  border-left-width: 4px;
+  /* El JSX pasa `--event-accent: <adminColor>` via inline-style. Lo usamos
+   * como color del border-left para preservar la identidad del EventType
+   * sin pintar el background entero (que rompe el dark theme). */
+  border-left-color: var(--event-accent, var(--rd-brand-purple, #9333ea));
+  border-radius: 0.625rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+.events-list-container .events-list li strong {
+  color: var(--rd-text, #ffffff) !important;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.events-list-container .events-list li span {
+  color: var(--rd-text-tertiary, #9ca3af) !important;
+}
+
+.events-list-container .events-list li p {
+  color: var(--rd-text-secondary, #e4e2e4) !important;
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+
+/* ============================================================
+ * Separadores de fecha (estilo WhatsApp). Funcionan igual en
+ * dark theme con la pildora oscura del original.
+ * ============================================================ */
 .date-separator {
   display: flex;
   justify-content: center;
   margin: 0;
-  padding: 15px 0 5px 0;
-  background: none !important;
+  padding: 0.9375rem 0 0.3125rem 0;
+  background: transparent !important;
   box-shadow: none !important;
+  border: none !important;
   border-radius: 0;
   position: sticky;
   top: 0;
@@ -67,37 +105,35 @@
 }
 
 .floating-date {
-  background-color: rgba(0, 0, 0, 0.75);
-  color: white;
-  padding: 8px 16px;
+  background: rgba(0, 0, 0, 0.75);
+  color: #ffffff;
+  padding: 0.5rem 1rem;
   border-radius: 20px;
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 600;
   text-align: center;
   backdrop-filter: blur(15px);
   -webkit-backdrop-filter: blur(15px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
   border: 1px solid rgba(255, 255, 255, 0.15);
-  min-width: 80px;
+  min-width: 5rem;
   white-space: nowrap;
   position: relative;
   animation: fadeInScale 0.3s ease-out;
 }
 
 @keyframes fadeInScale {
-  from {
-    opacity: 0;
-    transform: scale(0.9);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
+  from { opacity: 0; transform: scale(0.9); }
+  to   { opacity: 1; transform: scale(1); }
 }
 
-/* Efecto hover para la fecha flotante */
 .floating-date:hover {
-  background-color: rgba(0, 0, 0, 0.85);
-  transform: scale(1.02);
-  transition: all 0.2s ease;
+  background: rgba(0, 0, 0, 0.85);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .events-list-container .events-list li {
+    padding: 0.625rem 0.75rem 0.625rem 1rem;
+  }
 }

@@ -14,6 +14,7 @@ class EventConfigService {
         priority: 100,
         systemEventType: 'SCAN',
         customerDisplay: 'hidden',
+        cardVariant: null,
         isDefault: true
       },
       {
@@ -26,6 +27,7 @@ class EventConfigService {
         priority: 90,
         systemEventType: 'MARK_SEEN',
         customerDisplay: 'hidden',
+        cardVariant: null,
         isDefault: true
       },
       {
@@ -38,6 +40,7 @@ class EventConfigService {
         priority: 80,
         systemEventType: 'OCCUPY',
         customerDisplay: 'hidden',
+        cardVariant: null,
         isDefault: true
       },
       {
@@ -50,6 +53,7 @@ class EventConfigService {
         priority: 70,
         systemEventType: 'VACATE',
         customerDisplay: 'hidden',
+        cardVariant: 'paid',
         isDefault: true
       },
 
@@ -64,6 +68,7 @@ class EventConfigService {
         priority: 50,
         systemEventType: null,
         customerDisplay: 'main_action',
+        cardVariant: 'yellow',
         isDefault: true
       },
 
@@ -78,6 +83,7 @@ class EventConfigService {
         priority: 40,
         systemEventType: null,
         customerDisplay: 'hidden',
+        cardVariant: 'red',
         isDefault: true
       },
 
@@ -92,6 +98,7 @@ class EventConfigService {
         priority: 60,
         systemEventType: null,
         customerDisplay: 'hidden',
+        cardVariant: 'red',
         isDefault: true
       },
 
@@ -106,6 +113,7 @@ class EventConfigService {
         priority: 35,
         systemEventType: null,
         customerDisplay: 'quick_action',
+        cardVariant: 'orange',
         isDefault: true
       },
       {
@@ -118,6 +126,7 @@ class EventConfigService {
         priority: 32,
         systemEventType: null,
         customerDisplay: 'quick_action',
+        cardVariant: 'orange',
         isDefault: true
       },
       {
@@ -130,6 +139,7 @@ class EventConfigService {
         priority: 30,
         systemEventType: null,
         customerDisplay: 'quick_action',
+        cardVariant: 'orange',
         isDefault: true
       },
       {
@@ -142,6 +152,7 @@ class EventConfigService {
         priority: 28,
         systemEventType: null,
         customerDisplay: 'quick_action',
+        cardVariant: 'orange',
         isDefault: true
       }
     ];

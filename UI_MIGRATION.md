@@ -202,8 +202,9 @@ Objetivo: poner el rediseño visual de las dos pantallas core (cliente y mozo) e
 7. Adaptar `AdminHeader` al estilo del mockup (logo + sector picker placeholder + settings dropdown).
 8. Mantener: polling 6s, sonido notification.mp3, contador, ordenamiento por priority/tableNumber.
 
-### Sprint 4 — Repintar el resto del admin (opcional, 2 días)
+### Sprint 4 — Repintar el resto del admin + vista "Mesas" (2 días)
 - `CompanyList`, `CompanyConfig`, `BranchConfig`, `TableUrls`, `EventConfigModal`, `IconPicker` reciben el nuevo tema sin cambios funcionales.
+- **Nueva vista "Mesas"** en AdminScreen — tabs/pills en el header para alternar entre "Alertas" (lo que se hizo en Sprint 3, filtrado a `unseenCount > 0`) y "Mesas" (grid completo de todas las mesas con liberar/ocupar/historial). Misma `<AlertCard>` reusada con action labels dinámicos. Sin asignación por mozo todavía (eso es F2).
 - Si el tiempo aprieta, se puede dejar el admin "viejo" hasta F2.
 
 ### Sprint 5 — QA y deploy de F1 (1 día)

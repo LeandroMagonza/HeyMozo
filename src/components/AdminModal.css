@@ -1,61 +1,74 @@
-/* src/components/AdminModal.css */
+/* src/components/AdminModal.css
+ *
+ * Modal del AdminScreen (historial de eventos por mesa) — versión dark.
+ * Reemplaza al estilo claro heredado de Modal.css.
+ */
 
-@import './Modal.css';
+.admin-screen .modal-overlay,
+.admin-screen + .modal-overlay,
+.admin-screen ~ .modal-overlay {
+  /* Por si quedó algún wrapper externo, default ya cubre los casos comunes */
+}
 
-/* Estilos específicos para el modal en AdminScreen */
-
-/* Base styles */
 .modal-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 1000;
+  font-family: var(--rd-font-sans);
+  animation: rd-fade-in 0.2s ease-out;
 }
 
 .modal {
-  background: white;
-  border-radius: 10px;
+  background: var(--rd-bg-sheet, #2c2c2e);
+  color: var(--rd-text, #ffffff);
+  border: 1px solid var(--rd-border, #3a3a3c);
+  border-radius: var(--rd-radius-xl, 16px);
   width: 90%;
-  max-width: 800px;
-  height: 85vh;
+  max-width: 720px;
+  height: auto;
   max-height: 90vh;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--rd-shadow-modal, 0 24px 64px rgba(0, 0, 0, 0.6));
   overflow: hidden;
+  animation: rd-modal-in 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  padding: 16px;
-  border-bottom: 1px solid #eee;
+  padding: 1.125rem 1.25rem;
+  border-bottom: 1px solid var(--rd-border, #3a3a3c);
+  background: var(--rd-bg-card, #2c2c2e);
 }
 
 .modal-title h2 {
   margin: 0;
-  font-size: 1.5em;
-  color: #333;
+  font-size: 1.125rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--rd-text, #ffffff);
 }
 
 .modal-title h3 {
-  margin: 4px 0 0 0;
-  font-size: 1.2em;
-  color: #666;
+  margin: 0.25rem 0 0 0;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--rd-text-tertiary, #9ca3af);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .modal-content {
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 16px;
+  padding: 1rem 1.25rem 1.25rem;
   overflow: hidden;
   min-height: 0;
 }
@@ -63,172 +76,126 @@
 .modal-actions {
   flex-shrink: 0;
   display: flex;
-  gap: 8px;
-  margin-bottom: 16px;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
   flex-wrap: wrap;
 }
 
 .modal-actions .app-button {
   flex: 1;
-  min-width: 120px;
-  padding: 10px;
-  display: flex;
+  min-width: 7.5rem;
+  padding: 0.625rem 0.875rem;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  border: none;
-  border-radius: 4px;
-  font-weight: 500;
+  gap: 0.5rem;
+  background: var(--rd-bg, #1c1c1e);
+  color: var(--rd-text-secondary, #e4e2e4);
+  border: 1px solid var(--rd-border, #3a3a3c);
+  border-radius: 0.625rem;
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 700;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background 0.15s ease, color 0.15s ease, transform 0.1s ease;
+}
+
+.modal-actions .app-button:hover:not(:disabled) {
+  background: var(--rd-bg-card-elevated, #3a3a3c);
+  color: var(--rd-text, #ffffff);
+}
+
+.modal-actions .app-button:active:not(:disabled) {
+  transform: scale(0.97);
 }
 
 .modal-actions .app-button:disabled {
-  opacity: 0.6;
+  opacity: 0.5;
   cursor: not-allowed;
 }
 
 .modal-actions .app-button svg {
-  font-size: 1.2em;
+  font-size: 1rem;
 }
 
 .close-button {
-  background-color: #6c757d;
-  color: white;
-  padding: 0;
-  border: none;
-  border-radius: 4px;
+  background: var(--rd-bg, #1c1c1e);
+  color: var(--rd-text-secondary, #e4e2e4);
+  border: 1px solid var(--rd-border, #3a3a3c);
+  border-radius: 0.625rem;
   cursor: pointer;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: background-color 0.2s;
-  width: 36px;
-  height: 36px;
-  position: relative;
-  line-height: 1;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  transition: background 0.15s ease, color 0.15s ease;
 }
 
 .close-button:hover {
-  background-color: #5a6268;
+  background: var(--rd-bg-card-elevated, #3a3a3c);
+  color: var(--rd-text, #ffffff);
 }
 
 .close-button svg {
   display: block;
+  width: 1rem;
+  height: 1rem;
   fill: currentColor;
-  width: 18px;
-  height: 18px;
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
 }
 
-.release-button {
-  background-color: #dc3545;
-  color: white;
+/* Color semánticos para acciones específicas (Liberar/Ocupar) */
+.modal-actions .app-button.release-button {
+  background: var(--rd-brand-red, #d62d20);
+  color: #ffffff;
+  border-color: transparent;
+  box-shadow: 0 6px 16px rgba(214, 45, 32, 0.3);
 }
 
-.release-button:hover {
-  background-color: #c82333;
+.modal-actions .app-button.release-button:hover:not(:disabled) {
+  filter: brightness(1.08);
+  background: var(--rd-brand-red, #d62d20);
+  color: #ffffff;
 }
 
-.occupy-button {
-  background-color: #28a745;
-  color: white;
+.modal-actions .app-button.occupy-button {
+  background: var(--rd-brand-green, #16a34a);
+  color: #ffffff;
+  border-color: transparent;
+  box-shadow: 0 6px 16px rgba(22, 163, 74, 0.3);
 }
 
-.occupy-button:hover {
-  background-color: #218838;
+.modal-actions .app-button.occupy-button:hover:not(:disabled) {
+  filter: brightness(1.08);
+  background: var(--rd-brand-green, #16a34a);
+  color: #ffffff;
 }
 
 .events-list-container {
   flex: 1;
   display: flex;
   flex-direction: column;
-  margin: 0 -16px;
-  padding: 0 16px;
+  margin: 0 -1.25rem;
+  padding: 0 1.25rem;
   overflow: hidden;
   min-height: 0;
 }
 
-/* Media queries para móvil */
-@media (max-width: 768px) {
-  .modal {
-    width: 90%;
-    height: 90vh;
-    border-radius: 10px;
-  }
-
-  .modal-header {
-    padding: 12px;
-  }
-
-  .modal-header h2 {
-    font-size: 1.2em;
-  }
-
-  .modal-content {
-    padding: 12px;
-  }
-
-  .modal-actions {
-    flex-direction: row;
-    margin-bottom: 12px;
-  }
-
-  .modal-actions .app-button {
-    padding: 12px;
-    font-size: 0.9em;
-  }
-
-  .events-list-container {
-    margin: 0 -12px;
-    padding: 0 12px;
-  }
-
-  .action-buttons-row {
-    flex-direction: column;
-    width: 100%;
-  }
-
-  .action-buttons-row .app-button {
-    width: 100%;
-    white-space: normal;
-    padding: 8px;
-    min-height: 36px;
-  }
-}
-
-/* Añadir un breakpoint intermedio para pantallas medianas */
-@media (min-width: 769px) and (max-width: 1024px) {
-  .action-buttons-row .app-button {
-    font-size: 0.9em;
-    padding: 8px;
-  }
-}
-
-.modal-actions .app-button.release-button {
-  background-color: #dc3545;
-  color: white;
-}
-
-.modal-actions .app-button.release-button:hover {
-  background-color: #c82333;
-}
-
-.modal-actions .app-button.occupy-button {
-  background-color: #28a745;
-  color: white;
-}
-
-.modal-actions .app-button.occupy-button:hover {
-  background-color: #218838;
+.no-events-message {
+  margin: 2rem auto;
+  padding: 1.5rem;
+  text-align: center;
+  color: var(--rd-text-tertiary, #9ca3af);
+  font-size: 0.9375rem;
+  background: var(--rd-bg-card, #2c2c2e);
+  border: 1px dashed var(--rd-border, #3a3a3c);
+  border-radius: var(--rd-radius-lg, 12px);
 }
 
 .action-buttons-row {
   display: flex;
-  gap: 8px;
+  gap: 0.5rem;
   width: 100%;
 }
 
@@ -238,4 +205,45 @@
   min-width: 0;
 }
 
+/* Responsive */
+@media (max-width: 768px) {
+  .modal {
+    width: 95%;
+    max-height: 92vh;
+  }
 
+  .modal-header {
+    padding: 1rem;
+  }
+
+  .modal-title h2 {
+    font-size: 1rem;
+  }
+
+  .modal-title h3 {
+    font-size: 0.8125rem;
+  }
+
+  .modal-content {
+    padding: 0.875rem 1rem;
+  }
+
+  .modal-actions {
+    margin-bottom: 0.875rem;
+  }
+
+  .events-list-container {
+    margin: 0 -1rem;
+    padding: 0 1rem;
+  }
+
+  .action-buttons-row {
+    flex-direction: column;
+  }
+
+  .action-buttons-row .app-button {
+    width: 100%;
+    white-space: normal;
+    padding: 0.625rem;
+  }
+}

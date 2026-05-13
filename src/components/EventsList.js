@@ -141,13 +141,14 @@ const EventsList = ({ events, showSeenStatus = true, eventTypes = [], isAdminVie
         }
 
         const eventInfo = getEventTypeInfo(item);
-        
+
         return (
           <li
             key={item.originalIndex}
-            style={{ 
+            style={{
               backgroundColor: eventInfo.color,
-              color: eventInfo.fontColor
+              color: eventInfo.fontColor,
+              '--event-accent': eventInfo.color,
             }}
           >
             <div
