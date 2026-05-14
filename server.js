@@ -96,9 +96,6 @@ app.post('/api/mailing-list', async (req, res) => {
   }
 });
 
-console.log('🔧 Mounting events routes at /api');
-app.use('/api', eventsRoutes);
-
 // PUBLIC ROUTES FOR USERSCREEN (before authentication middleware)
 // Obtener una compañía específica (pública para UserScreen)
 app.get('/api/companies/:id', async (req, res) => {
@@ -159,11 +156,11 @@ app.get('/api/tables/:id', async (req, res) => {
   console.log('TABLE GET API - Fetching table:', req.params.id);
   try {
     const { id } = req.params;
-    
+
     // Check if user is authenticated by looking for authorization header
     const isAuthenticated = req.headers.authorization && req.headers.authorization.startsWith('Bearer ');
     console.log('Request is authenticated:', isAuthenticated);
-    
+
     const table = await Table.findByPk(id, {
       include: [{
         model: Branch,
@@ -175,63 +172,46 @@ app.get('/api/tables/:id', async (req, res) => {
       return res.status(404).json({ error: 'Table not found' });
     }
 
-    // Get effective event types for this table
+    // Get effective event types for this table.
+    // - customerEvents: agrupado por customerDisplay (quickActions / mainActions / all),
+    //   ya filtra los 'hidden' y los system events.
+    // - allEvents (with system): sólo lo necesitamos para extraer el SCAN event
+    //   y devolver su config visual al UserScreen.
     const EventConfigService = require('./src/services/eventConfig');
-    
-    // Get all events (including system events) to find SCAN event
-    const allEvents = await EventConfigService.getEffectiveEventsForResource(
-      'location',
-      parseInt(id),
-      table.Branch.Company.id,
-      table.Branch.id,
-      true // Include system events
+
+    const [customerEvents, allEventsWithSystem] = await Promise.all([
+      EventConfigService.getCustomerEventsForTable(id),
+      EventConfigService.getEffectiveEventsForResource(
+        'location',
+        parseInt(id),
+        table.Branch.Company.id,
+        table.Branch.id,
+        true // include system events to find SCAN
+      ),
+    ]);
+
+    console.log(
+      '📋 customerEvents:',
+      customerEvents.quickActions.length, 'quick,',
+      customerEvents.mainActions.length, 'main'
     );
 
-    console.log('📋 allEvents returned from getEffectiveEventsForResource:', allEvents.length);
-    console.log('📋 allEvents details:', allEvents.map(e => ({
-      id: e.id,
-      eventName: e.eventName,
-      userColor: e.userColor,
-      userFontColor: e.userFontColor,
-      userIcon: e.userIcon,
-      systemEventType: e.systemEventType
-    })));
-
-    // Filter to only customer-visible events (exclude system events)
-    const customerEvents = allEvents.filter(event =>
-      !event.systemEventType && event.enabled !== false
+    const scanEvent = allEventsWithSystem.find(
+      (event) => event.systemEventType === 'SCAN'
     );
 
-    console.log('📋 customerEvents after filtering:', customerEvents.length);
-    console.log('📋 customerEvents details:', customerEvents.map(e => ({
-      id: e.id,
-      eventName: e.eventName,
-      userColor: e.userColor,
-      userFontColor: e.userFontColor,
-      userIcon: e.userIcon
-    })));
-
-    // Get scan event configuration
-    const scanEvent = allEvents.find(event => 
-      event.systemEventType === 'SCAN'
-    );
-    console.log('SCAN event found in table API:', scanEvent ? 'YES' : 'NO');
-    if (scanEvent) {
-      console.log('SCAN event details:', scanEvent);
-    }
-    
-    const scanEventConfig = scanEvent ? {
-      eventName: scanEvent.eventName || 'Página Escaneada',
-      eventColor: scanEvent.userColor || '#28a745',
-      fontColor: scanEvent.userFontColor || '#ffffff'
-    } : null;
-    
-    console.log('scanEventConfig being returned:', scanEventConfig);
+    const scanEventConfig = scanEvent
+      ? {
+          eventName: scanEvent.eventName || 'Página Escaneada',
+          eventColor: scanEvent.userColor || '#28a745',
+          fontColor: scanEvent.userFontColor || '#ffffff',
+        }
+      : null;
 
     const response = {
       ...table.toJSON(),
       availableEventTypes: customerEvents,
-      scanEvent: scanEventConfig
+      scanEvent: scanEventConfig,
     };
 
     // Only include events array if user is authenticated (admin users)
@@ -253,7 +233,7 @@ app.get('/api/tables/:id', async (req, res) => {
         }],
         order: [['events', 'createdAt', 'DESC']]
       });
-      
+
       if (tableWithEvents) {
         response.events = tableWithEvents.events || [];
       }
@@ -401,6 +381,9 @@ app.post('/api/tables/:id/events', async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
+console.log('🔧 Mounting events routes at /api');
+app.use('/api', eventsRoutes);
 
 // RUTA /api/mailing-list DUPLICADA ELIMINADA - Ahora está registrada al principio del archivo (línea ~57)
 // antes de que se monte eventsRoutes, para evitar que sea interceptada por otros middlewares
@@ -816,57 +799,7 @@ app.put('/api/tables/:id/mark-occupied', authMiddleware.authenticate, async (req
 
 // RUTAS DUPLICADAS ELIMINADAS - MOVIDAS A SECCIÓN PÚBLICA ARRIBA
 
-// Ruta para liberar todas las mesas de una sucursal
-app.post('/api/branches/:id/release-all-tables', authMiddleware.authenticate, async (req, res) => {
-  try {
-    const { id: branchId } = req.params;
-    const currentTime = new Date();
-
-    // Obtener todas las mesas de la sucursal
-    const tables = await Table.findAll({
-      where: { branchId }
-    });
-
-    // Para cada mesa, crear un evento MARK_AVAILABLE y marcar todos los eventos como vistos
-    await Promise.all(tables.map(async (table) => {
-      // Marcar todos los eventos como vistos
-      await Event.update(
-        { seenAt: currentTime },
-        {
-          where: {
-            tableId: table.id,
-            seenAt: null
-          }
-        }
-      );
-
-      // Crear evento MARK_AVAILABLE
-      await Event.create({
-        tableId: table.id,
-        type: EventTypes.MARK_AVAILABLE,
-        createdAt: currentTime,
-        seenAt: currentTime
-      });
-    }));
-
-    // Obtener las mesas actualizadas
-    const updatedTables = await Table.findAll({
-      where: { branchId },
-      include: [{
-        model: Event,
-        as: 'events',
-        attributes: ['type', 'message', 'createdAt', 'seenAt'],
-      }],
-      order: [['events', 'createdAt', 'DESC']]
-    });
-
-    const formattedTables = updatedTables.map(formatTableWithEvents);
-    res.json(formattedTables);
-  } catch (error) {
-    console.error('Error releasing all tables:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+// DISABLED: Duplicate release-all-tables route - this functionality is handled by routes/index.js
 
 // DISABLED: Duplicate POST /api/companies route - this functionality is handled by routes/index.js
 // which properly creates default event types for new companies

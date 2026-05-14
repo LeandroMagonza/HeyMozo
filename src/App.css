@@ -554,81 +554,89 @@ body {
   }
 }
 
+/* ==========================================================================
+ * Sistema de botones admin (.app-button) — versión dark del redesign.
+ * Lo usan todas las pantallas /admin/* (CompanyList, CompanyConfig,
+ * BranchConfig, TableUrls, EventConfigModal, AdminHistoryModal). Mantiene
+ * la API legacy: variants `.success` `.warning` `.danger` `.secondary`,
+ * tamaño `.small`. Colores enganchados a los tokens --rd-*.
+ * ========================================================================== */
 .app-button {
-  margin: 10px;
-  padding: 15px 30px;
-  font-size: 1rem;
+  margin: 0.3125rem;
+  padding: 0.625rem 1.125rem;
+  font-family: var(--rd-font-sans);
+  font-size: 0.875rem;
+  font-weight: 700;
   cursor: pointer;
-  background-color: #007bff; /* Color de fondo azul */
-  color: #fff; /* Texto blanco */
-  /*border: 2px solid black; /* Añadimos un borde negro de 2px */
-  border-radius: 5px;
+  background: var(--rd-brand-purple, #9333ea);
+  color: #ffffff;
+  border-radius: 0.625rem;
   border: none;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.3s ease;
+  gap: 0.5rem;
+  transition: filter 0.15s ease, transform 0.1s ease, background 0.15s ease;
+  box-shadow: 0 6px 16px rgba(147, 51, 234, 0.3);
+  letter-spacing: 0.01em;
 }
 
-.app-button:hover {
-  background-color: #0056b3; /* Color al pasar el cursor */
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+.app-button:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+.app-button:active:not(:disabled) {
+  transform: scale(0.97);
 }
 
 .app-button:disabled {
-  background-color: #cccccc; /* Color de fondo gris para botones deshabilitados */
-  color: #666666; /* Color de texto más oscuro para botones deshabilitados */
-  cursor: not-allowed; /* Cambia el cursor para indicar que el botón está deshabilitado */
+  background: var(--rd-bg-card, #2c2c2e);
+  color: var(--rd-text-disabled, #6b7280);
+  cursor: not-allowed;
+  box-shadow: none;
 }
 
 .app-button svg {
-  margin-right: 5px;
+  font-size: 1em;
 }
 
-/* Botones de colores semánticos */
+/* Variant: success (verde — confirmaciones, crear, ocupar) */
 .app-button.success {
-  background-color: #28a745; /* Verde */
+  background: var(--rd-brand-green, #16a34a);
+  box-shadow: 0 6px 16px rgba(22, 163, 74, 0.3);
 }
 
-.app-button.success:hover {
-  background-color: #218838;
-  box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
-}
-
+/* Variant: warning (naranja — secundario, configurar) */
 .app-button.warning {
-  background-color: #ffc107; /* Amarillo */
-  color: #212529; /* Texto oscuro para mejor contraste */
+  background: var(--rd-brand-orange, #e07b00);
+  color: #ffffff;
+  box-shadow: 0 6px 16px rgba(224, 123, 0, 0.3);
 }
 
-.app-button.warning:hover {
-  background-color: #e0a800;
-  box-shadow: 0 4px 8px rgba(255, 193, 7, 0.3);
-}
-
+/* Variant: danger (rojo — destructivo: borrar, liberar) */
 .app-button.danger {
-  background-color: #dc3545; /* Rojo */
+  background: var(--rd-brand-red, #d62d20);
+  box-shadow: 0 6px 16px rgba(214, 45, 32, 0.3);
 }
 
-.app-button.danger:hover {
-  background-color: #c82333;
-  box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3);
-}
-
+/* Variant: secondary (oscuro neutro — cancelar, atrás) */
 .app-button.secondary {
-  background-color: #6c757d; /* Gris */
+  background: var(--rd-bg-card, #2c2c2e);
+  color: var(--rd-text-secondary, #e4e2e4);
+  border: 1px solid var(--rd-border, #3a3a3c);
+  box-shadow: none;
 }
 
-.app-button.secondary:hover {
-  background-color: #5a6268;
-  box-shadow: 0 4px 8px rgba(108, 117, 125, 0.3);
+.app-button.secondary:hover:not(:disabled) {
+  background: var(--rd-bg-card-elevated, #3a3a3c);
+  filter: none;
 }
 
 /* Tamaños de botones */
 .app-button.small {
-  padding: 8px 16px;
-  font-size: 0.875rem;
-  margin: 5px;
+  padding: 0.4rem 0.75rem;
+  font-size: 0.8125rem;
+  margin: 0.25rem;
 }
 
 .customer-benefits {

@@ -1,368 +1,261 @@
+/* BranchConfig.css — config de sucursal + lista drag-and-drop de mesas.
+ * Versión dark del redesign.
+ */
+
 .branch-config {
-  padding: 20px;
+  padding: 1.25rem 0;
   max-width: 1200px;
   margin: 0 auto;
   width: 100%;
   box-sizing: border-box;
+  font-family: var(--rd-font-sans);
+  color: var(--rd-text, #ffffff);
 }
 
+/* ===== Header con botón "Ver Sucursal" ===== */
+.branch-config .header-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 1rem;
+}
+
+.branch-config .header-row .app-button {
+  margin: 0;
+}
+
+/* ===== Datos de la sucursal (form) ===== */
 .branch-details {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  gap: 20px;
-  margin-bottom: 20px;
-  max-width: 100%;
-}
-
-.input-group {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-width: 200px;
-}
-
-.input-group label {
-  font-size: 0.9rem;
-  color: #666;
-  margin-bottom: 4px;
-}
-
-.input-group input,
-.input-group select {
-  padding: 8px;
-  font-size: 14px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-}
-
-.style-controls-row {
-  display: flex;
-  gap: 20px;
-  width: 100%;
-  align-items: flex-start;
-}
-
-.qr-and-style-group {
-  display: flex;
-  gap: 20px;
-  width: 100%;
-}
-
-.input-group.qr-input {
-  max-width: 400px; /* o el ancho que prefieras */
-}
-
-.style-controls {
-  display: flex;
-  gap: 20px;
-  flex: 1;
-}
-
-.style-controls .input-group {
-  min-width: 120px;
-  flex: 1;
-}
-
-.style-controls input[type="color"] {
-  height: 38px;
-  padding: 2px;
-  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: 1rem;
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+  background: var(--rd-bg-card, #2c2c2e);
+  border: 1px solid var(--rd-border, #3a3a3c);
+  border-radius: var(--rd-radius-lg, 12px);
 }
 
 .branch-actions-row {
   display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  margin-bottom: 20px;
+  gap: 0.625rem;
   flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+}
+
+.branch-actions-row .app-button {
+  flex: 1;
+  min-width: 12rem;
+  margin: 0;
 }
 
 .section-divider {
-  margin: 30px 0;
   border: none;
-  border-top: 1px solid #e0e0e0;
+  border-top: 1px solid var(--rd-border, #3a3a3c);
+  margin: 1.75rem 0 1.25rem;
 }
 
+/* ===== Sección "Mesas" ===== */
 .tables-section {
-  margin-top: 30px;
-}
-
-button {
-  margin: 0;
-}
-.branch-details .app-button {
-  align-self: flex-start;
-  padding: 6px 10px;
-  font-size: 12px;
-  margin-top: 10px;
-  flex-basis: 100%;
-}
-
-.add-table-container {
-  margin-bottom: 20px;
-}
-
-.add-table-btn {
-  background-color: #4caf50;
-  color: white;
-  padding: 8px 12px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-.add-table-btn:hover {
-  background-color: #45a049;
-}
-.app-button {
-  transition: background-color 0.2s;
-}
-.app-button:hover {
-  background-color: #0056b3;
-}
-.app-button-cambios {
-  margin-left: 0 !important;
-}
-.tables-list {
-  list-style-type: none;
-  padding: 0;
-}
-
-.table-item {
-  display: flex;
-  align-items: center;
-  padding: 12px 16px;
-  background-color: white;
-  border: 1px solid #e9ecef;
-  border-radius: 6px;
-  margin-bottom: 8px;
-  transition: all 0.2s ease;
-}
-
-.table-info {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  flex: 1;
-}
-
-.table-actions {
-  display: flex;
-  gap: 8px;
-  margin-left: auto;
-}
-
-.table-actions .app-button {
-  padding: 6px 12px;
-  font-size: 0.9rem;
-}
-
-.table-name-input,
-.table-description-input {
-  padding: 8px 12px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 0.9rem;
-  transition: all 0.2s ease;
-  background-color: white;
-}
-
-.table-name-input:hover,
-.table-description-input:hover {
-  border-color: #b3b3b3;
-}
-
-.table-name-input:focus,
-.table-description-input:focus {
-  outline: none;
-  border-color: #007bff;
-  box-shadow: 0 0 0 2px rgba(0,123,255,0.1);
-}
-
-.table-name-input {
-  width: 150px;
-}
-
-.table-description-input {
-  width: 300px;
-}
-
-.table-number {
-  font-weight: 500;
-  color: #495057;
-  min-width: 30px;
-  text-align: center;
-}
-
-.button-row .app-button {
-  flex: initial;
-  margin-right: 0;
-}
-
-.delete-icon {
-  width: 20px;
-  height: 20px;
-  cursor: pointer;
-  margin-left: 10px;
-}
-
-.delete-icon:hover {
-  opacity: 0.8;
-}
-
-.loading {
-  font-size: 18px;
-  color: #666;
-  text-align: center;
-  margin-top: 50px;
-}
-
-/* Styles for drag and drop */
-.table-item:hover {
-  background-color: #f8f9fa;
-  border-color: #dee2e6;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-}
-
-.button-row {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 20px;
-}
-
-.button-row .app-button {
-  flex: 0 1 auto;
-  margin-right: 10px;
-  padding: 8px 12px;
-  font-size: 14px;
-}
-
-.button-row .app-button:last-child {
-  margin-right: 0;
-}
-
-.app-button {
-  background-color: #007bff;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.app-button:hover {
-  background-color: #0056b3;
-}
-
-@media (max-width: 600px) {
-  .branch-details {
-    max-width: 100%;
-  }
-
-  .button-row {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .button-row .app-button {
-    margin-right: 0;
-    margin-bottom: 10px;
-  }
-}
-
-.view-icon,
-.delete-icon {
-  width: 24px;
-  height: 24px;
-  cursor: pointer;
-  margin-left: 10px;
-  transition: opacity 0.2s;
-  position: relative;
-}
-
-.view-icon {
-  height: 15px;
-}
-
-.view-icon:hover,
-.delete-icon:hover {
-  opacity: 0.8;
-}
-
-.view-icon::after,
-.delete-icon::after {
-  content: attr(title);
-  position: absolute;
-  bottom: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  background-color: rgba(0, 0, 0, 0.8);
-  color: white;
-  padding: 5px 10px;
-  border-radius: 4px;
-  font-size: 12px;
-  white-space: nowrap;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.2s, visibility 0.2s;
-}
-
-.view-icon:hover::after,
-.delete-icon:hover::after {
-  opacity: 1;
-  visibility: visible;
-}
-
-/* Eliminar los estilos que ya no se usan */
-.view-table-btn {
-  display: none;
-}
-
-@media (max-width: 768px) {
-  .branch-details {
-    flex-direction: column;
-  }
-
-  .branch-details input {
-    width: 100%;
-  }
-}
-
-.header-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-}
-
-.app-button svg {
-  margin-right: 8px;
-  vertical-align: middle;
-}
-
-.delete-btn {
-  background-color: #dc3545 !important;
-}
-
-.delete-btn:hover {
-  background-color: #c82333 !important;
+  margin-top: 0;
 }
 
 .section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
   margin-bottom: 1rem;
 }
 
 .section-header h3 {
   margin: 0;
-  color: #2c3e50;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--rd-text, #ffffff);
+  letter-spacing: -0.01em;
 }
 
 .section-actions {
   display: flex;
-  gap: 10px;
+  gap: 0.625rem;
+  flex-wrap: wrap;
+}
+
+.section-actions .app-button {
+  margin: 0;
+}
+
+/* ===== Drag list de mesas ===== */
+.tables-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.table-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem 1rem;
+  background: var(--rd-bg-card, #2c2c2e);
+  border: 1px solid var(--rd-border, #3a3a3c);
+  border-radius: var(--rd-radius-lg, 12px);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  cursor: grab;
+}
+
+.table-item:hover {
+  border-color: var(--rd-brand-purple-soft, rgba(147, 51, 234, 0.45));
+}
+
+.table-item:active {
+  cursor: grabbing;
+}
+
+.table-info {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  flex: 1;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.table-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 999px;
+  background: var(--rd-bg, #1c1c1e);
+  border: 1px solid var(--rd-border, #3a3a3c);
+  color: var(--rd-text-tertiary, #9ca3af);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.table-name-input,
+.table-description-input {
+  padding: 0.5rem 0.75rem;
+  background: var(--rd-bg, #1c1c1e);
+  color: var(--rd-text, #ffffff);
+  border: 1px solid var(--rd-border, #3a3a3c);
+  border-radius: 0.5rem;
+  font-family: inherit;
+  font-size: 0.875rem;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  box-sizing: border-box;
+}
+
+.table-name-input {
+  width: 9rem;
+  font-weight: 600;
+}
+
+.table-description-input {
+  flex: 1;
+  min-width: 12rem;
+}
+
+.table-name-input:focus,
+.table-description-input:focus {
+  border-color: var(--rd-brand-purple, #9333ea);
+  box-shadow: 0 0 0 3px rgba(147, 51, 234, 0.18);
+}
+
+.table-name-input::placeholder,
+.table-description-input::placeholder {
+  color: var(--rd-text-disabled, #6b7280);
+}
+
+.table-actions {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.table-actions .app-button.small {
+  margin: 0;
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 919px) {
+  .table-item {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .table-info {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .table-name-input,
+  .table-description-input {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .table-actions {
+    justify-content: stretch;
+    width: 100%;
+  }
+
+  .table-actions .app-button.small {
+    flex: 1;
+    min-width: 5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .branch-config {
+    padding: 0.875rem 0;
+  }
+
+  .branch-details {
+    padding: 1rem;
+  }
+
+  .branch-actions-row {
+    flex-direction: column;
+  }
+
+  .branch-actions-row .app-button {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .section-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .section-actions {
+    flex-direction: column;
+  }
+
+  .section-actions .app-button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .table-actions .app-button.small {
+    padding: 0.5rem 0.625rem;
+    font-size: 0.75rem;
+    min-width: 0;
+  }
+
+  .table-number {
+    width: 1.5rem;
+    height: 1.5rem;
+    font-size: 0.75rem;
+  }
 }

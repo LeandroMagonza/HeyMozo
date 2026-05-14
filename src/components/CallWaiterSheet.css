@@ -1,0 +1,175 @@
+/* src/components/CallWaiterSheet.css */
+
+.call-waiter-sheet__overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: var(--rd-z-modal);
+  animation: rd-fade-in 0.2s ease-out;
+  font-family: var(--rd-font-sans);
+}
+
+.call-waiter-sheet {
+  width: 100%;
+  max-width: 32rem;
+  background: var(--rd-bg-sheet);
+  border-radius: var(--rd-radius-sheet-top);
+  padding: 1rem 1.5rem 1.75rem;
+  color: var(--rd-text);
+  animation: rd-slide-up 0.3s var(--rd-ease-out) forwards;
+  box-shadow: var(--rd-shadow-modal);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.call-waiter-sheet__handle {
+  width: 3rem;
+  height: 0.375rem;
+  background: var(--rd-text-disabled);
+  border-radius: var(--rd-radius-full);
+  margin: 0 auto 1rem;
+  opacity: 0.6;
+}
+
+.call-waiter-sheet__title {
+  margin: 0;
+  text-align: center;
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.call-waiter-sheet__subtitle {
+  margin: 0.5rem 0 0;
+  text-align: center;
+  font-size: 0.8125rem;
+  color: var(--rd-text-tertiary);
+}
+
+.call-waiter-sheet__empty {
+  margin: 1.5rem 0 0;
+  padding: 1rem;
+  text-align: center;
+  font-size: 0.875rem;
+  color: var(--rd-text-tertiary);
+  background: var(--rd-bg-card);
+  border: 1px dashed var(--rd-border);
+  border-radius: var(--rd-radius-lg);
+}
+
+/* ===== Grid 2x2 de quick actions ===== */
+.call-waiter-sheet__grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.875rem;
+  margin: 1.5rem 0 1rem;
+}
+
+/* Quick actions: fondo neutro oscuro idéntico para los 4. El usuario
+ * percibe los 4 como "opciones rápidas" iguales en jerarquía, con el
+ * emoji como única diferenciación visual. El userColor del EventType se
+ * conserva pero NO se aplica al fondo del card — queda disponible para
+ * accents/badges futuros (admin, F2). */
+.call-waiter-sheet__action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.625rem;
+  padding: 1.25rem 0.75rem;
+  border: 1px solid var(--rd-border);
+  border-radius: var(--rd-radius-xl);
+  background: var(--rd-bg-card);
+  color: var(--rd-text);
+  font-family: var(--rd-font-sans);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+  min-height: 7rem;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+
+.call-waiter-sheet__action:hover {
+  background: var(--rd-bg-card-elevated);
+}
+
+.call-waiter-sheet__action-icon {
+  font-size: 2.5rem;
+  line-height: 1;
+}
+
+.call-waiter-sheet__action-label {
+  word-break: break-word;
+  line-height: 1.2;
+  color: var(--rd-text-secondary);
+}
+
+/* ===== Botón alargado debajo del grid (main_action) ===== */
+.call-waiter-sheet__main-action {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.625rem;
+  padding: 1rem 1.25rem;
+  margin-top: 0.5rem;
+  margin-bottom: 0.75rem;
+  border: none;
+  border-radius: var(--rd-radius-xl);
+  font-family: var(--rd-font-sans);
+  font-size: 1.0625rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: center;
+  transition: filter 0.15s ease;
+}
+
+.call-waiter-sheet__main-action:hover {
+  filter: brightness(1.05);
+}
+
+.call-waiter-sheet__main-action-icon {
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+/* Si hay main_action pero no quick_actions, eliminar margen extra arriba */
+.call-waiter-sheet__grid + .call-waiter-sheet__main-action {
+  margin-top: 0;
+}
+
+/* ===== Botón cancelar ===== */
+.call-waiter-sheet__cancel {
+  width: 100%;
+  margin-top: 0.5rem;
+  padding: 0.875rem 1rem;
+  background: var(--rd-bg-card);
+  color: var(--rd-text-secondary);
+  font-family: var(--rd-font-sans);
+  font-size: 0.9375rem;
+  font-weight: 700;
+  border: none;
+  border-radius: var(--rd-radius-lg);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.call-waiter-sheet__cancel:hover {
+  background: var(--rd-bg-card-strong);
+}
+
+/* Single-column en pantallas muy chicas */
+@media (max-width: 360px) {
+  .call-waiter-sheet__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .call-waiter-sheet__action {
+    min-height: 5.5rem;
+  }
+}

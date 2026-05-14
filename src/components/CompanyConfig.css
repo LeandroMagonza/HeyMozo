@@ -1,834 +1,270 @@
+/* CompanyConfig.css — config de empresa + lista de sucursales.
+ * Versión dark del redesign. También usado por CompanyCreate.
+ */
+
 .company-config {
-  padding: 20px;
+  padding: 1.25rem 0;
   max-width: 1200px;
   margin: 0 auto;
   width: 100%;
   box-sizing: border-box;
+  font-family: var(--rd-font-sans);
+  color: var(--rd-text, #ffffff);
 }
 
+/* ===== Datos de la empresa (form de arriba) ===== */
 .company-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: 1rem;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+  background: var(--rd-bg-card, #2c2c2e);
+  border: 1px solid var(--rd-border, #3a3a3c);
+  border-radius: var(--rd-radius-lg, 12px);
+}
+
+.input-group {
   display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-bottom: 20px;
-  max-width: 100%;
+  flex-direction: column;
+  min-width: 0;
 }
 
-.company-details input {
-  padding: 8px;
-  font-size: 14px;
-  flex: 1;
-  min-width: 200px;
+.input-group label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--rd-text-tertiary, #9ca3af);
+  margin-bottom: 0.375rem;
+  letter-spacing: 0.01em;
 }
 
-.company-actions {
+.input-group input,
+.input-group textarea,
+.input-group select {
+  padding: 0.625rem 0.75rem;
+  background: var(--rd-bg, #1c1c1e);
+  color: var(--rd-text, #ffffff);
+  border: 1px solid var(--rd-border, #3a3a3c);
+  border-radius: 0.5rem;
+  font-family: inherit;
+  font-size: 0.9375rem;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  box-sizing: border-box;
+}
+
+.input-group input:focus,
+.input-group textarea:focus,
+.input-group select:focus {
+  border-color: var(--rd-brand-purple, #9333ea);
+  box-shadow: 0 0 0 3px rgba(147, 51, 234, 0.18);
+}
+
+.input-group input::placeholder,
+.input-group textarea::placeholder {
+  color: var(--rd-text-disabled, #6b7280);
+}
+
+.input-group input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.company-details .company-actions,
+.actions-group {
+  grid-column: 1 / -1;
   display: flex;
-  gap: 12px;
+  gap: 0.625rem;
   flex-wrap: wrap;
-  margin-top: 16px;
+  margin-top: 0.5rem;
 }
 
-.company-actions button {
+.company-details .company-actions .app-button,
+.actions-group .app-button {
   flex: 1;
-  min-width: 150px;
+  min-width: 12rem;
+  margin: 0;
 }
 
 .header-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 1.25rem;
 }
 
-.branches-table {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0 8px;
-}
-
-.branch-row {
-  background-color: white;
-  border: 1px solid #e9ecef;
-  transition: all 0.2s ease;
-}
-
-.branch-row:hover {
-  background-color: #f8f9fa;
-  border-color: #dee2e6;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-}
-
-.branch-row td {
-  padding: 12px 16px;
-  vertical-align: middle;
-}
-
-.branch-row td:first-child {
-  width: 30%;
-  font-weight: 500;
-  color: #495057;
-  border-radius: 6px 0 0 6px;
-}
-
-.branch-actions {
-  display: flex;
-  gap: 8px;
-  justify-content: flex-end;
-  border-radius: 0 6px 6px 0;
-}
-
-.branch-actions .app-button.small {
-  padding: 6px 12px;
-  font-size: 0.9rem;
-}
-
-.app-button {
-  padding: 8px 16px;
-  font-size: 14px;
-  cursor: pointer;
-  background-color: #007bff;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  transition: background-color 0.3s;
-}
-
-.app-button:hover {
-  background-color: #0056b3;
-}
-
-.loading {
-  text-align: center;
-  font-size: 18px;
-  margin-top: 20px;
-}
-
-.input-group {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-width: 200px;
-}
-
-.input-group label {
-  font-size: 0.9rem;
-  color: #666;
-  margin-bottom: 4px;
-}
-
-.input-group input {
-  padding: 8px;
-  font-size: 14px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-}
-
+/* ===== Sucursales ===== */
 .branches-section {
-  margin-top: 2rem;
+  margin-top: 1.75rem;
 }
 
 .branches-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2rem;
+  margin-bottom: 1.25rem;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.branches-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--rd-text, #ffffff);
+  letter-spacing: -0.01em;
 }
 
 .header-buttons {
   display: flex;
-  gap: 10px;
+  gap: 0.625rem;
+  flex-wrap: wrap;
 }
 
-.app-button.secondary {
-  background-color: #6c757d;
-}
-
-.app-button.secondary:hover {
-  background-color: #5a6268;
+.header-buttons .app-button {
+  margin: 0;
 }
 
 .branches-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr));
+  gap: 1rem;
 }
 
 .branch-card {
-  background: white;
-  border: 2px solid #e9ecef;
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease;
+  background: var(--rd-bg-card, #2c2c2e);
+  border: 1px solid var(--rd-border, #3a3a3c);
+  border-radius: var(--rd-radius-lg, 12px);
+  padding: 1.125rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  transition: border-color 0.2s ease, transform 0.1s ease;
 }
 
 .branch-card:hover {
-  border-color: #007bff;
-  box-shadow: 0 4px 16px rgba(0, 123, 255, 0.15);
+  border-color: var(--rd-brand-purple-soft, rgba(147, 51, 234, 0.45));
+  transform: translateY(-1px);
 }
 
 .branch-card.selected {
-  border-color: #28a745;
-  background-color: #f8fff9;
+  border-color: var(--rd-brand-green, #16a34a);
+  background: rgba(22, 163, 74, 0.08);
 }
 
 .branch-card-header {
   display: flex;
   align-items: center;
-  gap: 15px;
-  margin-bottom: 15px;
+  gap: 0.75rem;
+  margin-bottom: 0.875rem;
 }
 
 .branch-number {
-  font-size: 1.2rem;
-  font-weight: bold;
-  color: #495057;
-  min-width: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 999px;
+  background: var(--rd-bg, #1c1c1e);
+  border: 1px solid var(--rd-border, #3a3a3c);
+  color: var(--rd-text-tertiary, #9ca3af);
+  font-size: 0.8125rem;
+  font-weight: 700;
 }
 
-.branch-name-input {
-  flex: 1;
-  padding: 10px 15px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  font-size: 1rem;
-  font-weight: 500;
-}
-
-.branch-name-input:focus {
-  outline: none;
-  border-color: #007bff;
-  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+.branch-name {
+  margin: 0;
+  font-size: 1.0625rem;
+  font-weight: 800;
+  color: var(--rd-text, #ffffff);
+  letter-spacing: -0.01em;
 }
 
 .branch-card-body {
-  margin-bottom: 20px;
+  margin-bottom: 1rem;
 }
 
-.branch-description-input {
-  width: 100%;
-  padding: 10px 15px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  font-size: 0.95rem;
-  color: #666;
-  box-sizing: border-box;
-}
-
-.branch-description-input:focus {
-  outline: none;
-  border-color: #007bff;
-  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+.branch-description {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--rd-text-tertiary, #9ca3af);
+  line-height: 1.45;
 }
 
 .branch-card-actions {
   display: flex;
-  gap: 10px;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .branch-card-actions .app-button.small {
   flex: 1;
-  padding: 12px 20px;
-  font-size: 0.9rem;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
+  min-width: 5.5rem;
+  margin: 0;
 }
 
-.view-btn {
-  background-color: #007bff !important;
-}
-
-.view-btn:hover {
-  background-color: #0056b3 !important;
+.no-branches-message,
+.branches-section > div[style] {
+  /* El mensaje "No hay sucursales creadas..." viene con inline style;
+   * lo dejamos pero el wrapper visual sigue siendo dark */
+  color: var(--rd-text-tertiary, #9ca3af) !important;
 }
 
 .loading {
   text-align: center;
-  font-size: 18px;
-  margin-top: 20px;
-}
-
-.input-group {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-width: 200px;
-}
-
-.input-group label {
-  font-size: 0.9rem;
-  color: #666;
-  margin-bottom: 4px;
-}
-
-.input-group input {
-  padding: 8px;
-  font-size: 14px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-}
-
-.branches-section {
-  margin-top: 2rem;
-}
-
-.branches-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2rem;
-}
-
-.header-buttons {
-  display: flex;
-  gap: 10px;
-}
-
-.app-button.secondary {
-  background-color: #6c757d;
-}
-
-.app-button.secondary:hover {
-  background-color: #5a6268;
-}
-
-.branches-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.branch-card {
-  background: white;
-  border: 2px solid #e9ecef;
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease;
-}
-
-.branch-card:hover {
-  border-color: #007bff;
-  box-shadow: 0 4px 16px rgba(0, 123, 255, 0.15);
-}
-
-.branch-card.selected {
-  border-color: #28a745;
-  background-color: #f8fff9;
-}
-
-.branch-card-header {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  margin-bottom: 15px;
-}
-
-.branch-number {
-  font-size: 1.2rem;
-  font-weight: bold;
-  color: #495057;
-  min-width: 20px;
-}
-
-.branch-name-input {
-  flex: 1;
-  padding: 10px 15px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
+  padding: 2.5rem 1rem;
+  color: var(--rd-text-tertiary, #9ca3af);
   font-size: 1rem;
-  font-weight: 500;
-}
-
-.branch-name-input:focus {
-  outline: none;
-  border-color: #007bff;
-  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
-}
-
-.branch-card-body {
-  margin-bottom: 20px;
-}
-
-.branch-description-input {
-  width: 100%;
-  padding: 10px 15px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  font-size: 0.95rem;
-  color: #666;
-  box-sizing: border-box;
-}
-
-.branch-description-input:focus {
-  outline: none;
-  border-color: #007bff;
-  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
-}
-
-.branch-card-actions {
-  display: flex;
-  gap: 10px;
-}
-
-.branch-card-actions .app-button.small {
-  flex: 1;
-  padding: 12px 20px;
-  font-size: 0.9rem;
-  font-weight: 500;
+  background: var(--rd-bg, #1c1c1e);
+  min-height: 60vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
 }
 
-.view-btn {
-  background-color: #007bff !important;
-}
-
-.view-btn:hover {
-  background-color: #0056b3 !important;
-}
-
-/* Breakpoint específico para 919px - Layout intermedio */
-@media (max-width: 919px) {
-  /* Cambiar flex direction de table-item a column */
-  .table-item {
-    flex-direction: column;
-  }
-
-  /* Eliminar margin-left auto de table-actions para centrar */
-  .table-actions {
-    margin-left: unset;
-    justify-content: center;
-  }
-
-  .company-config .branch-row {
-    display: table-row; /* Mantener como tabla pero permitir wrap */
-  }
-
-  .company-config .branch-row td {
-    display: table-cell;
-    vertical-align: top;
-    padding: 12px 8px;
-  }
-
-  .company-config .branch-row td:first-child {
-    width: 100%;
-    display: block;
-    padding: 12px 16px;
-    background-color: #f8f9fa;
-    border-bottom: 1px solid #e9ecef;
-    font-weight: 600;
-    text-align: left;
-  }
-
-  .company-config .branch-actions {
-    display: block;
-    width: 100%;
-    padding: 12px 16px;
-    background-color: white;
-  }
-
-  .company-config .branch-actions .app-button.small {
-    display: inline-block;
-    width: calc(33.33% - 8px);
-    margin: 4px 2px;
-    padding: 8px 12px;
-    text-align: center;
-    vertical-align: top;
-  }
-}
-
-/* Media Queries para dispositivos móviles */
+/* ===== Responsive ===== */
 @media (max-width: 768px) {
   .company-config {
-    padding: 15px;
+    padding: 0.875rem 0;
   }
 
-  .company-config .company-details {
-    flex-direction: column;
-    gap: 15px;
+  .company-details {
+    padding: 1rem;
   }
 
-  .company-config .company-details input {
-    min-width: 100%;
-    font-size: 16px; /* Evita zoom en iOS */
-  }
-
-  .company-config .input-group {
-    min-width: 100%;
-  }
-
-  .company-config .header-row {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
-  }
-
-  .company-config .header-row h2 {
-    font-size: 1.5rem;
-    margin: 0;
-  }
-
-  .company-config .branches-header {
+  .header-row {
     flex-direction: column;
     align-items: stretch;
-    gap: 15px;
+    gap: 0.75rem;
   }
 
-  .company-config .branches-header h3 {
-    margin: 0;
-    font-size: 1.3rem;
-  }
-
-  /* Convertir tabla en cards para móvil */
-  .company-config .branches-table {
-    border-spacing: 0;
-    display: block;
-    width: 100%;
-    overflow: visible;
-  }
-
-  .company-config .branches-table tbody {
-    display: block;
-    width: 100%;
-  }
-
-  .company-config .branch-row {
-    display: block;
-    width: 100%;
-    margin-bottom: 20px;
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    border: 1px solid #e9ecef;
-    background-color: white;
-  }
-
-  .company-config .branch-row td {
-    display: block;
-    width: 100%;
-    padding: 0;
-    border: none;
-    box-sizing: border-box;
-  }
-
-  /* Información de la sucursal en la parte superior */
-  .company-config .branch-row td.table-info {
-    padding: 20px;
-    background-color: #f8f9fa;
-    border-bottom: 1px solid #e9ecef;
-    font-weight: 600;
-    font-size: 1.2rem;
-    color: #495057;
-    text-align: center;
-  }
-
-  /* Botones de acción en la parte inferior */
-  .company-config .branch-row td.table-actions {
-    padding: 20px;
-    background-color: white;
-  }
-
-  .company-config .branch-actions {
-    display: flex;
+  .branches-header {
     flex-direction: column;
-    gap: 12px;
-    width: 100%;
-    justify-content: stretch;
-    border-radius: 0;
+    align-items: stretch;
   }
 
-  .company-config .branch-actions .app-button.small {
-    width: 100%;
-    padding: 14px 20px;
-    font-size: 1rem;
-    font-weight: 500;
-    min-height: 50px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    border-radius: 8px;
-    margin: 0;
-    flex: none;
-    max-width: none;
+  .header-buttons {
+    flex-direction: column;
   }
 
-  /* Específico para el botón de agregar sucursal */
-  .company-config .branches-header .app-button {
+  .header-buttons .app-button,
+  .actions-group .app-button {
     width: 100%;
-    margin-bottom: 0;
-    padding: 14px;
-    font-size: 1.1rem;
+    min-width: 0;
   }
 
-  .company-config .app-button {
-    width: 100%;
-    text-align: center;
-    font-size: 16px;
-    padding: 12px;
-    margin-bottom: 10px;
-    box-sizing: border-box;
+  .branches-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .branch-card-actions {
+    gap: 0.4rem;
   }
 }
 
 @media (max-width: 480px) {
-  .company-config {
-    padding: 10px;
-  }
-
-  .company-config .header-row h2 {
-    font-size: 1.3rem;
-  }
-
-  .company-config .branches-header h3 {
-    font-size: 1.2rem;
-  }
-
-  /* Aumentar padding y espaciado para pantallas muy pequeñas */
-  .company-config .branch-row td.table-info {
-    padding: 16px;
-    font-size: 1.1rem;
-  }
-
-  .company-config .branch-row td.table-actions {
-    padding: 16px;
-  }
-
-  .company-config .branch-actions {
-    gap: 10px;
-  }
-
-  .company-config .branch-actions .app-button.small {
-    padding: 16px 20px;
-    font-size: 1rem;
-    min-height: 52px;
-  }
-
-  .company-config .app-button {
-    padding: 16px;
-    font-size: 16px;
-  }
-
-  .company-config .input-group label {
-    font-size: 1rem;
-    margin-bottom: 6px;
-    font-weight: 600;
-  }
-
-  .company-config .input-group input {
-    padding: 12px;
-    font-size: 16px;
-    border-radius: 6px;
-    border: 2px solid #ddd;
-  }
-
-  .company-config .input-group input:focus {
-    border-color: #007bff;
-    outline: none;
-  }
-}
-
-/* Breakpoint específico para 580px - Inputs más pequeños */
-@media (max-width: 580px) {
-  .table-description-input,
-  .table-name-input,
-  .branch-description-input,
-  .branch-name-input {
-    padding: 8px 12px !important;
-    font-size: 14px !important;
-    border-radius: 4px !important;
-  }
-
-  /* Reducir widths específicos de los inputs */
-  .table-name-input {
-    width: 75px !important; /* Reducido de 150px a aproximadamente la mitad */
-  }
-
-  .table-description-input {
-    width: 150px !important; /* Reducido de 300px a aproximadamente la mitad */
-  }
-
-  /* Hacer los botones más pequeños */
-  .app-button {
-    padding: 8px 12px !important;
-    font-size: 13px !important;
-    min-height: 36px !important;
-  }
-
-  .app-button.small {
-    padding: 6px 10px !important;
-    font-size: 12px !important;
-    min-height: 32px !important;
-  }
-
-  /* Botones específicos de las cards */
   .branch-card-actions .app-button.small {
-    padding: 8px 12px !important;
-    font-size: 13px !important;
-    min-height: 36px !important;
-  }
-
-  /* Botones del header */
-  .header-buttons .app-button {
-    padding: 8px 12px !important;
-    font-size: 13px !important;
-  }
-
-  /* Reducir gaps entre botones */
-  .branch-card-actions {
-    gap: 6px !important;
-  }
-
-  .header-buttons {
-    gap: 6px !important;
-  }
-
-  .table-description-input:focus,
-  .table-name-input:focus,
-  .branch-description-input:focus,
-  .branch-name-input:focus {
-    border-color: #007bff;
-    box-shadow: 0 0 0 1px rgba(0, 123, 255, 0.15);
-  }
-
-  /* También hacer más pequeños los números de mesa/sucursal */
-  .branch-number {
-    font-size: 1rem !important;
-    min-width: 15px;
-  }
-
-  /* Reducir spacing entre elementos */
-  .branch-card-header {
-    gap: 10px !important;
-    margin-bottom: 10px !important;
-  }
-
-  .branch-card-body {
-    margin-bottom: 15px !important;
-  }
-
-  .branch-card {
-    padding: 15px !important;
-  }
-}
-
-/* Mejoras adicionales para UX móvil */
-@media (max-width: 768px) {
-  .admin-container {
-    padding: 0;
-    overflow-x: hidden; /* Prevenir scroll horizontal */
-  }
-
-  .admin-content {
-    padding: 0;
-    overflow-x: hidden; /* Prevenir scroll horizontal */
-    width: 100%;
-    box-sizing: border-box;
-  }
-
-  /* Asegurar que los botones sean fáciles de tocar - SOLO CompanyConfig */
-  .company-config .app-button {
-    min-height: 44px; /* Tamaño mínimo recomendado para toques */
-    touch-action: manipulation; /* Evita delay en toques */
-  }
-
-  .company-config .branch-actions .app-button.small {
-    min-height: 50px; /* Más alto para mejor accesibilidad */
-  }
-
-  /* Asegurar que todo el contenido respete el ancho del contenedor - SOLO CompanyConfig */
-  .company-config .branches-section {
-    width: 100%;
-    overflow-x: hidden;
-    box-sizing: border-box;
-  }
-
-  /* Hover effects para móvil */
-  .company-config .branch-row:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
-  }
-
-  /* Mejorar la visual de los botones en móvil */
-  .company-config .branch-actions .app-button.small:active {
-    transform: scale(0.98);
-  }
-  .company-config .table-info input:focus,
-  .company-config .table-actions input:focus {
-    border-color: #007bff;
-  }
-
-  /* Ocultar tabla y mostrar como cards en móvil - SOLO CompanyConfig */
-  .company-config .branches-table {
-    display: block;
-  }
-
-  .company-config .branches-table tbody {
-    display: block;
-  }
-}
-
-/* Estilos generales para inputs en tablas - aplicar en todos los breakpoints - SOLO CompanyConfig */
-.company-config .branches-table input {
-  box-sizing: border-box;
-}
-
-/* Mejoras adicionales para UX móvil */
-@media (max-width: 768px) {
-  .admin-container {
-    padding: 0;
-    overflow-x: hidden; /* Prevenir scroll horizontal */
-  }
-
-  .admin-content {
-    padding: 0;
-    overflow-x: hidden; /* Prevenir scroll horizontal */
-    width: 100%;
-    box-sizing: border-box;
-  }
-
-  /* Asegurar que los botones sean fáciles de tocar - SOLO CompanyConfig */
-  .company-config .app-button {
-    min-height: 44px; /* Tamaño mínimo recomendado para toques */
-    touch-action: manipulation; /* Evita delay en toques */
-  }
-
-  .company-config .branch-actions .app-button.small {
-    min-height: 44px;
-  }
-
-  /* Asegurar que todo el contenido respete el ancho del contenedor - SOLO CompanyConfig */
-  .company-config .branches-section {
-    width: 100%;
-    overflow-x: hidden;
-    box-sizing: border-box;
-  }
-
-  /* Asegurar que cualquier input o elemento dentro de las celdas sea responsive - SOLO CompanyConfig */
-  .company-config .branch-row td input,
-  .company-config .branch-row td select,
-  .company-config .branch-row td textarea {
-    width: 100%;
-    max-width: 100%;
-    min-width: unset;
-    box-sizing: border-box;
-  }
-
-  /* Si hay elementos flex dentro de las celdas - SOLO CompanyConfig */
-  .company-config .branch-row td .input-group {
-    width: 100%;
-    min-width: unset;
-  }
-
-  .company-config .branch-row td .input-group input {
-    width: 100%;
-    min-width: unset;
+    min-width: 0;
+    padding: 0.5rem 0.625rem;
+    font-size: 0.75rem;
   }
 }

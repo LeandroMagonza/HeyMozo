@@ -1,18 +1,42 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { getCompany, getBranch, getTables, updateTable, markTableEventsSeen, releaseAllTables, markTableAsAvailable, markTableAsOccupied } from '../services/api';
+import { getCompany, getBranch, getTables, markTableEventsSeen, releaseAllTables, markTableAsAvailable, markTableAsOccupied } from '../services/api';
 import './AdminScreen.css';
 import './AdminModal.css';
-import EventsList from './EventsList';
-import { TableStates, TableColors } from '../theme';
-import { FaHistory, FaCheckCircle, FaSignOutAlt, FaSignInAlt, FaUser, FaFileInvoiceDollar, FaTimes, FaVolumeMute, FaVolumeUp } from 'react-icons/fa';
-import { translateState, translateEvent } from '../utils/translations';
+import { FaSignOutAlt } from 'react-icons/fa';
+import { translateState } from '../utils/translations';
 import { EventTypes } from '../constants';
 import AdminHistoryModal from './AdminHistoryModal';
 import notificationSound from '../sounds/notification.mp3';
-import TablesList from './TablesList';
+import AlertCard from './AlertCard';
 import SoundToggleButton from './SoundToggleButton';
 import AdminHeader from './AdminHeader';
+
+// Formatea un waitingTime (ms) al estilo del mockup: "AHORA" si <1min,
+// "X MIN" si <60min, "Xh Ym" si más. Todo en mayúsculas, sin "min" cuando no
+// hace falta.
+const formatWait = (ms) => {
+  if (ms == null || ms < 0) return '';
+  const totalMin = Math.floor(ms / 60000);
+  if (totalMin < 1) return 'AHORA';
+  if (totalMin < 60) return `${totalMin} MIN`;
+  const h = Math.floor(totalMin / 60);
+  const m = totalMin % 60;
+  return m === 0 ? `${h}H` : `${h}H ${m}M`;
+};
+
+// Decide la variant de la AlertCard a partir del estado de la mesa.
+// Reglas:
+//  - Si hay un eventType resuelto con cardVariant, se respeta.
+//  - Si la mesa está AVAILABLE (sin alertas), va 'paid' (verde dimmed).
+//  - Si está OCCUPIED sin alertas → 'blue' (info).
+//  - Fallback → 'orange' (quick action).
+const getVariant = (table) => {
+  if (table.eventType?.cardVariant) return table.eventType.cardVariant;
+  if (table.currentState === 'AVAILABLE') return 'paid';
+  if (table.currentState === 'OCCUPIED') return 'blue';
+  return 'orange';
+};
 
 const AdminScreen = () => {
   const { companyId, branchId } = useParams();
@@ -30,6 +54,27 @@ const AdminScreen = () => {
   const [selectedTable, setSelectedTable] = useState(null);
   const [sortType, setSortType] = useState('priority'); // Nuevo estado para el tipo de ordenamiento
   const [isSoundEnabled, setIsSoundEnabled] = useState(true);
+  // Vista activa: 'alerts' = solo cards con unseenCount > 0 (default — feed
+  // del mozo); 'tables' = grid completo con ocupar/liberar/historial para
+  // gestión manual. Persistido en localStorage por sucursal para no resetear
+  // entre recargas.
+  const [viewMode, setViewMode] = useState(() => {
+    try {
+      const saved = localStorage.getItem(`heymozo_admin_view_${branchId}`);
+      return saved === 'tables' ? 'tables' : 'alerts';
+    } catch {
+      return 'alerts';
+    }
+  });
+
+  const handleViewModeChange = useCallback((next) => {
+    setViewMode(next);
+    try {
+      localStorage.setItem(`heymozo_admin_view_${branchId}`, next);
+    } catch {
+      /* ignore — quota / private mode */
+    }
+  }, [branchId]);
 
   const TableStates = {
     AVAILABLE: 'AVAILABLE',
@@ -465,8 +510,8 @@ const AdminScreen = () => {
 
     if (confirmed) {
       try {
-        const response = await releaseAllTables(branchId);
-        setTables(response.data);
+        await releaseAllTables(branchId);
+        await fetchData();
       } catch (error) {
         console.error('Error liberando todas las mesas:', error);
       }
@@ -494,43 +539,131 @@ const AdminScreen = () => {
 
   return (
     <div className="admin-screen">
-      <AdminHeader 
+      <AdminHeader
         title={loading ? 'Cargando...' : error ? 'Error' : `${company?.name} - ${branch?.name}`}
         showBackButton={true}
         backUrl={`/admin/${companyId}/${branchId}/config`}
       />
-      <div className="refresh-timer">
-        Refrescando en {refreshCountdown} segundos
+
+      <div className="admin-screen__tabs" role="tablist">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={viewMode === 'alerts'}
+          className={`admin-screen__tab ${viewMode === 'alerts' ? 'admin-screen__tab--active' : ''}`}
+          onClick={() => handleViewModeChange('alerts')}
+        >
+          Alertas
+          {totalUnseenMessages > 0 && (
+            <span className="admin-screen__tab-badge">{totalUnseenMessages}</span>
+          )}
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={viewMode === 'tables'}
+          className={`admin-screen__tab ${viewMode === 'tables' ? 'admin-screen__tab--active' : ''}`}
+          onClick={() => handleViewModeChange('tables')}
+        >
+          Mesas
+        </button>
       </div>
-      <div className="controls-row">
-        <div className="sort-selector">
-          <label htmlFor="sort-type">Ordenar por: </label>
-          <select id="sort-type" value={sortType} onChange={handleSortChange}>
-            <option value="priority">Prioridad de atención</option>
-            <option value="tableNumber">Nombre de mesa</option>
-          </select>
+
+      <div className="admin-screen__controls">
+        <div className="admin-screen__controls-left">
+          <span className="admin-screen__refresh-pill">
+            <span className="admin-screen__refresh-dot" />
+            Refresca en {refreshCountdown}s
+          </span>
+          <label className="admin-screen__sort">
+            <span>Ordenar:</span>
+            <select value={sortType} onChange={handleSortChange}>
+              <option value="priority">Prioridad</option>
+              <option value="tableNumber">Mesa</option>
+            </select>
+          </label>
         </div>
-        <div className="controls-right">
-          <SoundToggleButton 
+        <div className="admin-screen__controls-right">
+          <SoundToggleButton
             isSoundEnabled={isSoundEnabled}
             onClick={() => setIsSoundEnabled(!isSoundEnabled)}
           />
-          <button 
-            className="release-all-button app-button"
+          <button
+            type="button"
+            className="admin-screen__release-all"
             onClick={handleReleaseAllTables}
           >
-            <FaSignOutAlt /> Liberar TODAS las Mesas
+            <FaSignOutAlt /> Liberar todas
           </button>
         </div>
       </div>
 
-      <TablesList 
-        tables={sortedTables}
-        onTableClick={(table) => viewEventHistory(table.id)}
-        msToMinutes={msToMinutes}
-        onMarkAsAvailable={markAsAvailable}
-        onMarkAsOccupied={markAsOccupied}
-      />
+      {(() => {
+        // Vista "Alertas": solo mesas con unseenCount > 0. Feed del mozo,
+        // foco en acción. "¡LISTO!" marca todos los eventos como vistos.
+        //
+        // Vista "Mesas": todas las mesas. Útil para gestión manual:
+        //  - mesa con alertas → action "¡LISTO!" (markEventsAsSeen)
+        //  - mesa ocupada sin alertas → action "Liberar" (markAsAvailable)
+        //  - mesa disponible → action "Ocupar" (markAsOccupied)
+        const visibleTables = viewMode === 'alerts'
+          ? sortedTables.filter((t) => (t.unseenCount || 0) > 0)
+          : sortedTables;
+
+        if (visibleTables.length === 0) {
+          return (
+            <div className="admin-screen__empty">
+              {viewMode === 'alerts'
+                ? 'No hay alertas pendientes. Todo bajo control.'
+                : 'No hay mesas configuradas en esta sucursal.'}
+            </div>
+          );
+        }
+
+        return (
+          <div className="admin-screen__grid">
+            {visibleTables.map((table) => {
+              const hasAlerts = (table.unseenCount || 0) > 0;
+              const isAvailable = table.currentState === 'AVAILABLE';
+              const variant = getVariant(table);
+              const title =
+                hasAlerts && table.eventType?.eventName
+                  ? table.eventType.eventName
+                  : table.eventType?.stateName ||
+                    translateState(table.currentState);
+
+              // Action y handler según vista y estado.
+              let actionLabel = '¡LISTO!';
+              let onActionClick = () => markEventsAsSeen(table.id);
+              if (viewMode === 'tables' && !hasAlerts) {
+                if (isAvailable) {
+                  actionLabel = 'Ocupar';
+                  onActionClick = () => markAsOccupied(table.id);
+                } else {
+                  actionLabel = 'Liberar';
+                  onActionClick = () => markAsAvailable(table.id);
+                }
+              }
+
+              return (
+                <AlertCard
+                  key={table.id}
+                  tableName={table.tableName || '-'}
+                  variant={variant}
+                  title={title}
+                  waitTime={hasAlerts || !isAvailable ? formatWait(table.waitingTime) : ''}
+                  icon={table.eventType?.userIcon}
+                  actionLabel={actionLabel}
+                  badgeCount={hasAlerts ? table.unseenCount : null}
+                  dimmed={viewMode === 'tables' && !hasAlerts}
+                  onClick={() => viewEventHistory(table.id)}
+                  onActionClick={onActionClick}
+                />
+              );
+            })}
+          </div>
+        );
+      })()}
 
       <AdminHistoryModal
         show={showEventsModal}

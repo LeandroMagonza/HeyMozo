@@ -81,6 +81,30 @@ module.exports = (sequelize) => {
       allowNull: true,
       unique: ['companyId', 'systemEventType']
     },
+    // Controla dónde aparece el EventType en la UI del cliente.
+    // - 'quick_action': aparece en el grid 2x2 del modal "Llamar al Mozo"
+    // - 'main_action':  aparece como botón alargado debajo del grid
+    // - 'hidden':       no se muestra al cliente (uso admin / pago / etc.)
+    // null se trata como 'quick_action' por compatibilidad.
+    customerDisplay: {
+      type: DataTypes.ENUM('quick_action', 'main_action', 'hidden'),
+      allowNull: true,
+      defaultValue: null
+    },
+    // Variant de color que usa la AlertCard del mozo cuando este EventType
+    // dispara una alerta. Drivea el background semántico de la card.
+    //   - 'red'    → urgente / pago pendiente
+    //   - 'orange' → quick action (Hielo, Condimentos, etc.)
+    //   - 'yellow' → llamado de mozo genérico / espera
+    //   - 'paid'   → confirmado / mesa liberada (verde)
+    //   - 'purple' → nuevo pedido (F2)
+    //   - 'blue'   → info / secundario
+    // null = system event (SCAN/MARK_SEEN/OCCUPY) que no se renderea como card.
+    cardVariant: {
+      type: DataTypes.ENUM('red', 'orange', 'yellow', 'paid', 'purple', 'blue'),
+      allowNull: true,
+      defaultValue: null
+    },
     isActive: {
       type: DataTypes.BOOLEAN,
       defaultValue: true

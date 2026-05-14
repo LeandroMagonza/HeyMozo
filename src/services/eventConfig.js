@@ -3,83 +3,156 @@ const { EventType, EventConfiguration } = require('../models');
 class EventConfigService {
   static async createDefaultEventTypes(companyId, createdBy = null) {
     const defaultEventTypes = [
-      // System Events (cannot be deleted)
+      // ─── System Events (no se pueden borrar, ocultos al cliente) ────────
       {
-        eventName: 'Location Scanned',
-        stateName: 'Scanned',
+        eventName: 'Página Escaneada',
+        stateName: 'Escaneado',
         userColor: '#6c757d',
         userFontColor: '#ffffff',
         userIcon: null,
         adminColor: '#e9ecef',
         priority: 100,
         systemEventType: 'SCAN',
+        customerDisplay: 'hidden',
+        cardVariant: null,
         isDefault: true
       },
       {
-        eventName: 'Acknowledged',
-        stateName: 'Seen',
+        eventName: 'Visto',
+        stateName: 'Visto',
         userColor: '#28a745',
         userFontColor: '#ffffff',
         userIcon: null,
         adminColor: '#d4edda',
         priority: 90,
         systemEventType: 'MARK_SEEN',
+        customerDisplay: 'hidden',
+        cardVariant: null,
         isDefault: true
       },
       {
-        eventName: 'Occupy Location',
-        stateName: 'Occupied',
+        eventName: 'Ocupar Mesa',
+        stateName: 'Ocupada',
         userColor: '#ffc107',
         userFontColor: '#000000',
         userIcon: null,
         adminColor: '#fff3cd',
         priority: 80,
         systemEventType: 'OCCUPY',
+        customerDisplay: 'hidden',
+        cardVariant: null,
         isDefault: true
       },
       {
-        eventName: 'Vacate Location',
-        stateName: 'Available',
+        eventName: 'Mesa Disponible',
+        stateName: 'Disponible',
         userColor: '#28a745',
         userFontColor: '#ffffff',
         userIcon: null,
         adminColor: '#d1ecf1',
         priority: 70,
         systemEventType: 'VACATE',
+        customerDisplay: 'hidden',
+        cardVariant: 'paid',
         isDefault: true
       },
-      // Default Custom Events (can be modified/deleted)
+
+      // ─── Botón principal del modal del cliente ──────────────────────────
       {
-        eventName: 'Call Waiter',
-        stateName: 'Waiter Called',
-        userColor: '#007bff',
+        eventName: 'Llamar al Mozo',
+        stateName: 'Mozo llamado',
+        userColor: '#e07b00',
         userFontColor: '#ffffff',
-        userIcon: 'FaUser',
+        userIcon: '🙋',
         adminColor: '#ffc107',
         priority: 50,
         systemEventType: null,
+        customerDisplay: 'main_action',
+        cardVariant: 'yellow',
         isDefault: true
       },
+
+      // ─── Oculto en F1; será el botón Pagar en F2 ────────────────────────
       {
-        eventName: 'Request Check',
-        stateName: 'Check Requested',
-        userColor: '#28a745',
+        eventName: 'Pedir Cuenta',
+        stateName: 'Cuenta pedida',
+        userColor: '#16a34a',
         userFontColor: '#ffffff',
         userIcon: 'FaFileInvoiceDollar',
         adminColor: '#17a2b8',
         priority: 40,
         systemEventType: null,
+        customerDisplay: 'hidden',
+        cardVariant: 'red',
         isDefault: true
       },
+
+      // ─── Oculto en F1; habilitable desde admin en F2 ────────────────────
       {
-        eventName: 'Call Manager',
-        stateName: 'Manager Called',
+        eventName: 'Llamar al Encargado',
+        stateName: 'Encargado llamado',
         userColor: '#dc3545',
         userFontColor: '#ffffff',
         userIcon: 'FaUserTie',
         adminColor: '#fd7e14',
         priority: 60,
         systemEventType: null,
+        customerDisplay: 'hidden',
+        cardVariant: 'red',
+        isDefault: true
+      },
+
+      // ─── Quick actions configurables (grid 2x2 del modal) ───────────────
+      {
+        eventName: 'Hielo',
+        stateName: 'Solicitado',
+        userColor: '#06b6d4',
+        userFontColor: '#ffffff',
+        userIcon: '🧊',
+        adminColor: '#fef3c7',
+        priority: 35,
+        systemEventType: null,
+        customerDisplay: 'quick_action',
+        cardVariant: 'orange',
+        isDefault: true
+      },
+      {
+        eventName: 'Condimentos',
+        stateName: 'Solicitado',
+        userColor: '#f59e0b',
+        userFontColor: '#ffffff',
+        userIcon: '🧂',
+        adminColor: '#fef3c7',
+        priority: 32,
+        systemEventType: null,
+        customerDisplay: 'quick_action',
+        cardVariant: 'orange',
+        isDefault: true
+      },
+      {
+        eventName: 'Servilletas',
+        stateName: 'Solicitado',
+        userColor: '#94a3b8',
+        userFontColor: '#ffffff',
+        userIcon: '📄',
+        adminColor: '#fef3c7',
+        priority: 30,
+        systemEventType: null,
+        customerDisplay: 'quick_action',
+        cardVariant: 'orange',
+        isDefault: true
+      },
+      {
+        eventName: 'Limpiar mesa',
+        stateName: 'Solicitado',
+        userColor: '#10b981',
+        userFontColor: '#ffffff',
+        userIcon: '🧽',
+        adminColor: '#fef3c7',
+        priority: 28,
+        systemEventType: null,
+        customerDisplay: 'quick_action',
+        cardVariant: 'orange',
         isDefault: true
       }
     ];
@@ -451,11 +524,33 @@ class EventConfigService {
     return eventsWithConfig;
   }
 
+  // Devuelve los EventTypes que el cliente puede disparar, agrupados por
+  // dónde aparecen en la UI según `customerDisplay`.
+  //
+  // Shape:
+  //   { quickActions: EventType[], mainActions: EventType[], all: EventType[] }
+  //
+  // Reglas:
+  //   - System events siempre se excluyen.
+  //   - 'hidden' se excluye.
+  //   - 'main_action' → mainActions.
+  //   - 'quick_action' o null (legacy/no asignado) → quickActions.
+  //   - `all` queda con la unión, para callers que prefieren un array plano.
   static async getCustomerEventsForTable(tableId) {
-    console.log('📱📱📱 getCustomerEventsForTable DEFINITELY called for table:', tableId);
-    const result = await this.resolveEventsForTable(tableId, false); // Exclude system events
-    console.log('📱📱📱 getCustomerEventsForTable result count:', result.length);
-    return result;
+    console.log('📱 getCustomerEventsForTable called for table:', tableId);
+    const allEvents = await this.resolveEventsForTable(tableId, false); // sin system events
+
+    const visible = allEvents.filter((e) => e.customerDisplay !== 'hidden');
+    const mainActions = visible.filter((e) => e.customerDisplay === 'main_action');
+    const quickActions = visible.filter(
+      (e) => e.customerDisplay === 'quick_action' || e.customerDisplay == null
+    );
+
+    console.log(
+      `📱 getCustomerEventsForTable: ${quickActions.length} quick, ${mainActions.length} main`
+    );
+
+    return { quickActions, mainActions, all: visible };
   }
 
   static async getAdminEventsForTable(tableId) {
@@ -480,13 +575,17 @@ class EventConfigService {
 
   static async findEventTypeByLegacyType(legacyType, companyId) {
     console.log(`Looking for legacy event type: ${legacyType} in company ${companyId}`);
-    
-    // Helper method to migrate existing events
+
+    // Helper to map legacy `type` strings (CALL_WAITER, etc.) to the new
+    // EventType rows. Tras la migración 20260511 los defaults están en
+    // español; los nombres en inglés ya no existen como filas activas.
     const legacyMapping = {
-      'CALL_WAITER': { eventName: 'Call Waiter', systemEventType: null },
-      'REQUEST_CHECK': { eventName: 'Request Check', systemEventType: null },
-      'CALL_MANAGER': { eventName: 'Call Manager', systemEventType: null },
+      'CALL_WAITER': { eventName: 'Llamar al Mozo', systemEventType: null },
+      'REQUEST_CHECK': { eventName: 'Pedir Cuenta', systemEventType: null },
+      'CALL_MANAGER': { eventName: 'Llamar al Encargado', systemEventType: null },
       'MARK_SEEN': { eventName: null, systemEventType: 'MARK_SEEN' },
+      'MARK_AVAILABLE': { eventName: null, systemEventType: 'VACATE' },
+      'MARK_OCCUPIED': { eventName: null, systemEventType: 'OCCUPY' },
       'SCAN': { eventName: null, systemEventType: 'SCAN' }
     };
 
