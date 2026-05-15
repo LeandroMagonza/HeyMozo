@@ -13,7 +13,7 @@ const JWT_EXPIRY = '7d'; // Token valid for 7 days
  */
 const generateToken = (user) => {
   return jwt.sign(
-    { id: user.id, email: user.email, isAdmin: user.isAdmin },
+    { id: user.id, email: user.email, isAdmin: user.isAdmin, role: user.role },
     JWT_SECRET,
     { expiresIn: JWT_EXPIRY }
   );
@@ -180,10 +180,31 @@ const checkTablePermission = async (req, res, next) => {
   }
 };
 
+/**
+ * Middleware factory that restricts access to users with a specific role.
+ * platformAdmin always passes (equivalent to isAdmin bypass).
+ * Usage: router.get('/path', authenticate, requireRole('owner', 'cashier'), handler)
+ * @param {...string} roles - Allowed roles
+ */
+const requireRole = (...roles) => (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+  if (req.user.role === 'platformAdmin') {
+    return next();
+  }
+  if (!roles.includes(req.user.role)) {
+    console.log(`🚫 requireRole - ${req.user.email} role='${req.user.role}' needs one of: ${roles.join(', ')}`);
+    return res.status(403).json({ error: 'Insufficient role' });
+  }
+  next();
+};
+
 module.exports = {
   generateToken,
   authenticate,
   requireAdmin,
+  requireRole,
   checkCompanyPermission,
   checkBranchPermission,
   checkTablePermission
