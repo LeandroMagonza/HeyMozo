@@ -191,6 +191,75 @@ Mantener convención existente:
 - Idempotentes: cada step valida estado antes de escribir. Las migrations de Fase 1 son referencia, especialmente [`20260514_cleanup_duplicate_event_types.js`](src/database/migrations/20260514_cleanup_duplicate_event_types.js) por el patrón de cleanup defensivo.
 - Steps comentados con el `por qué`, no solo el `qué`.
 
+### Tests — selectivos, no exhaustivos
+
+Con 2 devs y 7 sprints, testear todo frena el flow. Regla pragmática:
+
+**Sí testear (MVP)**:
+- Servicios en `src/services/` (lógica de negocio: sessions, devices, hard limits, payments).
+- Middleware de auth y permisos en `src/middleware/`.
+- Migrations: corrida 2× consecutiva no debe romper ni duplicar datos.
+- **Bug en producción → primer commit del fix es el test que reproduce el bug**, después el código que lo arregla. Evita regresiones.
+
+**No testear (MVP)**:
+- Componentes React, layouts, CSS — se prueban a ojo con `npm run dev`.
+- Páginas y flujos UI completos — frágiles, alto costo, bajo ROI con 2 devs.
+
+Stack: Jest (ya viene con CRA, no agregar nada). Tests viven junto al código en `__tests__/` o `*.test.js`. Para tests de backend con DB, mockear Sequelize cuando sea posible; integration tests con DB real solo donde la lógica lo requiera (ej: migrations).
+
+CI corre `npm test -- --watchAll=false` en cada PR vía GitHub Actions (ver [.github/workflows/test.yml](.github/workflows/test.yml)). PR rojo no se mergea.
+
+### Clean architecture — regla simple
+
+Para código nuevo de Fase 2:
+
+- **Lógica de negocio va en `src/services/`** ([`eventConfig.js`](src/services/eventConfig.js) es el ejemplo).
+- **Routes (`src/routes/`) son delgados**: parsean request, llaman service, devuelven response. Nada de SQL ni reglas de negocio inline.
+- **Modelos (`src/models/`)** solo definen schema + asociaciones + hooks de validación. No reglas de negocio.
+- **Middleware (`src/middleware/`)** solo para cross-cutting concerns (auth, logging, validación de request).
+
+Ejemplo de la regla aplicada en Sprint 1.2:
+
+```
+routes/sessions.js          → 10-20 líneas, llama a sessionService
+services/sessionService.js  → toda la lógica (crear sesión, validar device, expirar)
+models/TableSession.js      → schema Sequelize + asociaciones
+```
+
+Esto hace los tests fáciles: Jest mockea el service, no Express.
+
+### Self-review con Claude Code antes de pedir review humano
+
+Antes de pushear una sub-PR, en la sesión de Claude Code correr:
+
+- `/review` — revisión general del diff (calidad, simplicidad, edge cases).
+- `/security-review` — **obligatorio** en PRs que toquen auth, roles, sesiones, pagos o hard limits.
+
+Captura lo obvio antes que el reviewer humano lo vea. Ahorra ida-y-vuelta.
+
+### Sesiones de Claude Code: una por sub-PR
+
+- Sub-PR nueva → sesión nueva. Le decís: "Sprint 1.X de PHASE2_PLAN.md, branch `feature/phase2-...`".
+- Trabajás hasta abrir el PR.
+- Cerrás la sesión.
+- No mezclar 2 sub-PRs en una misma sesión: el contexto se contamina y baja la calidad del output.
+
+Si una sesión se complica o el contexto se ensucia, `/clear` y arrancás de nuevo con el plan en mano.
+
+### Definition of Done (checklist antes de pedir review)
+
+Cada sub-PR antes de marcar "Ready for review":
+
+- [ ] Branch creada desde `master` actualizado.
+- [ ] `npm test -- --watchAll=false` pasa local.
+- [ ] CI (GitHub Actions) verde.
+- [ ] `/review` corrido en la sesión, comentarios atendidos.
+- [ ] `/security-review` corrido si el PR toca auth/sesiones/pagos.
+- [ ] Migrations (si hay) corridas 2× local sin error ni duplicados.
+- [ ] PR description usa el template de esta sección.
+- [ ] Reviewer (otro dev) asignado.
+- [ ] Sin `console.log` de debug ni código comentado muerto.
+
 ### División del trabajo
 
 A definir entre los 2 devs antes de Sprint 1:
