@@ -9,6 +9,7 @@ import CompanyConfig from "./components/CompanyConfig";
 import CompanyList from "./components/CompanyList";
 import CompanyCreate from "./components/CompanyCreate";
 import TableUrls from "./components/TableUrls";
+import MenuAdmin from "./components/MenuAdmin";
 import LoginPage from "./components/LoginPage";
 import LoginForm from "./components/LoginForm";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -277,6 +278,15 @@ function App() {
           element={
             <ProtectedRoute>
               <TableUrls />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/:companyId/:branchId/menu"
+          element={
+            <ProtectedRoute>
+              <MenuAdmin />
             </ProtectedRoute>
           }
         />

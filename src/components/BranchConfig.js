@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { getBranch, getTables, updateBranch, updateTable, createTable, deleteTable, getCompany } from '../services/api';
 import './BranchConfig.css';
-import { FaEye, FaQrcode, FaChair, FaSave, FaTrash, FaPlus, FaCalendarAlt } from 'react-icons/fa';
+import { FaEye, FaQrcode, FaChair, FaSave, FaTrash, FaPlus, FaCalendarAlt, FaUtensils } from 'react-icons/fa';
 import '../styles/common.css';
 import AdminHeader from './AdminHeader';
 import EventConfigModal from './EventConfigModal';
@@ -256,11 +256,17 @@ const BranchConfig = () => {
             <button className="app-button success" onClick={handleSaveBranch}>
               <FaSave /> Guardar Cambios
             </button>
-            <button 
+            <button
               className="app-button primary"
               onClick={() => setShowEventConfigModal(true)}
             >
               <FaCalendarAlt /> Configurar Eventos
+            </button>
+            <button
+              className="app-button"
+              onClick={() => navigate(`/admin/${companyId}/${branchId}/menu`)}
+            >
+              <FaUtensils /> Gestionar Menú
             </button>
           </div>
 
