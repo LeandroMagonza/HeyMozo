@@ -274,6 +274,31 @@ router.get('/check-access', authMiddleware.authenticate, async (req, res) => {
         reason = hasAccess ? 'User has edit access to company' : 'Requires edit access to company';
       }
     }
+    // Route: /admin/:companyId/branch/create - Edit access to company
+    else if (routeParts.length === 4 && routeParts[2] === 'branch' && routeParts[3] === 'create') {
+      const companyId = parseInt(routeParts[1]);
+      if (isNaN(companyId)) {
+        return res.status(400).json({ error: 'Invalid company ID' });
+      }
+
+      if (user.isAdmin) {
+        hasAccess = true;
+        accessLevel = 'admin';
+        reason = 'User is admin';
+      } else {
+        const permission = await Permission.findOne({
+          where: {
+            userId: user.id,
+            resourceType: 'company',
+            resourceId: companyId
+          }
+        });
+
+        hasAccess = permission?.permissionLevel === 'edit';
+        accessLevel = hasAccess ? 'edit' : null;
+        reason = hasAccess ? 'User has edit access to company' : 'Requires edit access to company';
+      }
+    }
     // Route: /admin/:companyId/:branchId/config - Edit access to company or branch
     else if (routeParts.length === 4 && routeParts[3] === 'config') {
       const companyId = parseInt(routeParts[1]);
