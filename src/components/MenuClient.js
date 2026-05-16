@@ -89,7 +89,7 @@ const MenuClient = () => {
   }, [categories, activeCategoryId]);
 
   const handleBack = () => {
-    navigate(`/m/${companyId}/${branchId}/${tableId}`);
+    navigate(-1);
   };
 
   if (loading) {
