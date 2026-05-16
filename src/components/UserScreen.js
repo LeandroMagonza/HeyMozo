@@ -7,23 +7,25 @@
 // por el backend (getCustomerEventsForTable).
 
 import React, { useEffect, useState, useRef } from 'react';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import Phone from './Phone';
 import DecorativeGlow from './DecorativeGlow';
 import CallWaiterSheet from './CallWaiterSheet';
 import HistoryModal from './HistoryModal';
-import { getCompany, getBranch, getTable, sendEvent } from '../services/api';
+import { getCompany, getBranch, getTable, getPublicMenu, sendEvent } from '../services/api';
 import './UserScreen.css';
 
 const EMPTY_GROUPS = { quickActions: [], mainActions: [], all: [] };
 
 const UserScreen = () => {
   const { companyId, branchId, tableId } = useParams();
+  const navigate = useNavigate();
   const [company, setCompany] = useState(null);
   const [branch, setBranch] = useState(null);
   const [table, setTable] = useState(null);
   const [availableEventTypes, setAvailableEventTypes] = useState(EMPTY_GROUPS);
   const [menuLink, setMenuLink] = useState('');
+  const [hasInternalMenu, setHasInternalMenu] = useState(false);
   const [userEvents, setUserEvents] = useState([]); // session-only history
   const [sheetOpen, setSheetOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -48,10 +50,11 @@ const UserScreen = () => {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [companyData, branchData, tableData] = await Promise.all([
+        const [companyData, branchData, tableData, menuData] = await Promise.all([
           getCompany(companyId),
           getBranch(branchId),
           getTable(tableId),
+          getPublicMenu(branchId).catch(() => ({ data: { categories: [] } })),
         ]);
 
         setCompany(companyData.data);
@@ -74,6 +77,7 @@ const UserScreen = () => {
         const branchMenu = branchData.data.menu;
         const companyMenu = companyData.data.menu;
         setMenuLink(branchMenu || companyMenu || '');
+        setHasInternalMenu((menuData.data.categories || []).length > 0);
 
         if (!scanSentRef.current) {
           scanSentRef.current = true;
@@ -110,12 +114,16 @@ const UserScreen = () => {
   };
 
   const handleOpenMenu = () => {
-    if (menuLink) window.open(menuLink, '_blank');
+    if (hasInternalMenu) {
+      navigate(`/m/${companyId}/${branchId}/${tableId}/menu`);
+    } else if (menuLink) {
+      window.open(menuLink, '_blank');
+    }
   };
 
   const restaurantName = company?.name || 'Cargando...';
   const tableName = table?.tableName ? `la ${table.tableName}` : '';
-  const hasMenu = Boolean(menuLink);
+  const hasMenu = hasInternalMenu || Boolean(menuLink);
 
   return (
     <Phone className="user-screen">

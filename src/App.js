@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import AdminScreen from "./components/AdminScreen";
 import UserScreen from "./components/UserScreen";
+import MenuClient from "./components/MenuClient";
 import BranchConfig from "./components/BranchConfig";
 import CompanyConfig from "./components/CompanyConfig";
 import CompanyList from "./components/CompanyList";
@@ -229,6 +230,12 @@ function App() {
         <Route
           path="/user/:companyId/:branchId/:tableId"
           element={<UserScreen />}
+        />
+
+        {/* Customer menu route (Sprint 2.5) — sibling of /m/:c/:b/:t from Sprint 1.4 */}
+        <Route
+          path="/m/:companyId/:branchId/:tableId/menu"
+          element={<MenuClient />}
         />
 
         {/* Authentication routes */}
