@@ -8,6 +8,8 @@ const Company = require('./Company');
 const Branch = require('./Branch');
 const Table = require('./Table');
 const MailingList = require('./MailingList');
+const Category = require('./Category');
+const MenuItem = require('./MenuItem');
 
 // Import new model factories
 const eventTypeFactory = require('./EventType');
@@ -20,7 +22,7 @@ const EventConfiguration = eventConfigurationFactory(sequelize);
 const Event = eventFactory(sequelize);
 
 // Set up new model associations
-const models = { User, Permission, AuthToken, Company, Branch, Table, Event, MailingList, EventType, EventConfiguration };
+const models = { User, Permission, AuthToken, Company, Branch, Table, Event, MailingList, EventType, EventConfiguration, Category, MenuItem };
 Object.keys(models).forEach(modelName => {
   if (models[modelName].associate) {
     models[modelName].associate(models);
@@ -45,6 +47,13 @@ Branch.hasMany(Table, { foreignKey: 'branchId' });
 Table.belongsTo(Branch, { foreignKey: 'branchId' });
 Table.hasMany(Event, { foreignKey: 'tableId', as: 'events' });
 
+// Menu associations (Sprint 2.1). Aliases en lowercase: gotcha del codebase
+// (alias case-sensitive; mismatch devuelve arrays vacíos sin error).
+Branch.hasMany(Category, { as: 'categories', foreignKey: 'branchId' });
+Category.belongsTo(Branch, { as: 'branch', foreignKey: 'branchId' });
+Category.hasMany(MenuItem, { as: 'items', foreignKey: 'categoryId' });
+MenuItem.belongsTo(Category, { as: 'category', foreignKey: 'categoryId' });
+
 module.exports = {
   User,
   Permission,
@@ -55,5 +64,7 @@ module.exports = {
   Event,
   MailingList,
   EventType,
-  EventConfiguration
-}; 
+  EventConfiguration,
+  Category,
+  MenuItem
+};
