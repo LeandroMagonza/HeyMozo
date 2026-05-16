@@ -23,6 +23,10 @@ import BenefitsSection from "./components/BenefitsSection";
 import HowItWorks from "./components/HowItWorks";
 
 // Redirect helpers — extract URL params and navigate to new-style routes.
+function UserRedirect() {
+  const { companyId, branchId, tableId } = useParams();
+  return <Navigate to={`/m/${companyId}/${branchId}/${tableId}`} replace />;
+}
 function AdminBranchRedirect() {
   const { branchId } = useParams();
   return <Navigate to={`/piso/${branchId}`} replace />;
@@ -247,10 +251,9 @@ function App() {
         {/* Public routes */}
         <Route path="/" element={<LandingPage />} />
         <Route path="/faq" element={<FAQ />} />
-        <Route
-          path="/user/:companyId/:branchId/:tableId"
-          element={<UserScreen />}
-        />
+        <Route path="/m/:companyId/:branchId/:tableId" element={<UserScreen />} />
+        {/* Redirect 301 desde URL vieja (Sprint 1.4) */}
+        <Route path="/user/:companyId/:branchId/:tableId" element={<UserRedirect />} />
 
         {/* Authentication routes */}
         <Route path="/login" element={<LoginPage />} />

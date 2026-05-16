@@ -312,7 +312,7 @@ const BranchConfig = () => {
                             <div className="table-actions">
                               <button 
                                 className="app-button small"
-                                onClick={() => navigate(`/user/${companyId}/${branchId}/${table.id}`)}
+                                onClick={() => navigate(`/m/${companyId}/${branchId}/${table.id}`)}
                               >
                                 <FaEye /> Ver
                               </button>
