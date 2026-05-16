@@ -125,8 +125,8 @@ Distinguir zombi (>30min sin heartbeat, pagos completos) vs realmente caliente:
 
 | # | Nombre | Status | Scope resumido |
 |---|---|---|---|
-| 1 | Foundation | 📝 | Roles + middleware + reorganización rutas + shells vacías + URL `/m/` + modelos `TableSession` + `Device` |
-| 2 | Menú + onboarding | 📝 | Wizard crear sucursal (modo B) + modelos `Category`/`MenuItem` + vista admin menú + vista cliente menú |
+| 1 | Foundation | 🚧 | Roles + middleware + reorganización rutas + shells vacías + URL `/m/` + modelos `TableSession` + `Device` |
+| 2 | Menú + onboarding | 🚧 | Wizard crear sucursal (modo B) + modelos `Category`/`MenuItem` + vista admin menú + vista cliente menú |
 | 3 | Pedido + identificación | 📝 | `Order`/`OrderItem` + carrito + ConfirmadoPage + AlertCard `new_order` + polling cliente + pantalla "PEDIDO LISTO" + emoji auto + aprobación transitiva entre amigos + override mozo |
 | 4 | Pagos manuales B | 📝 | PagarPage B con 4 métodos + sub-pantallas transferencia/efectivo/posnet/validando + cuentas bancarias config + Tab Acciones CajaShell (validar transferencias) + EventTypes pago manual |
 | 5 | Pago MP + Post-pago | 📝 | Integración Mercado Pago + `Payment` + PostPagoPage con rating + `Review`/`ReviewTag` |
@@ -136,6 +136,8 @@ Distinguir zombi (>30min sin heartbeat, pagos completos) vs realmente caliente:
 
 Status: 📝 planeado · 🚧 en curso · ✅ mergeado
 
+> **Estado live de los sub-PRs** (qué está en review / mergeado): ver [PHASE2_STATUS.md](PHASE2_STATUS.md).
+
 ### Sprint 1 — desglose en sub-PRs
 
 Sprint 1 es el más grande. Lo partimos en 4 PRs aislables, cada uno mergeable solo:
@@ -144,6 +146,79 @@ Sprint 1 es el más grande. Lo partimos en 4 PRs aislables, cada uno mergeable s
 2. **1.2 Modelos `TableSession` + `Device`** — migration + modelos Sequelize + asociaciones. 0 cambios visibles en UI.
 3. **1.3 Shells (`OpShell`, `CajaShell`, `AdminShell`)** — layouts vacíos con sidebar/topnav, ruteados desde `/piso`, `/caja`, `/config`. Pantallas viejas siguen funcionando con redirects 301 desde `/admin/...`.
 4. **1.4 URL cliente `/m/:c/:b/:t`** — nueva ruta + redirect 301 desde `/user/:c/:b/:t`.
+
+### Sprint 2 — desglose en sub-PRs
+
+Sprint 2 introduce el **menú interno** (Category + MenuItem) a nivel sucursal y el **wizard de creación de sucursal**. 5 sub-PRs independientes (todas desde master).
+
+#### Modelos nuevos
+
+**`Category`** (paranoid)
+
+| Campo | Tipo | Notas |
+|---|---|---|
+| `id` | INTEGER PK autoIncrement | |
+| `branchId` | INTEGER FK NOT NULL | → Branch. Menú vive a nivel sucursal (no Company). |
+| `name` | STRING NOT NULL | "Entradas", "Bebidas", etc. |
+| `displayOrder` | INTEGER DEFAULT 0 | Para drag-drop ordering. |
+| `isActive` | BOOLEAN DEFAULT true | Ocultar sin borrar. |
+
+**`MenuItem`** (paranoid)
+
+| Campo | Tipo | Notas |
+|---|---|---|
+| `id` | INTEGER PK autoIncrement | |
+| `categoryId` | INTEGER FK NOT NULL | → Category |
+| `name` | STRING NOT NULL | (mockup usa `title` — renombramos a `name` por consistencia con `Branch.name`, `EventType.eventName`). |
+| `description` | TEXT nullable | |
+| `priceCents` | INTEGER NOT NULL | Centavos, NO decimal. |
+| `imageUrl` | STRING nullable | URL externa (mismo patrón que `Branch.logo`). Sin upload propio en MVP. |
+| `isAvailable` | BOOLEAN DEFAULT true | Toggle "agotado" manual. ÚNICO campo de stock en MVP. |
+| `displayOrder` | INTEGER DEFAULT 0 | |
+| `metaProductId` | STRING nullable | Para Meta Commerce sync (Fase 3 delivery). NULL hasta entonces. NO exponer en UI admin MVP. |
+| `stock` | INTEGER nullable | Tracking numérico. NULL hasta Fase 3 delivery. NO exponer en UI admin MVP (mismo patrón que `metaProductId` — agregar columna ahora evita migration futura sobre tabla con datos reales). |
+
+**`Branch` (alter)**
+
+- `+ modality` ENUM(`'mozo'`, `'autoservicio'`) NOT NULL DEFAULT `'mozo'`
+- `menu` (STRING link externo viejo) **se mantiene** como fallback cuando la sucursal aún no cargó menú interno.
+
+#### Asociaciones (en `src/models/index.js`)
+
+```js
+Branch.hasMany(Category, { as: 'categories', foreignKey: 'branchId' });
+Category.belongsTo(Branch, { as: 'branch', foreignKey: 'branchId' });
+Category.hasMany(MenuItem, { as: 'items', foreignKey: 'categoryId' });
+MenuItem.belongsTo(Category, { as: 'category', foreignKey: 'categoryId' });
+```
+
+Aliases en lowercase (`'categories'`, `'items'`, `'branch'`, `'category'`) — gotcha del codebase: alias case-sensitive, mismatch devuelve arrays vacíos sin error (ver [CLAUDE.md](CLAUDE.md) gotchas #2).
+
+#### Sub-PRs
+
+| # | Branch | Scope | Depende de |
+|---|---|---|---|
+| **2.1** | `feature/phase2-menu-models` | Migration crea `Categories` + `MenuItems` + ADD COLUMN `Branches.modality`. Modelos Sequelize. Asociaciones. Cero UI, cero endpoints. | — |
+| **2.2** | `feature/phase2-menu-endpoints` | Rutas en `src/routes/index.js`: CRUD `/api/branches/:bid/categories`, CRUD `/api/categories/:cid/items`, endpoints reorder. Permisos vía `checkBranchPermission`. | 2.1 |
+| **2.3** | `feature/phase2-menu-admin` | Vista admin `/config/:c/:b/menu` dentro de AdminShell. CRUD cat + ítems, drag-drop reorder, toggle `isAvailable`. NO mostrar `stock` ni `metaProductId`. | 2.2 |
+| **2.4** | `feature/phase2-branch-wizard` | `BranchCreate.js` wizard 3 pasos: (1) datos básicos + logo, (2) modalidad (B preseleccionada y única — A bloqueada con tooltip "Disponible próximamente"), (3) cantidad+nombres de mesas iniciales. | — (paralelizable con 2.2/2.3) |
+| **2.5** | `feature/phase2-menu-client` | Vista cliente `/m/:c/:b/:t/menu` (port de `MenuPage` del mockup, ver [MOCKUP_HANDOFF.md §menuPage](MOCKUP_HANDOFF.md)). En `UserScreen`: si branch tiene categorías cargadas → abre menú interno; sino → fallback al link `Branch.menu` actual (sin breaking change). | 2.2 |
+
+#### Decisiones explícitas
+
+- **Nivel del menú**: Branch (no Company, no override).
+- **`name` no `title`**: consistencia con resto del schema.
+- **`paranoid: true`** en Category y MenuItem.
+- **Dual fallback en cliente**: menú interno si está cargado, sino link externo viejo.
+- **Wizard pasos**: 3 (datos / modalidad / mesas). Modalidad A bloqueada.
+- **`stock` y `metaProductId`** en DB ahora pero ocultos en UI MVP. Patrón "sumar columnas nullables anticipadamente para evitar migrations futuras sobre tabla con datos reales".
+
+#### Lo que NO entra en Sprint 2 (capturado pero pospuesto)
+
+- **Carga de menú asistida por IA** (PDF/Excel/URL via Claude Vision) — ver [ROADMAP.md](ROADMAP.md). Se diseñó pensando en Sprint 2 pero NO entra al MVP.
+- **Promos en menú** — ver [ROADMAP.md](ROADMAP.md). Candidata a Sprint 2.6 o v1.5.
+- **Upload propio de imágenes** — sigue siendo URL externa. S3/Cloudinary post-MVP.
+- **Stock numérico funcional** — columna existe, lógica de decremento entra en Fase 3 delivery.
 
 ---
 
@@ -232,6 +307,8 @@ A es mejor si los devs tienen skills muy distintos. B si los dos son full-stack 
 
 ## Referencias
 
+- [PHASE2_STATUS.md](PHASE2_STATUS.md) — tracker live de sub-PRs (qué está en review / mergeado).
+- [ROADMAP.md](ROADMAP.md) — features post-MVP (reservas con mapa, promos con IA, carga de menú con IA, delivery Fase 3 y 4).
 - [UI_MIGRATION.md](UI_MIGRATION.md) — plan de Fase 1 (completado).
 - [MOCKUP_HANDOFF.md](MOCKUP_HANDOFF.md) — fuente de verdad del mockup original.
 - [CLAUDE.md](CLAUDE.md) — arquitectura del codebase y convenciones.
