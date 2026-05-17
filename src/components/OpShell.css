@@ -1,0 +1,236 @@
+/* OpShell.css — layout del panel operativo del piso (mozo) */
+
+.op-shell {
+  display: flex;
+  min-height: 100vh;
+  background: var(--rd-bg, #1c1c1e);
+  font-family: var(--rd-font-sans);
+}
+
+/* ===== Sidebar ===== */
+
+.op-shell__sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--rd-bg-card, #2c2c2e);
+  border-right: 1px solid var(--rd-border, #3a3a3c);
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+.op-shell__brand {
+  padding: 1.25rem 1.125rem 1rem;
+  border-bottom: 1px solid var(--rd-border, #3a3a3c);
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.op-shell__brand-name {
+  color: var(--rd-text, #ffffff);
+  font-size: 1.0625rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.op-shell__brand-role {
+  color: var(--rd-brand-orange, #e07b00);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* ===== Nav ===== */
+
+.op-shell__nav {
+  flex: 1;
+  padding: 0.75rem 0.625rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.op-shell__nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.5625rem 0.75rem;
+  border-radius: var(--rd-radius-md, 8px);
+  color: var(--rd-text-tertiary, #9ca3af);
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.op-shell__nav-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--rd-text-secondary, #e4e2e4);
+}
+
+.op-shell__nav-item--active {
+  background: rgba(224, 123, 0, 0.12);
+  color: var(--rd-brand-orange-light, #f97316);
+}
+
+.op-shell__nav-item--active:hover {
+  background: rgba(224, 123, 0, 0.16);
+  color: var(--rd-brand-orange-light, #f97316);
+}
+
+.op-shell__nav-icon {
+  font-size: 0.9375rem;
+  flex-shrink: 0;
+}
+
+/* ===== Footer ===== */
+
+.op-shell__footer {
+  padding: 0.75rem 0.625rem;
+  border-top: 1px solid var(--rd-border, #3a3a3c);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.op-shell__user {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.375rem 0.5rem;
+}
+
+.op-shell__user-icon {
+  color: var(--rd-brand-orange, #e07b00);
+  font-size: 0.875rem;
+  flex-shrink: 0;
+}
+
+.op-shell__user-email {
+  color: var(--rd-text-tertiary, #9ca3af);
+  font-size: 0.75rem;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.op-shell__logout {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  background: transparent;
+  border: 1px solid var(--rd-border, #3a3a3c);
+  border-radius: var(--rd-radius-md, 8px);
+  color: var(--rd-text-tertiary, #9ca3af);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.op-shell__logout:hover {
+  background: rgba(214, 45, 32, 0.1);
+  border-color: rgba(214, 45, 32, 0.4);
+  color: var(--rd-brand-red, #e8362a);
+}
+
+/* ===== Main ===== */
+
+.op-shell__main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.op-shell__topnav {
+  padding: 0.875rem 1.5rem;
+  background: var(--rd-bg-card, #2c2c2e);
+  border-bottom: 1px solid var(--rd-border, #3a3a3c);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+}
+
+.op-shell__topnav-title {
+  margin: 0;
+  color: var(--rd-text, #ffffff);
+  font-size: 1.0625rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.op-shell__content {
+  flex: 1;
+  padding: 2rem 1.5rem;
+}
+
+/* ===== Placeholder ===== */
+
+.op-shell__placeholder {
+  max-width: 480px;
+  padding: 2rem;
+  background: var(--rd-bg-card, #2c2c2e);
+  border: 1px solid var(--rd-border, #3a3a3c);
+  border-radius: var(--rd-radius-lg, 12px);
+}
+
+.op-shell__placeholder-title {
+  margin: 0 0 0.5rem;
+  color: var(--rd-text, #ffffff);
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.op-shell__placeholder-desc {
+  margin: 0;
+  color: var(--rd-text-tertiary, #9ca3af);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+/* ===== Responsive ===== */
+
+@media (max-width: 768px) {
+  .op-shell__sidebar {
+    width: 60px;
+  }
+
+  .op-shell__brand-name,
+  .op-shell__brand-role,
+  .op-shell__nav-item span,
+  .op-shell__user-email,
+  .op-shell__logout span {
+    display: none;
+  }
+
+  .op-shell__brand {
+    align-items: center;
+    padding: 1rem 0;
+  }
+
+  .op-shell__nav-item {
+    justify-content: center;
+    padding: 0.625rem;
+  }
+
+  .op-shell__user {
+    justify-content: center;
+  }
+
+  .op-shell__logout {
+    justify-content: center;
+    padding: 0.5rem;
+  }
+}
