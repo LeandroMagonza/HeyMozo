@@ -12,7 +12,9 @@ const {
   Table,
   Event,
   EventType,
-  Permission
+  Permission,
+  Category,
+  MenuItem
 } = require('../models');
 
 // Auth routes are mounted directly in server.js, not here
@@ -25,6 +27,7 @@ router.use('/users', userRoutes);
 router.use('/companies', authMiddleware.authenticate);
 router.use('/branches', authMiddleware.authenticate);
 router.use('/tables', authMiddleware.authenticate);
+router.use('/categories', authMiddleware.authenticate);
 
 // Specific company routes
 router.get('/companies/:companyId', authMiddleware.checkCompanyPermission, async (req, res) => {
@@ -753,6 +756,277 @@ router.delete('/branches/:branchId', authMiddleware.checkBranchPermission, async
   } catch (error) {
     console.error('Error deleting branch:', error);
     res.status(500).json({ error: 'Error deleting branch' });
+  }
+});
+
+// ============================================================
+// Sprint 2.2 — Menu endpoints
+// ============================================================
+
+// Fields in MenuItem hidden from UI in MVP (reserved for Fase 3 delivery).
+const MENU_ITEM_HIDDEN_FIELDS = ['stock', 'metaProductId'];
+
+// Resolve branchId for a category (used for permission checks on /categories routes).
+async function getBranchIdForCategory(categoryId) {
+  const cat = await Category.findByPk(categoryId, { attributes: ['branchId'] });
+  return cat ? cat.branchId : null;
+}
+
+// Check branch permission inline for routes where branchId is not a URL param.
+async function hasBranchAccess(user, branchId) {
+  if (user.isAdmin) return true;
+  const authService = require('../services/auth');
+  return authService.hasPermission(user.id, 'branch', branchId);
+}
+
+// --- Categories ---
+
+// GET /api/branches/:branchId/categories — list with nested items
+router.get('/branches/:branchId/categories', authMiddleware.checkBranchPermission, async (req, res) => {
+  try {
+    const categories = await Category.findAll({
+      where: { branchId: req.params.branchId },
+      order: [['displayOrder', 'ASC'], ['name', 'ASC']],
+      include: [{
+        model: MenuItem,
+        as: 'items',
+        attributes: { exclude: MENU_ITEM_HIDDEN_FIELDS },
+        required: false,
+        order: [['displayOrder', 'ASC'], ['name', 'ASC']]
+      }]
+    });
+    res.json(categories);
+  } catch (error) {
+    console.error('Error fetching categories:', error);
+    res.status(500).json({ error: 'Error fetching categories' });
+  }
+});
+
+// POST /api/branches/:branchId/categories — create category
+router.post('/branches/:branchId/categories', authMiddleware.checkBranchPermission, async (req, res) => {
+  try {
+    const branchId = parseInt(req.params.branchId);
+    const { name, displayOrder, isActive } = req.body;
+
+    if (!name) {
+      return res.status(400).json({ error: 'name es requerido' });
+    }
+
+    const category = await Category.create({ branchId, name, displayOrder, isActive });
+    res.status(201).json(category);
+  } catch (error) {
+    console.error('Error creating category:', error);
+    res.status(500).json({ error: 'Error creating category' });
+  }
+});
+
+// PUT /api/branches/:branchId/categories/reorder — bulk reorder (must be before /:categoryId)
+router.put('/branches/:branchId/categories/reorder', authMiddleware.checkBranchPermission, async (req, res) => {
+  try {
+    const { order } = req.body; // [{ id, displayOrder }]
+
+    if (!Array.isArray(order)) {
+      return res.status(400).json({ error: 'order debe ser un array de {id, displayOrder}' });
+    }
+
+    await Promise.all(
+      order.map(({ id, displayOrder }) =>
+        Category.update({ displayOrder }, { where: { id, branchId: req.params.branchId } })
+      )
+    );
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error reordering categories:', error);
+    res.status(500).json({ error: 'Error reordering categories' });
+  }
+});
+
+// PUT /api/branches/:branchId/categories/:categoryId — update category
+router.put('/branches/:branchId/categories/:categoryId', authMiddleware.checkBranchPermission, async (req, res) => {
+  try {
+    const category = await Category.findOne({
+      where: { id: req.params.categoryId, branchId: req.params.branchId }
+    });
+    if (!category) {
+      return res.status(404).json({ error: 'Category not found' });
+    }
+
+    const { name, displayOrder, isActive } = req.body;
+    await category.update({ name, displayOrder, isActive });
+    res.json(category);
+  } catch (error) {
+    console.error('Error updating category:', error);
+    res.status(500).json({ error: 'Error updating category' });
+  }
+});
+
+// DELETE /api/branches/:branchId/categories/:categoryId — soft delete
+router.delete('/branches/:branchId/categories/:categoryId', authMiddleware.checkBranchPermission, async (req, res) => {
+  try {
+    const category = await Category.findOne({
+      where: { id: req.params.categoryId, branchId: req.params.branchId }
+    });
+    if (!category) {
+      return res.status(404).json({ error: 'Category not found' });
+    }
+
+    await category.destroy();
+    res.status(204).send();
+  } catch (error) {
+    console.error('Error deleting category:', error);
+    res.status(500).json({ error: 'Error deleting category' });
+  }
+});
+
+// --- Menu Items ---
+
+// GET /api/categories/:categoryId/items — list items for a category
+router.get('/categories/:categoryId/items', async (req, res) => {
+  try {
+    const categoryId = parseInt(req.params.categoryId);
+    const branchId = await getBranchIdForCategory(categoryId);
+
+    if (!branchId) {
+      return res.status(404).json({ error: 'Category not found' });
+    }
+    if (!await hasBranchAccess(req.user, branchId)) {
+      return res.status(403).json({ error: 'Access denied to this branch' });
+    }
+
+    const items = await MenuItem.findAll({
+      where: { categoryId },
+      attributes: { exclude: MENU_ITEM_HIDDEN_FIELDS },
+      order: [['displayOrder', 'ASC'], ['name', 'ASC']]
+    });
+    res.json(items);
+  } catch (error) {
+    console.error('Error fetching menu items:', error);
+    res.status(500).json({ error: 'Error fetching menu items' });
+  }
+});
+
+// POST /api/categories/:categoryId/items — create item
+router.post('/categories/:categoryId/items', async (req, res) => {
+  try {
+    const categoryId = parseInt(req.params.categoryId);
+    const branchId = await getBranchIdForCategory(categoryId);
+
+    if (!branchId) {
+      return res.status(404).json({ error: 'Category not found' });
+    }
+    if (!await hasBranchAccess(req.user, branchId)) {
+      return res.status(403).json({ error: 'Access denied to this branch' });
+    }
+
+    const { name, description, priceCents, imageUrl, isAvailable, displayOrder } = req.body;
+
+    if (!name) {
+      return res.status(400).json({ error: 'name es requerido' });
+    }
+    if (priceCents === undefined || priceCents === null) {
+      return res.status(400).json({ error: 'priceCents es requerido' });
+    }
+
+    const item = await MenuItem.create({ categoryId, name, description, priceCents, imageUrl, isAvailable, displayOrder });
+    const created = item.toJSON();
+    MENU_ITEM_HIDDEN_FIELDS.forEach(f => delete created[f]);
+    res.status(201).json(created);
+  } catch (error) {
+    console.error('Error creating menu item:', error);
+    res.status(500).json({ error: 'Error creating menu item' });
+  }
+});
+
+// PUT /api/categories/:categoryId/items/reorder — bulk reorder (must be before /:itemId)
+router.put('/categories/:categoryId/items/reorder', async (req, res) => {
+  try {
+    const categoryId = parseInt(req.params.categoryId);
+    const branchId = await getBranchIdForCategory(categoryId);
+
+    if (!branchId) {
+      return res.status(404).json({ error: 'Category not found' });
+    }
+    if (!await hasBranchAccess(req.user, branchId)) {
+      return res.status(403).json({ error: 'Access denied to this branch' });
+    }
+
+    const { order } = req.body; // [{ id, displayOrder }]
+
+    if (!Array.isArray(order)) {
+      return res.status(400).json({ error: 'order debe ser un array de {id, displayOrder}' });
+    }
+
+    await Promise.all(
+      order.map(({ id, displayOrder }) =>
+        MenuItem.update({ displayOrder }, { where: { id, categoryId } })
+      )
+    );
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error reordering menu items:', error);
+    res.status(500).json({ error: 'Error reordering menu items' });
+  }
+});
+
+// PUT /api/categories/:categoryId/items/:itemId — update item
+router.put('/categories/:categoryId/items/:itemId', async (req, res) => {
+  try {
+    const categoryId = parseInt(req.params.categoryId);
+    const branchId = await getBranchIdForCategory(categoryId);
+
+    if (!branchId) {
+      return res.status(404).json({ error: 'Category not found' });
+    }
+    if (!await hasBranchAccess(req.user, branchId)) {
+      return res.status(403).json({ error: 'Access denied to this branch' });
+    }
+
+    const item = await MenuItem.findOne({
+      where: { id: req.params.itemId, categoryId }
+    });
+    if (!item) {
+      return res.status(404).json({ error: 'Menu item not found' });
+    }
+
+    const { name, description, priceCents, imageUrl, isAvailable, displayOrder } = req.body;
+    await item.update({ name, description, priceCents, imageUrl, isAvailable, displayOrder });
+
+    const updated = item.toJSON();
+    MENU_ITEM_HIDDEN_FIELDS.forEach(f => delete updated[f]);
+    res.json(updated);
+  } catch (error) {
+    console.error('Error updating menu item:', error);
+    res.status(500).json({ error: 'Error updating menu item' });
+  }
+});
+
+// DELETE /api/categories/:categoryId/items/:itemId — soft delete
+router.delete('/categories/:categoryId/items/:itemId', async (req, res) => {
+  try {
+    const categoryId = parseInt(req.params.categoryId);
+    const branchId = await getBranchIdForCategory(categoryId);
+
+    if (!branchId) {
+      return res.status(404).json({ error: 'Category not found' });
+    }
+    if (!await hasBranchAccess(req.user, branchId)) {
+      return res.status(403).json({ error: 'Access denied to this branch' });
+    }
+
+    const item = await MenuItem.findOne({
+      where: { id: req.params.itemId, categoryId }
+    });
+    if (!item) {
+      return res.status(404).json({ error: 'Menu item not found' });
+    }
+
+    await item.destroy();
+    res.status(204).send();
+  } catch (error) {
+    console.error('Error deleting menu item:', error);
+    res.status(500).json({ error: 'Error deleting menu item' });
   }
 });
 
