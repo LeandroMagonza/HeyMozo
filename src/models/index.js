@@ -13,14 +13,20 @@ const MailingList = require('./MailingList');
 const eventTypeFactory = require('./EventType');
 const eventConfigurationFactory = require('./EventConfiguration');
 const eventFactory = require('./Event');
+const deviceFactory = require('./Device');
+const tableSessionFactory = require('./TableSession');
+const tableSessionDeviceFactory = require('./TableSessionDevice');
 
 // Initialize new models
 const EventType = eventTypeFactory(sequelize);
 const EventConfiguration = eventConfigurationFactory(sequelize);
 const Event = eventFactory(sequelize);
+const Device = deviceFactory(sequelize);
+const TableSession = tableSessionFactory(sequelize);
+const TableSessionDevice = tableSessionDeviceFactory(sequelize);
 
 // Set up new model associations
-const models = { User, Permission, AuthToken, Company, Branch, Table, Event, MailingList, EventType, EventConfiguration };
+const models = { User, Permission, AuthToken, Company, Branch, Table, Event, MailingList, EventType, EventConfiguration, Device, TableSession, TableSessionDevice };
 Object.keys(models).forEach(modelName => {
   if (models[modelName].associate) {
     models[modelName].associate(models);
@@ -44,6 +50,7 @@ Branch.belongsTo(Company, { foreignKey: 'companyId' });
 Branch.hasMany(Table, { foreignKey: 'branchId' });
 Table.belongsTo(Branch, { foreignKey: 'branchId' });
 Table.hasMany(Event, { foreignKey: 'tableId', as: 'events' });
+Table.hasMany(TableSession, { foreignKey: 'tableId', as: 'sessions' });
 
 module.exports = {
   User,
@@ -55,5 +62,8 @@ module.exports = {
   Event,
   MailingList,
   EventType,
-  EventConfiguration
-}; 
+  EventConfiguration,
+  Device,
+  TableSession,
+  TableSessionDevice
+};
