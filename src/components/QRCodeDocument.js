@@ -133,7 +133,7 @@ const QRCodeDocument = ({
 }) => {
   // Función para generar la URL del QR
   const getTableUrl = (tableId) => {
-    return `${window.location.origin}/user/${companyId}/${branchId}/${tableId}`;
+    return `${window.location.origin}/m/${companyId}/${branchId}/${tableId}`;
   };
 
   // Función para dividir las mesas en grupos de 4

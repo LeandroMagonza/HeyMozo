@@ -1,7 +1,7 @@
 // src/App.js
 
 import React, { useState, useRef, useEffect } from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate, useParams } from "react-router-dom";
 import AdminScreen from "./components/AdminScreen";
 import UserScreen from "./components/UserScreen";
 import BranchConfig from "./components/BranchConfig";
@@ -13,11 +13,36 @@ import LoginPage from "./components/LoginPage";
 import LoginForm from "./components/LoginForm";
 import ProtectedRoute from "./components/ProtectedRoute";
 import FAQ from "./components/FAQ";
+import OpShell from "./components/OpShell";
+import CajaShell from "./components/CajaShell";
+import AdminShell from "./components/AdminShell";
 import axios from "axios";
 import "./App.css";
 import FeatureCarousel from "./components/FeatureCarousel";
 import BenefitsSection from "./components/BenefitsSection";
 import HowItWorks from "./components/HowItWorks";
+
+// Redirect helpers — extract URL params and navigate to new-style routes.
+function UserRedirect() {
+  const { companyId, branchId, tableId } = useParams();
+  return <Navigate to={`/m/${companyId}/${branchId}/${tableId}`} replace />;
+}
+function AdminBranchRedirect() {
+  const { branchId } = useParams();
+  return <Navigate to={`/piso/${branchId}`} replace />;
+}
+function AdminCompanyConfigRedirect() {
+  const { companyId } = useParams();
+  return <Navigate to={`/config/${companyId}`} replace />;
+}
+function AdminBranchConfigRedirect() {
+  const { companyId, branchId } = useParams();
+  return <Navigate to={`/config/${companyId}/${branchId}`} replace />;
+}
+function AdminBranchUrlsRedirect() {
+  const { companyId, branchId } = useParams();
+  return <Navigate to={`/config/${companyId}/${branchId}/urls`} replace />;
+}
 
 function LandingPage() {
   const [formData, setFormData] = useState({
@@ -226,61 +251,98 @@ function App() {
         {/* Public routes */}
         <Route path="/" element={<LandingPage />} />
         <Route path="/faq" element={<FAQ />} />
-        <Route
-          path="/user/:companyId/:branchId/:tableId"
-          element={<UserScreen />}
-        />
+        <Route path="/m/:companyId/:branchId/:tableId" element={<UserScreen />} />
+        {/* Redirect 301 desde URL vieja (Sprint 1.4) */}
+        <Route path="/user/:companyId/:branchId/:tableId" element={<UserRedirect />} />
 
         {/* Authentication routes */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/admin/login" element={<LoginForm />} />
 
-        {/* Protected admin routes */}
+        {/* ===== New shell routes (Sprint 1.3) ===== */}
+
+        {/* OpShell — panel operativo del piso (mozo) */}
         <Route
-          path="/admin/config"
+          path="/piso/:branchId"
           element={
             <ProtectedRoute>
-              <CompanyList />
+              <OpShell />
             </ProtectedRoute>
           }
         />
 
+        {/* CajaShell — panel de caja (cajero/owner) */}
         <Route
-          path="/admin/company/create"
+          path="/caja/:branchId"
           element={
             <ProtectedRoute>
-              <CompanyCreate />
+              <CajaShell />
             </ProtectedRoute>
           }
         />
 
+        {/* AdminShell — configuración (owner/admin) */}
         <Route
-          path="/admin/:companyId/config"
+          path="/config"
           element={
             <ProtectedRoute>
-              <CompanyConfig />
+              <AdminShell>
+                <CompanyList />
+              </AdminShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/config/company/create"
+          element={
+            <ProtectedRoute>
+              <AdminShell>
+                <CompanyCreate />
+              </AdminShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/config/:companyId"
+          element={
+            <ProtectedRoute>
+              <AdminShell>
+                <CompanyConfig />
+              </AdminShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/config/:companyId/:branchId"
+          element={
+            <ProtectedRoute>
+              <AdminShell>
+                <BranchConfig />
+              </AdminShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/config/:companyId/:branchId/urls"
+          element={
+            <ProtectedRoute>
+              <AdminShell>
+                <TableUrls />
+              </AdminShell>
             </ProtectedRoute>
           }
         />
 
-        <Route
-          path="/admin/:companyId/:branchId/config"
-          element={
-            <ProtectedRoute>
-              <BranchConfig />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/admin/:companyId/:branchId/urls"
-          element={
-            <ProtectedRoute>
-              <TableUrls />
-            </ProtectedRoute>
-          }
-        />
-
+        {/* ===== Redirects 301 desde rutas /admin/... (Sprint 1.3) ===== */}
+        <Route path="/admin/config" element={<Navigate to="/config" replace />} />
+        <Route path="/admin/company/create" element={<Navigate to="/config/company/create" replace />} />
+        <Route path="/admin/:companyId/config" element={<AdminCompanyConfigRedirect />} />
+        <Route path="/admin/:companyId/:branchId/config" element={<AdminBranchConfigRedirect />} />
+        <Route path="/admin/:companyId/:branchId/urls" element={<AdminBranchUrlsRedirect />} />
+        {/*
+         * El redirect /admin/:c/:b → /piso/:b se activa cuando OpShell tenga
+         * contenido real. Por ahora AdminScreen sigue en su ruta original.
+         */}
         <Route
           path="/admin/:companyId/:branchId"
           element={

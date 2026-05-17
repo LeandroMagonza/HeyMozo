@@ -15,14 +15,20 @@ const MenuItem = require('./MenuItem');
 const eventTypeFactory = require('./EventType');
 const eventConfigurationFactory = require('./EventConfiguration');
 const eventFactory = require('./Event');
+const deviceFactory = require('./Device');
+const tableSessionFactory = require('./TableSession');
+const tableSessionDeviceFactory = require('./TableSessionDevice');
 
 // Initialize new models
 const EventType = eventTypeFactory(sequelize);
 const EventConfiguration = eventConfigurationFactory(sequelize);
 const Event = eventFactory(sequelize);
+const Device = deviceFactory(sequelize);
+const TableSession = tableSessionFactory(sequelize);
+const TableSessionDevice = tableSessionDeviceFactory(sequelize);
 
 // Set up new model associations
-const models = { User, Permission, AuthToken, Company, Branch, Table, Event, MailingList, EventType, EventConfiguration, Category, MenuItem };
+const models = { User, Permission, AuthToken, Company, Branch, Table, Event, MailingList, EventType, EventConfiguration, Category, MenuItem, Device, TableSession, TableSessionDevice };
 Object.keys(models).forEach(modelName => {
   if (models[modelName].associate) {
     models[modelName].associate(models);
@@ -46,6 +52,7 @@ Branch.belongsTo(Company, { foreignKey: 'companyId' });
 Branch.hasMany(Table, { foreignKey: 'branchId' });
 Table.belongsTo(Branch, { foreignKey: 'branchId' });
 Table.hasMany(Event, { foreignKey: 'tableId', as: 'events' });
+Table.hasMany(TableSession, { foreignKey: 'tableId', as: 'sessions' });
 
 // Menu associations (Sprint 2.1). Aliases en lowercase: gotcha del codebase
 // (alias case-sensitive; mismatch devuelve arrays vacíos sin error).
@@ -66,5 +73,8 @@ module.exports = {
   EventType,
   EventConfiguration,
   Category,
-  MenuItem
+  MenuItem,
+  Device,
+  TableSession,
+  TableSessionDevice
 };

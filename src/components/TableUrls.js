@@ -74,8 +74,8 @@ const TableUrls = () => {
             <tr key={table.id}>
               <td>{table.tableName}</td>
               <td>
-                <a href={`/user/${companyId}/${branchId}/${table.id}`} target="_blank" rel="noopener noreferrer">
-                  {`${window.location.origin}/user/${companyId}/${branchId}/${table.id}`}
+                <a href={`/m/${companyId}/${branchId}/${table.id}`} target="_blank" rel="noopener noreferrer">
+                  {`${window.location.origin}/m/${companyId}/${branchId}/${table.id}`}
                 </a>
               </td>
             </tr>

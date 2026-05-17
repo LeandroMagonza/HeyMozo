@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const authService = require('../services/auth');
 const authMiddleware = require('../middleware/auth');
-const { User, Permission } = require('../models');
+const { User, Permission, Branch } = require('../models');
 
 // Health check endpoint - no authentication required
 router.get('/health', (req, res) => {
@@ -232,18 +232,177 @@ router.get('/check-access', authMiddleware.authenticate, async (req, res) => {
 
     // Parse the route to extract components
     const routeParts = route.split('/').filter(part => part !== '');
-    
-    // Validate route format
-    if (routeParts[0] !== 'admin') {
-      return res.status(400).json({ error: 'Only admin routes are supported' });
+    const routeRoot = routeParts[0];
+
+    const SUPPORTED_ROOTS = ['admin', 'config', 'piso', 'caja'];
+    if (!SUPPORTED_ROOTS.includes(routeRoot)) {
+      return res.status(400).json({ error: 'Unsupported route' });
     }
 
     let hasAccess = false;
     let accessLevel = null;
     let reason = '';
 
+    // ===== /piso/:branchId — cualquier acceso a la sucursal =====
+    if (routeRoot === 'piso' && routeParts.length === 2) {
+      const branchId = parseInt(routeParts[1]);
+      if (isNaN(branchId)) {
+        return res.status(400).json({ error: 'Invalid branch ID' });
+      }
+
+      if (user.isAdmin) {
+        hasAccess = true;
+        accessLevel = 'admin';
+        reason = 'User is admin';
+      } else {
+        const branch = await Branch.findByPk(branchId, { attributes: ['id', 'companyId'] });
+        if (!branch) {
+          return res.status(404).json({ error: 'Branch not found' });
+        }
+        const companyPermission = await Permission.findOne({
+          where: { userId: user.id, resourceType: 'company', resourceId: branch.companyId }
+        });
+        if (companyPermission) {
+          hasAccess = true;
+          accessLevel = companyPermission.permissionLevel;
+          reason = `User has ${companyPermission.permissionLevel} access to company`;
+        } else {
+          const branchPermission = await Permission.findOne({
+            where: { userId: user.id, resourceType: 'branch', resourceId: branchId }
+          });
+          if (branchPermission) {
+            hasAccess = true;
+            accessLevel = branchPermission.permissionLevel;
+            reason = `User has ${branchPermission.permissionLevel} access to branch`;
+          } else {
+            reason = 'Requires access to company or branch';
+          }
+        }
+      }
+    }
+
+    // ===== /caja/:branchId — cualquier acceso a la sucursal (igual que piso por ahora) =====
+    else if (routeRoot === 'caja' && routeParts.length === 2) {
+      const branchId = parseInt(routeParts[1]);
+      if (isNaN(branchId)) {
+        return res.status(400).json({ error: 'Invalid branch ID' });
+      }
+
+      if (user.isAdmin) {
+        hasAccess = true;
+        accessLevel = 'admin';
+        reason = 'User is admin';
+      } else {
+        const branch = await Branch.findByPk(branchId, { attributes: ['id', 'companyId'] });
+        if (!branch) {
+          return res.status(404).json({ error: 'Branch not found' });
+        }
+        const companyPermission = await Permission.findOne({
+          where: { userId: user.id, resourceType: 'company', resourceId: branch.companyId }
+        });
+        if (companyPermission) {
+          hasAccess = true;
+          accessLevel = companyPermission.permissionLevel;
+          reason = `User has ${companyPermission.permissionLevel} access to company`;
+        } else {
+          const branchPermission = await Permission.findOne({
+            where: { userId: user.id, resourceType: 'branch', resourceId: branchId }
+          });
+          if (branchPermission) {
+            hasAccess = true;
+            accessLevel = branchPermission.permissionLevel;
+            reason = `User has ${branchPermission.permissionLevel} access to branch`;
+          } else {
+            reason = 'Requires access to company or branch';
+          }
+        }
+      }
+    }
+
+    // ===== /config/:companyId — edit access to company (≡ /admin/:companyId/config) =====
+    else if (routeRoot === 'config' && routeParts.length === 2 && routeParts[1] !== 'company') {
+      const companyId = parseInt(routeParts[1]);
+      if (isNaN(companyId)) {
+        return res.status(400).json({ error: 'Invalid company ID' });
+      }
+      if (user.isAdmin) {
+        hasAccess = true;
+        accessLevel = 'admin';
+        reason = 'User is admin';
+      } else {
+        const permission = await Permission.findOne({
+          where: { userId: user.id, resourceType: 'company', resourceId: companyId }
+        });
+        hasAccess = permission?.permissionLevel === 'edit';
+        accessLevel = hasAccess ? 'edit' : null;
+        reason = hasAccess ? 'User has edit access to company' : 'Requires edit access to company';
+      }
+    }
+
+    // ===== /config/:companyId/:branchId — edit access (≡ /admin/:companyId/:branchId/config) =====
+    else if (routeRoot === 'config' && routeParts.length === 3) {
+      const companyId = parseInt(routeParts[1]);
+      const branchId = parseInt(routeParts[2]);
+      if (isNaN(companyId) || isNaN(branchId)) {
+        return res.status(400).json({ error: 'Invalid company or branch ID' });
+      }
+      if (user.isAdmin) {
+        hasAccess = true;
+        accessLevel = 'admin';
+        reason = 'User is admin';
+      } else {
+        const companyPermission = await Permission.findOne({
+          where: { userId: user.id, resourceType: 'company', resourceId: companyId }
+        });
+        if (companyPermission?.permissionLevel === 'edit') {
+          hasAccess = true;
+          accessLevel = 'edit';
+          reason = 'User has edit access to company';
+        } else {
+          const branchPermission = await Permission.findOne({
+            where: { userId: user.id, resourceType: 'branch', resourceId: branchId }
+          });
+          hasAccess = branchPermission?.permissionLevel === 'edit';
+          accessLevel = hasAccess ? 'edit' : null;
+          reason = hasAccess ? 'User has edit access to branch' : 'Requires edit access to company or branch';
+        }
+      }
+    }
+
+    // ===== /config/:companyId/:branchId/urls — edit access (≡ /admin/:companyId/:branchId/urls) =====
+    else if (routeRoot === 'config' && routeParts.length === 4 && routeParts[3] === 'urls') {
+      const companyId = parseInt(routeParts[1]);
+      const branchId = parseInt(routeParts[2]);
+      if (isNaN(companyId) || isNaN(branchId)) {
+        return res.status(400).json({ error: 'Invalid company or branch ID' });
+      }
+      if (user.isAdmin) {
+        hasAccess = true;
+        accessLevel = 'admin';
+        reason = 'User is admin';
+      } else {
+        const companyPermission = await Permission.findOne({
+          where: { userId: user.id, resourceType: 'company', resourceId: companyId }
+        });
+        if (companyPermission?.permissionLevel === 'edit') {
+          hasAccess = true;
+          accessLevel = 'edit';
+          reason = 'User has edit access to company';
+        } else {
+          const branchPermission = await Permission.findOne({
+            where: { userId: user.id, resourceType: 'branch', resourceId: branchId }
+          });
+          hasAccess = branchPermission?.permissionLevel === 'edit';
+          accessLevel = hasAccess ? 'edit' : null;
+          reason = hasAccess ? 'User has edit access to branch' : 'Requires edit access to company or branch';
+        }
+      }
+    }
+
+    // ===== Legacy /admin/... routes (kept for backward compat during transition) =====
+
     // Route: /admin/config - Only admins
-    if (routeParts.length === 2 && routeParts[1] === 'config') {
+    else if (routeRoot === 'admin' && routeParts.length === 2 && routeParts[1] === 'config') {
       hasAccess = user.isAdmin;
       accessLevel = hasAccess ? 'admin' : null;
       reason = hasAccess ? 'User is admin' : 'Requires admin privileges';

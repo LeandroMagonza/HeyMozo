@@ -23,12 +23,18 @@ const ProtectedRoute = ({ children }) => {
       return;
     }
 
-    // Always allow access to /admin/config and /admin/company/create for any authenticated user
-    if (location.pathname === '/admin/config' || location.pathname === '/admin/company/create') {
+    // Routes accessible to any authenticated user without extra permission check.
+    const FREE_PATHS = [
+      '/admin/config',
+      '/admin/company/create',
+      '/config',
+      '/config/company/create',
+    ];
+    if (FREE_PATHS.includes(location.pathname)) {
       setHasAccess(true);
-      setAccessInfo({ 
-        hasAccess: true, 
-        reason: 'Company list and company creation are accessible to all authenticated users' 
+      setAccessInfo({
+        hasAccess: true,
+        reason: 'Company list and company creation are accessible to all authenticated users'
       });
       setLoading(false);
       return;

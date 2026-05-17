@@ -23,6 +23,11 @@ const User = sequelize.define('User', {
     type: DataTypes.BOOLEAN,
     defaultValue: false
   },
+  role: {
+    type: DataTypes.ENUM('waiter', 'cashier', 'owner', 'platformAdmin'),
+    allowNull: false,
+    defaultValue: 'owner'
+  },
   lastLogin: {
     type: DataTypes.DATE,
     allowNull: true
