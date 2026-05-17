@@ -24,6 +24,11 @@ const Branch = sequelize.define('Branch', {
   tableIds: {
     type: DataTypes.JSON,
     defaultValue: []
+  },
+  modality: {
+    type: DataTypes.ENUM('mozo', 'autoservicio'),
+    allowNull: false,
+    defaultValue: 'mozo'
   }
 }, {
   paranoid: true,
