@@ -154,6 +154,23 @@ class EventConfigService {
         customerDisplay: 'quick_action',
         cardVariant: 'orange',
         isDefault: true
+      },
+
+      // ─── Sprint 3.1: dispara la AlertCard purple al confirmar pedido ────
+      // customerDisplay 'hidden' porque el Event lo crea el backend al
+      // confirmar, no es un botón del cliente.
+      {
+        eventName: 'Nuevo Pedido',
+        stateName: 'Pedido pendiente',
+        userColor: '#a855f7',
+        userFontColor: '#ffffff',
+        userIcon: null,
+        adminColor: '#ede9fe',
+        priority: 55,
+        systemEventType: null,
+        customerDisplay: 'hidden',
+        cardVariant: 'purple',
+        isDefault: true
       }
     ];
 

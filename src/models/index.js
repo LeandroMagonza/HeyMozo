@@ -18,6 +18,8 @@ const eventFactory = require('./Event');
 const deviceFactory = require('./Device');
 const tableSessionFactory = require('./TableSession');
 const tableSessionDeviceFactory = require('./TableSessionDevice');
+const orderFactory = require('./Order');
+const orderItemFactory = require('./OrderItem');
 
 // Initialize new models
 const EventType = eventTypeFactory(sequelize);
@@ -26,9 +28,11 @@ const Event = eventFactory(sequelize);
 const Device = deviceFactory(sequelize);
 const TableSession = tableSessionFactory(sequelize);
 const TableSessionDevice = tableSessionDeviceFactory(sequelize);
+const Order = orderFactory(sequelize);
+const OrderItem = orderItemFactory(sequelize);
 
 // Set up new model associations
-const models = { User, Permission, AuthToken, Company, Branch, Table, Event, MailingList, EventType, EventConfiguration, Category, MenuItem, Device, TableSession, TableSessionDevice };
+const models = { User, Permission, AuthToken, Company, Branch, Table, Event, MailingList, EventType, EventConfiguration, Category, MenuItem, Device, TableSession, TableSessionDevice, Order, OrderItem };
 Object.keys(models).forEach(modelName => {
   if (models[modelName].associate) {
     models[modelName].associate(models);
@@ -61,6 +65,14 @@ Category.belongsTo(Branch, { as: 'branch', foreignKey: 'branchId' });
 Category.hasMany(MenuItem, { as: 'items', foreignKey: 'categoryId' });
 MenuItem.belongsTo(Category, { as: 'category', foreignKey: 'categoryId' });
 
+// Order associations inversas (Sprint 3.1).
+// Order/OrderItem son factory y ya wirearon sus belongsTo en el loop.
+// Acá completamos los hasMany del lado contrario.
+MenuItem.hasMany(OrderItem, { foreignKey: 'menuItemId', as: 'orderItems' });
+TableSession.hasMany(Order, { foreignKey: 'tableSessionId', as: 'orders' });
+Table.hasMany(Order, { foreignKey: 'tableId', as: 'orders' });
+Branch.hasMany(Order, { foreignKey: 'branchId', as: 'orders' });
+
 module.exports = {
   User,
   Permission,
@@ -76,5 +88,7 @@ module.exports = {
   MenuItem,
   Device,
   TableSession,
-  TableSessionDevice
+  TableSessionDevice,
+  Order,
+  OrderItem
 };
