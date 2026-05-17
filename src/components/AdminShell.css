@@ -1,0 +1,194 @@
+/* AdminShell.css — layout del panel de configuración (owner/admin) */
+
+.admin-shell {
+  display: flex;
+  min-height: 100vh;
+  background: var(--rd-bg, #1c1c1e);
+  font-family: var(--rd-font-sans);
+}
+
+/* ===== Sidebar ===== */
+
+.admin-shell__sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--rd-bg-card, #2c2c2e);
+  border-right: 1px solid var(--rd-border, #3a3a3c);
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+.admin-shell__brand {
+  padding: 1.25rem 1.125rem 1rem;
+  border-bottom: 1px solid var(--rd-border, #3a3a3c);
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.admin-shell__brand-name {
+  color: var(--rd-text, #ffffff);
+  font-size: 1.0625rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.admin-shell__brand-role {
+  color: var(--rd-brand-purple-soft, #c084fc);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* ===== Nav ===== */
+
+.admin-shell__nav {
+  flex: 1;
+  padding: 0.75rem 0.625rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.admin-shell__nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.5625rem 0.75rem;
+  border-radius: var(--rd-radius-md, 8px);
+  color: var(--rd-text-tertiary, #9ca3af);
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.admin-shell__nav-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--rd-text-secondary, #e4e2e4);
+}
+
+.admin-shell__nav-item--active {
+  background: rgba(147, 51, 234, 0.12);
+  color: var(--rd-brand-purple-soft, #c084fc);
+}
+
+.admin-shell__nav-item--active:hover {
+  background: rgba(147, 51, 234, 0.16);
+  color: var(--rd-brand-purple-soft, #c084fc);
+}
+
+.admin-shell__nav-icon {
+  font-size: 0.9375rem;
+  flex-shrink: 0;
+}
+
+/* ===== Footer ===== */
+
+.admin-shell__footer {
+  padding: 0.75rem 0.625rem;
+  border-top: 1px solid var(--rd-border, #3a3a3c);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.admin-shell__user {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.375rem 0.5rem;
+}
+
+.admin-shell__user-icon {
+  color: var(--rd-brand-purple, #9333ea);
+  font-size: 0.875rem;
+  flex-shrink: 0;
+}
+
+.admin-shell__user-email {
+  color: var(--rd-text-tertiary, #9ca3af);
+  font-size: 0.75rem;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-shell__logout {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  background: transparent;
+  border: 1px solid var(--rd-border, #3a3a3c);
+  border-radius: var(--rd-radius-md, 8px);
+  color: var(--rd-text-tertiary, #9ca3af);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.admin-shell__logout:hover {
+  background: rgba(214, 45, 32, 0.1);
+  border-color: rgba(214, 45, 32, 0.4);
+  color: var(--rd-brand-red, #e8362a);
+}
+
+/* ===== Content ===== */
+
+/*
+ * El contenido (CompanyList, CompanyConfig, etc.) ya incluye su propio
+ * AdminHeader sticky. La zona de contenido ocupa el espacio restante y
+ * permite scroll propio.
+ */
+.admin-shell__content {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ===== Responsive ===== */
+
+@media (max-width: 768px) {
+  .admin-shell__sidebar {
+    width: 60px;
+  }
+
+  .admin-shell__brand-name,
+  .admin-shell__brand-role,
+  .admin-shell__nav-item span,
+  .admin-shell__user-email,
+  .admin-shell__logout span {
+    display: none;
+  }
+
+  .admin-shell__brand {
+    align-items: center;
+    padding: 1rem 0;
+  }
+
+  .admin-shell__nav-item {
+    justify-content: center;
+    padding: 0.625rem;
+  }
+
+  .admin-shell__user {
+    justify-content: center;
+  }
+
+  .admin-shell__logout {
+    justify-content: center;
+    padding: 0.5rem;
+  }
+}
