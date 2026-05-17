@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getCompany, updateCompany, createBranch, deleteBranch, getBranches } from '../services/api';
+import { getCompany, updateCompany, deleteBranch, getBranches } from '../services/api';
 import './CompanyConfig.css';
 import { FaEye, FaSave, FaStore, FaCog, FaTrash, FaPlus, FaDownload, FaCalendarAlt } from 'react-icons/fa';
 import '../styles/common.css';
@@ -89,28 +89,8 @@ const CompanyConfig = () => {
     }
   };
 
-  const handleAddBranch = async () => {
-    const newBranch = {
-      name: `New Branch ${branches.length + 1}`,
-      companyId: parseInt(companyId),
-      website: "",
-      menu: "",
-      tableIds: [],
-    };
-
-    try {
-      const response = await createBranch(newBranch);
-      const updatedCompany = {
-        ...company,
-        branchIds: [...company.branchIds, response.data.id],
-      };
-      setCompany(updatedCompany);
-      setEditedCompany(updatedCompany);
-      setBranches([...branches, response.data]);
-      await updateCompany(companyId, updatedCompany);
-    } catch (error) {
-      console.error("Error adding new branch:", error);
-    }
+  const handleAddBranch = () => {
+    navigate(`/admin/${companyId}/branch/create`);
   };
 
   if (loading) {

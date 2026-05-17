@@ -5,6 +5,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useParams } from "rea
 import AdminScreen from "./components/AdminScreen";
 import UserScreen from "./components/UserScreen";
 import BranchConfig from "./components/BranchConfig";
+import BranchCreate from "./components/BranchCreate";
 import CompanyConfig from "./components/CompanyConfig";
 import CompanyList from "./components/CompanyList";
 import CompanyCreate from "./components/CompanyCreate";
@@ -344,6 +345,15 @@ function App() {
          * El redirect /admin/:c/:b → /piso/:b se activa cuando OpShell tenga
          * contenido real. Por ahora AdminScreen sigue en su ruta original.
          */}
+        <Route
+          path="/admin/:companyId/branch/create"
+          element={
+            <ProtectedRoute>
+              <BranchCreate />
+            </ProtectedRoute>
+          }
+        />
+
         <Route
           path="/admin/:companyId/:branchId/menu"
           element={
