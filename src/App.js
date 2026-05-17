@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate, useParams } from "react-router-dom";
 import AdminScreen from "./components/AdminScreen";
 import UserScreen from "./components/UserScreen";
+import MenuClient from "./components/MenuClient";
 import BranchConfig from "./components/BranchConfig";
 import BranchCreate from "./components/BranchCreate";
 import CompanyConfig from "./components/CompanyConfig";
@@ -256,6 +257,12 @@ function App() {
         <Route path="/m/:companyId/:branchId/:tableId" element={<UserScreen />} />
         {/* Redirect 301 desde URL vieja (Sprint 1.4) */}
         <Route path="/user/:companyId/:branchId/:tableId" element={<UserRedirect />} />
+
+        {/* Customer menu route (Sprint 2.5) — sibling of /m/:c/:b/:t from Sprint 1.4 */}
+        <Route
+          path="/m/:companyId/:branchId/:tableId/menu"
+          element={<MenuClient />}
+        />
 
         {/* Authentication routes */}
         <Route path="/login" element={<LoginPage />} />

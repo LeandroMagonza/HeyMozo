@@ -249,6 +249,33 @@ app.get('/api/tables/:id', async (req, res) => {
   }
 });
 
+// PUBLIC ROUTE: Customer menu browse (BEFORE auth middleware)
+app.get('/api/branches/:branchId/public-menu', async (req, res) => {
+  console.log('🍽️ PUBLIC MENU - Fetching menu for branch:', req.params.branchId);
+  try {
+    const { Category, MenuItem } = require('./src/models');
+    const categories = await Category.findAll({
+      where: { branchId: req.params.branchId, isActive: true },
+      include: [{
+        model: MenuItem,
+        as: 'items',
+        where: { isAvailable: true },
+        required: false,
+        attributes: ['id', 'name', 'description', 'priceCents', 'imageUrl', 'isAvailable', 'displayOrder'],
+      }],
+      order: [
+        ['displayOrder', 'ASC'],
+        [{ model: MenuItem, as: 'items' }, 'displayOrder', 'ASC'],
+      ],
+      attributes: ['id', 'name', 'displayOrder'],
+    });
+    res.json({ categories });
+  } catch (error) {
+    console.error('🍽️ Error fetching public menu:', error);
+    res.status(500).json({ error: 'Error al cargar el menú' });
+  }
+});
+
 // Ruta para crear un nuevo evento (pública para UserScreen) - SYSTEM AND CUSTOM EVENTS
 app.post('/api/tables/:id/events', async (req, res) => {
   console.log(req.params);

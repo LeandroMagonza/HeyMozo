@@ -133,8 +133,12 @@ export const markTableAsOccupied = (tableId) =>
 export const sendEvent = (tableId, eventData) => 
   api.post(`/tables/${tableId}/events`, eventData);
 
-export const releaseAllTables = (branchId) => 
+export const releaseAllTables = (branchId) =>
   api.post(`/branches/${branchId}/release-all-tables`);
+
+// Public menu endpoint (no auth required — accessed by customers)
+export const getPublicMenu = (branchId) =>
+  api.get(`/branches/${branchId}/public-menu`);
 
 // Menu — Categorías
 export const getCategories = (branchId) => api.get(`/branches/${branchId}/categories`);
