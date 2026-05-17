@@ -140,4 +140,18 @@ export const releaseAllTables = (branchId) =>
 export const getPublicMenu = (branchId) =>
   api.get(`/branches/${branchId}/public-menu`);
 
+// Menu — Categorías
+export const getCategories = (branchId) => api.get(`/branches/${branchId}/categories`);
+export const createCategory = (branchId, data) => api.post(`/branches/${branchId}/categories`, data);
+export const updateCategory = (branchId, categoryId, data) => api.put(`/branches/${branchId}/categories/${categoryId}`, data);
+export const deleteCategory = (branchId, categoryId) => api.delete(`/branches/${branchId}/categories/${categoryId}`);
+export const reorderCategories = (branchId, order) => api.put(`/branches/${branchId}/categories/reorder`, { order });
+
+// Menu — Ítems
+export const getMenuItems = (categoryId) => api.get(`/categories/${categoryId}/items`);
+export const createMenuItem = (categoryId, data) => api.post(`/categories/${categoryId}/items`, data);
+export const updateMenuItem = (categoryId, itemId, data) => api.put(`/categories/${categoryId}/items/${itemId}`, data);
+export const deleteMenuItem = (categoryId, itemId) => api.delete(`/categories/${categoryId}/items/${itemId}`);
+export const reorderMenuItems = (categoryId, order) => api.put(`/categories/${categoryId}/items/reorder`, { order });
+
 export default api;
