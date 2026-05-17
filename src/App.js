@@ -9,6 +9,7 @@ import CompanyConfig from "./components/CompanyConfig";
 import CompanyList from "./components/CompanyList";
 import CompanyCreate from "./components/CompanyCreate";
 import TableUrls from "./components/TableUrls";
+import MenuAdmin from "./components/MenuAdmin";
 import LoginPage from "./components/LoginPage";
 import LoginForm from "./components/LoginForm";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -343,6 +344,15 @@ function App() {
          * El redirect /admin/:c/:b → /piso/:b se activa cuando OpShell tenga
          * contenido real. Por ahora AdminScreen sigue en su ruta original.
          */}
+        <Route
+          path="/admin/:companyId/:branchId/menu"
+          element={
+            <ProtectedRoute>
+              <MenuAdmin />
+            </ProtectedRoute>
+          }
+        />
+
         <Route
           path="/admin/:companyId/:branchId"
           element={
