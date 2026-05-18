@@ -1,12 +1,75 @@
-import React from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { NavLink, useParams } from 'react-router-dom';
 import { FaStore, FaSignOutAlt, FaUser } from 'react-icons/fa';
 import authService from '../services/authService';
+import AlertCard from './AlertCard';
+import { getActiveOrders } from '../services/api';
+import notificationSound from '../sounds/notification.mp3';
 import './OpShell.css';
+
+const REFRESH_INTERVAL = 6000;
+
+function formatWaitTime(createdAt) {
+  const mins = Math.floor((Date.now() - new Date(createdAt).getTime()) / 60000);
+  if (mins < 1) return '< 1 min';
+  return `${mins} min`;
+}
+
+function formatPrice(cents) {
+  return '$' + Math.round(cents / 100).toLocaleString('es-AR');
+}
+
+function buildSubtitle(order) {
+  const qty = order.items ? order.items.reduce((s, it) => s + it.qty, 0) : 0;
+  return `${qty} ${qty === 1 ? 'ítem' : 'ítems'} · ${formatPrice(order.totalCents)}`;
+}
 
 const OpShell = () => {
   const { branchId } = useParams();
   const currentUser = authService.getCurrentUser();
+
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [countdown, setCountdown] = useState(REFRESH_INTERVAL / 1000);
+
+  const audioRef = useRef(new Audio(notificationSound));
+  const prevCountRef = useRef(null);
+
+  const fetchOrders = useCallback(async () => {
+    try {
+      const res = await getActiveOrders(branchId);
+      setOrders(res.data);
+    } catch (err) {
+      console.error('🍽️ OpShell — error fetching active orders:', err);
+    } finally {
+      setLoading(false);
+      setCountdown(REFRESH_INTERVAL / 1000);
+    }
+  }, [branchId]);
+
+  useEffect(() => {
+    fetchOrders();
+    const interval = setInterval(fetchOrders, REFRESH_INTERVAL);
+    return () => clearInterval(interval);
+  }, [fetchOrders]);
+
+  // Countdown ticker
+  useEffect(() => {
+    const tick = setInterval(() => {
+      setCountdown(prev => (prev > 1 ? prev - 1 : REFRESH_INTERVAL / 1000));
+    }, 1000);
+    return () => clearInterval(tick);
+  }, []);
+
+  // Sound on new orders
+  useEffect(() => {
+    const count = orders.length;
+    if (prevCountRef.current !== null && count > prevCountRef.current) {
+      audioRef.current.currentTime = 0;
+      audioRef.current.play().catch(() => {});
+    }
+    prevCountRef.current = count;
+  }, [orders.length]);
 
   const handleLogout = () => {
     if (window.confirm('¿Está seguro que desea cerrar sesión?')) {
@@ -54,15 +117,43 @@ const OpShell = () => {
       <main className="op-shell__main">
         <header className="op-shell__topnav">
           <h1 className="op-shell__topnav-title">Panel del Piso</h1>
-        </header>
-        <div className="op-shell__content">
-          <div className="op-shell__placeholder">
-            <p className="op-shell__placeholder-title">Dashboard del mozo</p>
-            <p className="op-shell__placeholder-desc">
-              Esta pantalla mostrará el panel operativo del piso (sucursal {branchId}).
-              Disponible en el próximo sprint.
-            </p>
+          <div className="op-shell__topnav-refresh">
+            {orders.length > 0 && (
+              <span className="op-shell__badge-total">{orders.length}</span>
+            )}
+            <span className="op-shell__countdown">Actualiza en {countdown}s</span>
           </div>
+        </header>
+
+        <div className="op-shell__content">
+          {loading ? (
+            <div className="op-shell__empty">
+              <p className="op-shell__empty-text">Cargando pedidos…</p>
+            </div>
+          ) : orders.length === 0 ? (
+            <div className="op-shell__empty">
+              <span className="material-icons op-shell__empty-icon">check_circle</span>
+              <p className="op-shell__empty-title">Sin pedidos pendientes</p>
+              <p className="op-shell__empty-desc">Los nuevos pedidos aparecerán aquí automáticamente.</p>
+            </div>
+          ) : (
+            <div className="op-shell__grid">
+              {orders.map((order) => (
+                <AlertCard
+                  key={order.id}
+                  variant="purple"
+                  tableName={order.table?.tableName ?? `Mesa ${order.tableId}`}
+                  title="Nuevo Pedido"
+                  subtitle={buildSubtitle(order)}
+                  waitTime={formatWaitTime(order.createdAt)}
+                  icon="FaShoppingCart"
+                  actionLabel="LISTO"
+                  badgeCount={order.items ? order.items.reduce((s, it) => s + it.qty, 0) : 0}
+                  disabledBtn={true}
+                />
+              ))}
+            </div>
+          )}
         </div>
       </main>
     </div>

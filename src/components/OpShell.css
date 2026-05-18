@@ -161,6 +161,9 @@
   top: 0;
   z-index: 10;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .op-shell__topnav-title {
@@ -171,29 +174,87 @@
   letter-spacing: -0.01em;
 }
 
+.op-shell__topnav-refresh {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+.op-shell__badge-total {
+  background: #9333ea;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.125rem 0.5rem;
+  border-radius: 999px;
+  min-width: 22px;
+  text-align: center;
+}
+
+.op-shell__countdown {
+  color: var(--rd-text-tertiary, #9ca3af);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
 .op-shell__content {
   flex: 1;
   padding: 2rem 1.5rem;
 }
 
-/* ===== Placeholder ===== */
+/* ===== AlertCards grid ===== */
 
-.op-shell__placeholder {
-  max-width: 480px;
-  padding: 2rem;
-  background: var(--rd-bg-card, #2c2c2e);
-  border: 1px solid var(--rd-border, #3a3a3c);
-  border-radius: var(--rd-radius-lg, 12px);
+.op-shell__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1.25rem;
 }
 
-.op-shell__placeholder-title {
-  margin: 0 0 0.5rem;
+@media (min-width: 640px) {
+  .op-shell__grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .op-shell__grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 1280px) {
+  .op-shell__grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* ===== Empty / loading state ===== */
+
+.op-shell__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 4rem 2rem;
+  text-align: center;
+}
+
+.op-shell__empty-icon {
+  color: var(--rd-text-tertiary, #9ca3af);
+  font-size: 3rem !important;
+  opacity: 0.5;
+}
+
+.op-shell__empty-title {
+  margin: 0;
   color: var(--rd-text, #ffffff);
   font-size: 1.125rem;
   font-weight: 700;
 }
 
-.op-shell__placeholder-desc {
+.op-shell__empty-text,
+.op-shell__empty-desc {
   margin: 0;
   color: var(--rd-text-tertiary, #9ca3af);
   font-size: 0.875rem;
