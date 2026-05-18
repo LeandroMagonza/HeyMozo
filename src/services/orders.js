@@ -14,14 +14,12 @@ const {
 
 // Confirma un pedido del cliente.
 //
-// Lógica de merge (decidida en sprint3-design):
-//   Si la sesión tiene un Order con status='pending' Y su Event "Nuevo Pedido"
-//   sigue unseen (seenAt IS NULL), agregamos OrderItems a ese Order en vez de
-//   crear uno nuevo. Si el mismo menuItemId ya está, sumamos qty. Si no, lo
-//   agregamos como item nuevo.
-//
-//   Si NO existe tal Order, creamos uno nuevo + Event "Nuevo Pedido" purple
-//   que dispara la AlertCard.
+// Cada confirmación crea un Order + Event "Nuevo Pedido" propios (sin merge).
+// Razón (decidida 2026-05-17): el mozo ve una card por pedido — lo que está
+// en la card es exactamente lo que tiene que llevar. Si el cliente confirma
+// dos veces, son dos cards distintas; nunca hay items "invisibles" que se
+// colaron en una card ya abierta. El costo (apretar LISTO N veces) es
+// trivial frente al riesgo de perder items.
 //
 // Snapshots: nameSnapshot + descriptionSnapshot + unitPriceCents se congelan
 // al confirmar. Cambios futuros de precio del MenuItem NO mutan este pedido.
@@ -86,110 +84,58 @@ async function confirmOrder({ tableId, deviceId, tableSessionId, items, notes })
     throw err;
   }
 
+  const nuevoPedidoType = await EventType.findOne({
+    where: { companyId, eventName: 'Nuevo Pedido', isActive: true }
+  });
+  if (!nuevoPedidoType) {
+    const err = new Error(
+      'EventType "Nuevo Pedido" no encontrado para la company. ' +
+      'Correr migration 20260517_backfill_nuevo_pedido_event_type.'
+    );
+    err.statusCode = 500;
+    throw err;
+  }
+
   const t = await sequelize.transaction();
   try {
-    // Buscar Order pending de la sesión cuyo Event siga unseen.
-    // Postgres no permite FOR UPDATE con outer join, así que el Event lo
-    // fetcheamos aparte (el lock va solo sobre Orders).
-    const candidateOrder = await Order.findOne({
-      where: { tableSessionId, status: 'pending' },
-      order: [['createdAt', 'DESC']],
-      transaction: t,
-      lock: t.LOCK.UPDATE
-    });
-    const candidateEvent = candidateOrder && candidateOrder.eventId
-      ? await Event.findByPk(candidateOrder.eventId, { transaction: t })
-      : null;
+    const now = new Date();
+    const event = await Event.create({
+      tableId,
+      eventTypeId: nuevoPedidoType.id,
+      message: null,
+      createdAt: now,
+      seenAt: null
+    }, { transaction: t });
 
-    const canMerge = candidateOrder
-      && candidateEvent
-      && candidateEvent.seenAt === null;
+    const totalCents = items.reduce((acc, i) => {
+      return acc + menuItemsById.get(i.menuItemId).priceCents * i.qty;
+    }, 0);
 
-    let order;
-    let merged = false;
-    if (canMerge) {
-      order = candidateOrder;
-      merged = true;
-    } else {
-      // Crear Event "Nuevo Pedido" primero (necesitamos su id para Order.eventId).
-      const nuevoPedidoType = await EventType.findOne({
-        where: { companyId, eventName: 'Nuevo Pedido', isActive: true }
-      });
-      if (!nuevoPedidoType) {
-        const err = new Error(
-          'EventType "Nuevo Pedido" no encontrado para la company. ' +
-          'Correr migration 20260517_backfill_nuevo_pedido_event_type.'
-        );
-        err.statusCode = 500;
-        throw err;
-      }
-
-      const now = new Date();
-      const event = await Event.create({
-        tableId,
-        eventTypeId: nuevoPedidoType.id,
-        message: null,
-        createdAt: now,
-        seenAt: null
-      }, { transaction: t });
-
-      order = await Order.create({
-        tableSessionId,
-        tableId,
-        branchId,
-        status: 'pending',
-        createdByDeviceId: deviceId || null,
-        eventId: event.id,
-        totalCents: 0,
-        notes: notes || null
-      }, { transaction: t });
-    }
-
-    // Aplicar items: si el mismo menuItemId ya está en el order (caso merge),
-    // sumar qty; sino crear OrderItem nuevo. Snapshots se capturan ahora.
-    const existingItems = merged
-      ? await OrderItem.findAll({ where: { orderId: order.id }, transaction: t, lock: t.LOCK.UPDATE })
-      : [];
-    const existingByMenuItemId = new Map(
-      existingItems
-        .filter((oi) => oi.menuItemId !== null)
-        .map((oi) => [oi.menuItemId, oi])
-    );
+    const order = await Order.create({
+      tableSessionId,
+      tableId,
+      branchId,
+      status: 'pending',
+      createdByDeviceId: deviceId || null,
+      eventId: event.id,
+      totalCents,
+      notes: notes || null
+    }, { transaction: t });
 
     for (const i of items) {
       const mi = menuItemsById.get(i.menuItemId);
-      const existing = existingByMenuItemId.get(i.menuItemId);
-      if (existing) {
-        await existing.update({ qty: existing.qty + i.qty }, { transaction: t });
-      } else {
-        await OrderItem.create({
-          orderId: order.id,
-          menuItemId: mi.id,
-          nameSnapshot: mi.name,
-          descriptionSnapshot: mi.description || null,
-          unitPriceCents: mi.priceCents,
-          qty: i.qty,
-          notes: i.notes || null
-        }, { transaction: t });
-      }
+      await OrderItem.create({
+        orderId: order.id,
+        menuItemId: mi.id,
+        nameSnapshot: mi.name,
+        descriptionSnapshot: mi.description || null,
+        unitPriceCents: mi.priceCents,
+        qty: i.qty,
+        notes: i.notes || null
+      }, { transaction: t });
     }
 
-    // Recalcular total a partir de TODOS los items del order.
-    const allItems = await OrderItem.findAll({
-      where: { orderId: order.id },
-      transaction: t
-    });
-    const totalCents = allItems.reduce((acc, oi) => acc + oi.unitPriceCents * oi.qty, 0);
-
-    // Si era merge y el cliente agregó notas, concatenar (sin pisar).
-    const newNotes = merged && notes
-      ? [order.notes, notes].filter(Boolean).join('\n---\n')
-      : (merged ? order.notes : (notes || null));
-
-    await order.update({ totalCents, notes: newNotes }, { transaction: t });
-
     await t.commit();
-
     return getOrderById(order.id);
   } catch (err) {
     await t.rollback();
