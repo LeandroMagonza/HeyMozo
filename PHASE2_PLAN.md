@@ -6,8 +6,8 @@ Plan de Fase 2 de HeyMozo. Paralelo a [UI_MIGRATION.md](UI_MIGRATION.md), que cu
 
 ## TL;DR
 
-- **MVP-B en 7 sprints** (~7 semanas). Modalidad B (con mozo) primero porque el venue piloto es B.
-- **Modalidad A** (autoservicio con pago al pedir) sale **post-MVP** en Sprint 8 — A es subconjunto operativo de B, sale rápido.
+- **MVP-B en 8 sprints** (~8 semanas). Modalidad B (con mozo) primero porque el venue piloto es B.
+- **Modalidad A** (autoservicio con pago al pedir) sale **post-MVP** en Sprint 9 — A es subconjunto operativo de B, sale rápido.
 - **Stack actual se conserva** — Express + Sequelize + CRA + CSS plano + magic-link auth. NO migrar a Fastify/Prisma/Vite/Tailwind.
 - **Roles introducidos en Sprint 1**: `waiter` / `cashier` / `owner` / `platformAdmin`.
 - **Branch por feature**, PRs chicos (1–3 días), master siempre deployable.
@@ -19,7 +19,7 @@ Plan de Fase 2 de HeyMozo. Paralelo a [UI_MIGRATION.md](UI_MIGRATION.md), que cu
 
 El dueño del local elige una de las dos al crear la sucursal en el wizard de admin. NO hay toggle self-service post-onboarding en MVP — cambios los gestiona HeyMozo backoffice manual.
 
-### Modalidad A — Autoservicio (post-MVP, Sprint 8)
+### Modalidad A — Autoservicio (post-MVP, Sprint 9)
 
 Para cervecerías de barra, hamburgueserías, food courts, locales con beepers.
 
@@ -123,16 +123,19 @@ Distinguir zombi (>30min sin heartbeat, pagos completos) vs realmente caliente:
 
 ## Plan de sprints
 
+> **Reordenamiento 2026-05-18**: Sprint 4 cambió de "Pagos manuales B" a "Mozo agrega items". Razón: muchas mesas piden oral, no por la app — sin la capacidad de mozo de meter items al sistema, cualquier feature de split o cobro digital arranca sobre datos incompletos. Pagos digitales (antes Sprint 4-5) se unifican en Sprint 5 y se diseñan recién después de Sprint 4. Split por ítem (NUEVO) entra como Sprint 7 — depende de pagos digitales reales para tener valor. Sprints de QA/deploy y Modalidad A se corren a 8 y 9. MVP-B ahora son 8 sprints en vez de 7.
+
 | # | Nombre | Status | Scope resumido |
 |---|---|---|---|
-| 1 | Foundation | 🚧 | Roles + middleware + reorganización rutas + shells vacías + URL `/m/` + modelos `TableSession` + `Device` |
-| 2 | Menú + onboarding | 🚧 | Wizard crear sucursal (modo B) + modelos `Category`/`MenuItem` + vista admin menú + vista cliente menú |
-| 3 | Pedido + identificación | 📝 | `Order`/`OrderItem` + carrito + ConfirmadoPage + AlertCard `new_order` + polling cliente + pantalla "PEDIDO LISTO" + emoji auto + aprobación transitiva entre amigos + override mozo |
-| 4 | Pagos manuales B | 📝 | PagarPage B con 4 métodos + sub-pantallas transferencia/efectivo/posnet/validando + cuentas bancarias config + Tab Acciones CajaShell (validar transferencias) + EventTypes pago manual |
-| 5 | Pago MP + Post-pago | 📝 | Integración Mercado Pago + `Payment` + PostPagoPage con rating + `Review`/`ReviewTag` |
-| 6 | Trust + hard limits + transferencias mesa | 📝 | Trust dot + hard limits enforcement + transferencia cliente-iniciada + mozo-iniciada + "soy otra persona" con clasificación zombi |
-| 7 | Pulso + QA + deploy | 📝 | Tab Pulso básica + Tab Pagos + bug bash + deploy venue piloto |
-| 8 | (post-MVP) Sumar Modalidad A | 📝 | Habilitar `autoservicio` en wizard + PagarPage A simplificada (solo MP) + skipear flow de validación de mesa caliente + QA en venue A |
+| 1 | Foundation | ✅ | Roles + middleware + reorganización rutas + shells vacías + URL `/m/` + modelos `TableSession` + `Device` |
+| 2 | Menú + onboarding | ✅ | Wizard crear sucursal (modo B) + modelos `Category`/`MenuItem` + vista admin menú + vista cliente menú |
+| 3 | Pedido + identificación | 🚧 | `Order`/`OrderItem` + carrito + ConfirmadoPage + AlertCard `new_order` + polling cliente + pantalla "PEDIDO LISTO" + emoji auto. Aprobación transitiva postergada a Sprint 6. |
+| 4 | Mozo agrega items | 📝 | `POST /api/orders/staff` + `AddOrderModal` en OpShell (menú agrupado por categorías + stepper qty). Event "Nuevo Pedido" auto-seen. Reusa Order/OrderItem/MenuItem sin migrations. **Prerequisito de split de cuenta** (sin esto los items orales no están en sistema). |
+| 5 | Pagos digitales | 📝 | A diseñar: canal (MP nativo / transferencia con validación cajero / ambos) + `Payment` + PostPagoPage con rating + `Review`/`ReviewTag`. Decisión bloqueante para Sprint 7 (split). |
+| 6 | Trust + hard limits + transferencias mesa | 📝 | Trust dot + hard limits enforcement + transferencia cliente-iniciada + mozo-iniciada + "soy otra persona" con clasificación zombi + aprobación transitiva |
+| 7 | Split por item + modos de pago | 📝 | `OrderItemClaim { orderItemId, deviceId, qty }` + coordinación real-time entre devices + reglas items huérfanos + `TableSession.paymentMode` ENUM. Depende de Sprint 5 (pagos digitales reales). |
+| 8 | Pulso + QA + deploy | 📝 | Tab Pulso básica + Tab Pagos + bug bash + deploy venue piloto |
+| 9 | (post-MVP) Sumar Modalidad A | 📝 | Habilitar `autoservicio` en wizard + PagarPage A simplificada (solo MP) + skipear flow de validación de mesa caliente + QA en venue A |
 
 Status: 📝 planeado · 🚧 en curso · ✅ mergeado
 
@@ -293,7 +296,7 @@ A es mejor si los devs tienen skills muy distintos. B si los dos son full-stack 
 
 ## Lo que queda fuera del MVP (v1.5)
 
-- **Modalidad A completa** (sale en Sprint 8 con PagarPage A simplificada solamente; UI/QA completos para A en v1.5).
+- **Modalidad A completa** (sale en Sprint 9 con PagarPage A simplificada solamente; UI/QA completos para A en v1.5).
 - **Club VIP UI completa**.
 - **Trust dot enforcement** (en MVP es solo informativo).
 - **Auditoría completa** (logs estructurados sí, dashboard no).
