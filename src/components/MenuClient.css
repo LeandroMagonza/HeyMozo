@@ -156,6 +156,13 @@
   margin-top: 0.375rem;
 }
 
+/* ===== Item right column (image + add) ===== */
+.menu-client__item-right {
+  position: relative;
+  flex-shrink: 0;
+  width: 5rem;
+}
+
 /* ===== Item image ===== */
 .menu-client__item-image-wrap {
   flex-shrink: 0;
@@ -163,6 +170,29 @@
   height: 5rem;
   border-radius: var(--rd-radius-md);
   overflow: hidden;
+}
+
+/* ===== Add button (overlay sobre la imagen) ===== */
+.menu-client__item-add {
+  position: absolute;
+  right: -0.375rem;
+  bottom: -0.375rem;
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--rd-radius-full);
+  background: var(--rd-brand-purple);
+  color: var(--rd-text);
+  border: 2px solid var(--rd-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: var(--rd-shadow-purple-soft);
+}
+
+.menu-client__item-add .material-symbols-outlined {
+  font-size: 1.125rem;
+  font-weight: 700;
 }
 
 .menu-client__item-image {
@@ -236,5 +266,50 @@
 
 /* ===== Spacer ===== */
 .menu-client__bottom-spacer {
-  height: 3rem;
+  height: 5rem;
+}
+
+/* ===== Cart bottom bar (sticky CTA "Ver Pedido") ===== */
+.menu-client__cart-bar {
+  position: fixed;
+  left: 50%;
+  bottom: 1rem;
+  transform: translateX(-50%);
+  width: min(calc(100% - 2rem), 28rem);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem 1rem;
+  border: none;
+  border-radius: var(--rd-radius-full);
+  background: var(--rd-brand-purple);
+  color: var(--rd-text);
+  font-family: var(--rd-font-sans);
+  font-size: 0.9375rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: var(--rd-shadow-purple);
+  z-index: var(--rd-z-sticky);
+}
+
+.menu-client__cart-bar-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+  height: 1.5rem;
+  padding: 0 0.4rem;
+  border-radius: var(--rd-radius-full);
+  background: rgba(255, 255, 255, 0.2);
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+
+.menu-client__cart-bar-label {
+  flex: 1;
+  text-align: left;
+}
+
+.menu-client__cart-bar-total {
+  font-weight: 700;
 }

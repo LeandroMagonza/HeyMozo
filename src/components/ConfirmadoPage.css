@@ -1,0 +1,246 @@
+/* src/components/ConfirmadoPage.css */
+
+.confirmado-page {
+  font-family: var(--rd-font-sans);
+  background: var(--rd-bg);
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.confirmado-page__center {
+  flex: 1;
+  padding: 3rem 1.5rem 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 1rem;
+}
+
+.confirmado-page__check {
+  width: 6rem;
+  height: 6rem;
+  border-radius: var(--rd-radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.5rem;
+}
+
+.confirmado-page__check .material-symbols-outlined {
+  font-size: 3.5rem;
+  font-weight: 700;
+  color: var(--rd-text);
+}
+
+.confirmado-page__check--pending {
+  background: var(--rd-brand-purple);
+  box-shadow: var(--rd-shadow-purple);
+  animation: rd-ring-pulse 2s infinite;
+}
+
+.confirmado-page__check--ready {
+  background: var(--rd-brand-green);
+  box-shadow: var(--rd-shadow-green);
+  animation: rd-ring-pulse 1.6s infinite;
+}
+
+.confirmado-page__check--cancelled {
+  background: var(--rd-brand-error);
+}
+
+.confirmado-page__title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--rd-text);
+  letter-spacing: -0.01em;
+}
+
+.confirmado-page--ready .confirmado-page__title {
+  color: var(--rd-brand-green-soft);
+  font-size: 1.75rem;
+  letter-spacing: 0.02em;
+}
+
+.confirmado-page__subtitle {
+  color: var(--rd-text-tertiary);
+  font-size: 0.9375rem;
+  line-height: 1.45;
+  max-width: 22rem;
+}
+
+/* ===== Items list ===== */
+.confirmado-page__items {
+  list-style: none;
+  margin: 1rem 0 0;
+  padding: 1rem;
+  width: 100%;
+  max-width: 24rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  background: var(--rd-bg-card);
+  border: 1px solid var(--rd-border-subtle);
+  border-radius: var(--rd-radius-lg);
+  text-align: left;
+}
+
+.confirmado-page__item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.9375rem;
+  color: var(--rd-text-secondary);
+}
+
+.confirmado-page__item-qty {
+  font-weight: 700;
+  color: var(--rd-brand-purple-soft);
+  min-width: 1.5rem;
+}
+
+.confirmado-page__item-name {
+  flex: 1;
+}
+
+.confirmado-page__item-price {
+  font-weight: 700;
+  color: var(--rd-text);
+}
+
+/* ===== Total ===== */
+.confirmado-page__total {
+  width: 100%;
+  max-width: 24rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 0.875rem 1rem;
+  border-top: 1px solid var(--rd-border-subtle);
+}
+
+.confirmado-page__total-label {
+  font-size: 0.875rem;
+  color: var(--rd-text-tertiary);
+}
+
+.confirmado-page__total-value {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--rd-text);
+}
+
+/* ===== Action buttons (primary + secondary) ===== */
+.confirmado-page__actions {
+  width: min(100%, 20rem);
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  margin-top: 0.75rem;
+}
+
+.confirmado-page__primary {
+  width: 100%;
+  padding: 0.9375rem 1rem;
+  border-radius: var(--rd-radius-full);
+  border: 1.5px solid var(--rd-border);
+  background: transparent;
+  color: var(--rd-text);
+  font-family: var(--rd-font-sans);
+  font-size: 0.9375rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.confirmado-page--ready .confirmado-page__primary {
+  background: var(--rd-brand-green);
+  border-color: var(--rd-brand-green);
+  box-shadow: var(--rd-shadow-green);
+}
+
+.confirmado-page__secondary {
+  width: 100%;
+  padding: 0.875rem 1rem;
+  border-radius: var(--rd-radius-full);
+  border: none;
+  background: var(--rd-brand-orange);
+  color: var(--rd-text);
+  font-family: var(--rd-font-sans);
+  font-size: 0.9375rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  box-shadow: var(--rd-shadow-orange);
+}
+
+.confirmado-page__secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.confirmado-page__secondary .material-symbols-outlined {
+  font-size: 1.125rem;
+}
+
+/* Back en pantallas de error/loading mantiene el estilo viejo */
+.confirmado-page__back {
+  margin-top: 0.75rem;
+  width: min(100%, 20rem);
+  padding: 0.9375rem 1rem;
+  border-radius: var(--rd-radius-full);
+  border: 1.5px solid var(--rd-border);
+  background: transparent;
+  color: var(--rd-text);
+  font-family: var(--rd-font-sans);
+  font-size: 0.9375rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* ===== Toast ===== */
+.confirmado-page__toast {
+  position: fixed;
+  left: 50%;
+  bottom: 1.5rem;
+  transform: translateX(-50%);
+  padding: 0.75rem 1.25rem;
+  border-radius: var(--rd-radius-full);
+  color: var(--rd-text);
+  font-size: 0.875rem;
+  font-weight: 700;
+  box-shadow: var(--rd-shadow-card);
+  z-index: var(--rd-z-modal);
+  animation: rd-fade-in 0.2s var(--rd-ease-out);
+}
+
+/* ===== Spinner / loading ===== */
+.confirmado-page__spinner {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: var(--rd-radius-full);
+  border: 3px solid var(--rd-border);
+  border-top-color: var(--rd-brand-purple);
+  animation: rd-spin 0.9s linear infinite;
+}
+
+.confirmado-page__loading-text {
+  color: var(--rd-text-tertiary);
+  font-size: 0.9375rem;
+}
+
+/* ===== Error state ===== */
+.confirmado-page__error-icon {
+  font-size: 3rem;
+  color: var(--rd-brand-error);
+}
+
+.confirmado-page__error-text {
+  color: var(--rd-text-tertiary);
+  font-size: 0.9375rem;
+  max-width: 22rem;
+}

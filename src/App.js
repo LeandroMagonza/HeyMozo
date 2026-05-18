@@ -4,6 +4,8 @@ import React, { useState, useRef, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate, useParams } from "react-router-dom";
 import UserScreen from "./components/UserScreen";
 import MenuClient from "./components/MenuClient";
+import CartPage from "./components/CartPage";
+import ConfirmadoPage from "./components/ConfirmadoPage";
 import BranchConfig from "./components/BranchConfig";
 import BranchCreate from "./components/BranchCreate";
 import CompanyConfig from "./components/CompanyConfig";
@@ -261,6 +263,16 @@ function App() {
         <Route
           path="/m/:companyId/:branchId/:tableId/menu"
           element={<MenuClient />}
+        />
+
+        {/* Customer cart + confirmed (Sprint 3.3) */}
+        <Route
+          path="/m/:companyId/:branchId/:tableId/pedido"
+          element={<CartPage />}
+        />
+        <Route
+          path="/m/:companyId/:branchId/:tableId/confirmado/:orderId"
+          element={<ConfirmadoPage />}
         />
 
         {/* Authentication routes */}

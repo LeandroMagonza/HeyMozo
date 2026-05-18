@@ -6,6 +6,10 @@ const API_BASE_URL = process.env.REACT_APP_API_URL || '/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
+  // Necesario para que el browser envíe la cookie HttpOnly `hm_device`
+  // en endpoints customer-facing (Sprint 3.2/3.3). Inocuo para endpoints
+  // admin que autentican por header `Authorization: Bearer`.
+  withCredentials: true,
 });
 
 // Add a request interceptor to include auth token in requests
@@ -160,5 +164,21 @@ export const getActiveOrders = (branchId) =>
 
 export const markOrderReady = (orderId) =>
   api.post(`/orders/${orderId}/mark-ready`);
+
+// Customer device + session + orders (Sprint 3.2/3.3) — usan cookie HttpOnly `hm_device`
+export const identifyDevice = (fingerprint, name) =>
+  api.post('/devices/identify', { fingerprint, name });
+
+export const attachSession = (tableId) =>
+  api.post(`/tables/${tableId}/sessions/attach`);
+
+export const getActiveSession = (tableId) =>
+  api.get(`/tables/${tableId}/session/active`);
+
+export const confirmOrder = (tableId, payload) =>
+  api.post(`/tables/${tableId}/orders`, payload);
+
+export const getOrder = (orderId) =>
+  api.get(`/orders/${orderId}`);
 
 export default api;
