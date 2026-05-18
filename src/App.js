@@ -2,7 +2,6 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate, useParams } from "react-router-dom";
-import AdminScreen from "./components/AdminScreen";
 import UserScreen from "./components/UserScreen";
 import MenuClient from "./components/MenuClient";
 import BranchConfig from "./components/BranchConfig";
@@ -348,10 +347,8 @@ function App() {
         <Route path="/admin/:companyId/config" element={<AdminCompanyConfigRedirect />} />
         <Route path="/admin/:companyId/:branchId/config" element={<AdminBranchConfigRedirect />} />
         <Route path="/admin/:companyId/:branchId/urls" element={<AdminBranchUrlsRedirect />} />
-        {/*
-         * El redirect /admin/:c/:b → /piso/:b se activa cuando OpShell tenga
-         * contenido real. Por ahora AdminScreen sigue en su ruta original.
-         */}
+        {/* Sprint 3.4b — OpShell tiene contenido real, se activa el redirect */}
+        <Route path="/admin/:companyId/:branchId" element={<AdminBranchRedirect />} />
         <Route
           path="/admin/:companyId/branch/create"
           element={
@@ -370,14 +367,6 @@ function App() {
           }
         />
 
-        <Route
-          path="/admin/:companyId/:branchId"
-          element={
-            <ProtectedRoute>
-              <AdminScreen />
-            </ProtectedRoute>
-          }
-        />
       </Routes>
     </Router>
   );

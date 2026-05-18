@@ -3,7 +3,8 @@ import { NavLink, useParams } from 'react-router-dom';
 import { FaStore, FaSignOutAlt, FaUser } from 'react-icons/fa';
 import authService from '../services/authService';
 import AlertCard from './AlertCard';
-import { getActiveOrders } from '../services/api';
+import OrderDetailModal from './OrderDetailModal';
+import { getActiveOrders, markOrderReady } from '../services/api';
 import notificationSound from '../sounds/notification.mp3';
 import './OpShell.css';
 
@@ -31,6 +32,8 @@ const OpShell = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [countdown, setCountdown] = useState(REFRESH_INTERVAL / 1000);
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [markingId, setMarkingId] = useState(null);
 
   const audioRef = useRef(new Audio(notificationSound));
   const prevCountRef = useRef(null);
@@ -70,6 +73,19 @@ const OpShell = () => {
     }
     prevCountRef.current = count;
   }, [orders.length]);
+
+  const handleMarkReady = useCallback(async (orderId) => {
+    setMarkingId(orderId);
+    try {
+      await markOrderReady(orderId);
+      setSelectedOrder(null);
+      await fetchOrders();
+    } catch (err) {
+      console.error('🍽️ OpShell — error marking order ready:', err);
+    } finally {
+      setMarkingId(null);
+    }
+  }, [fetchOrders]);
 
   const handleLogout = () => {
     if (window.confirm('¿Está seguro que desea cerrar sesión?')) {
@@ -149,13 +165,24 @@ const OpShell = () => {
                   icon="FaShoppingCart"
                   actionLabel="LISTO"
                   badgeCount={order.items ? order.items.reduce((s, it) => s + it.qty, 0) : 0}
-                  disabledBtn={true}
+                  disabledBtn={markingId === order.id}
+                  onClick={() => setSelectedOrder(order)}
+                  onActionClick={() => handleMarkReady(order.id)}
                 />
               ))}
             </div>
           )}
         </div>
       </main>
+
+      {selectedOrder && (
+        <OrderDetailModal
+          order={selectedOrder}
+          onClose={() => setSelectedOrder(null)}
+          onReady={() => handleMarkReady(selectedOrder.id)}
+          loading={markingId === selectedOrder.id}
+        />
+      )}
     </div>
   );
 };

@@ -154,7 +154,7 @@ export const updateMenuItem = (categoryId, itemId, data) => api.put(`/categories
 export const deleteMenuItem = (categoryId, itemId) => api.delete(`/categories/${categoryId}/items/${itemId}`);
 export const reorderMenuItems = (categoryId, order) => api.put(`/categories/${categoryId}/items/reorder`, { order });
 
-// Staff — OpShell (Sprint 3.4a)
+// Staff — OpShell
 export const getActiveOrders = (branchId) =>
   api.get(`/branches/${branchId}/orders/active`);
 
