@@ -12,9 +12,7 @@ Tracker live de los sub-PRs de Fase 2. Una línea por sub-PR con commit, branch,
 
 | Sub-PR | Branch | Commit | PR | Notas |
 |---|---|---|---|---|
-| 3.2 | `feature/phase2-order-endpoints` | _(local)_ | — (a abrir) | feat(orders): device cookie + session attach + order confirm/merge/mark-ready |
-| 3.3 | `feature/phase2-order-client-ui` | _(local)_ | — (a abrir) | feat(client): MenuClient "+", CartPage, ConfirmadoPage + polling LISTO, ThumbmarkJS |
-| 3.4a | `feature/phase2-opshell-alerts` | _(local)_ | — (a abrir) | feat(opshell): grid AlertCards purple `new_order` + polling 6s (render only) |
+| 3.4b | `feature/phase2-opshell-listo` | _(local)_ | — (a abrir) | feat(opshell): acción LISTO + OrderDetailModal + redirect AdminScreen |
 
 ---
 
@@ -22,7 +20,7 @@ Tracker live de los sub-PRs de Fase 2. Una línea por sub-PR con commit, branch,
 
 | Sub-PR | Branch (a crear) | Scope corto | Depende de |
 |---|---|---|---|
-| 3.4b | `feature/phase2-opshell-listo` | Acción LISTO + OrderDetailModal + redirect AdminScreen | 3.4a |
+| 3.3 | `feature/phase2-order-client-ui` | MenuClient "+", CartPage, ConfirmadoPage, pantalla LISTO, ThumbmarkJS | 3.2 |
 
 Para detalle de scope de Sprint 3 ver [PHASE2_PLAN.md §Sprint 3](PHASE2_PLAN.md).
 
@@ -42,6 +40,8 @@ Para detalle de scope de Sprint 3 ver [PHASE2_PLAN.md §Sprint 3](PHASE2_PLAN.md
 | 2.4 | `feature/phase2-branch-wizard` | — | [#11](https://github.com/LeandroMagonza/HeyMozo/pull/11) | feat(branch): wizard 3 pasos |
 | 2.5 | `feature/phase2-menu-client` | — | [#12](https://github.com/LeandroMagonza/HeyMozo/pull/12) | feat(menu): vista cliente `/m/:c/:b/:t/menu` |
 | 3.1 | `feature/phase2-order-models` | `fe31025` | [#13](https://github.com/LeandroMagonza/HeyMozo/pull/13) | feat(orders): Order + OrderItem + EventType "Nuevo Pedido" |
+| 3.2 | `feature/phase2-order-endpoints` | `6c9b332` | [#14](https://github.com/LeandroMagonza/HeyMozo/pull/14) | feat(orders): device cookie + session attach + order endpoints |
+| 3.4a | `feature/phase2-opshell-alerts` | `dbfbfc4` | [#16](https://github.com/LeandroMagonza/HeyMozo/pull/16) | feat(opshell): grid AlertCards purple `new_order` + polling 6s (render only) |
 
 ---
 
