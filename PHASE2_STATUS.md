@@ -12,7 +12,7 @@ Tracker live de los sub-PRs de Fase 2. Una línea por sub-PR con commit, branch,
 
 | Sub-PR | Branch | Commit | PR | Notas |
 |---|---|---|---|---|
-| 3.4b | `feature/phase2-opshell-listo` | _(local)_ | — (a abrir) | feat(opshell): acción LISTO + OrderDetailModal + redirect AdminScreen |
+| 3.4b | `feature/phase2-opshell-listo` | `c7db4f1` | [#17](https://github.com/LeandroMagonza/HeyMozo/pull/17) | feat(opshell): acción LISTO + OrderDetailModal + redirect AdminScreen |
 
 ---
 
