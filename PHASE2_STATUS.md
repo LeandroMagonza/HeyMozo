@@ -2,7 +2,7 @@
 
 Tracker live de los sub-PRs de Fase 2. Una línea por sub-PR con commit, branch, PR# y estado.
 
-**Última actualización:** 2026-05-17
+**Última actualización:** 2026-05-18
 
 > Cuando un PR se mergea, mover su sub-PR a "✅ Mergeado" abajo y actualizar el [PHASE2_PLAN.md](PHASE2_PLAN.md) si corresponde (cambiar 🚧 → ✅ para el sprint completo cuando todas las sub-PRs estén in).
 
@@ -13,6 +13,8 @@ Tracker live de los sub-PRs de Fase 2. Una línea por sub-PR con commit, branch,
 | Sub-PR | Branch | Commit | PR | Notas |
 |---|---|---|---|---|
 | 3.2 | `feature/phase2-order-endpoints` | _(local)_ | — (a abrir) | feat(orders): device cookie + session attach + order confirm/merge/mark-ready |
+| 3.3 | `feature/phase2-order-client-ui` | _(local)_ | — (a abrir) | feat(client): MenuClient "+", CartPage, ConfirmadoPage + polling LISTO, ThumbmarkJS |
+| 3.4a | `feature/phase2-opshell-alerts` | _(local)_ | — (a abrir) | feat(opshell): grid AlertCards purple `new_order` + polling 6s (render only) |
 
 ---
 
@@ -20,8 +22,6 @@ Tracker live de los sub-PRs de Fase 2. Una línea por sub-PR con commit, branch,
 
 | Sub-PR | Branch (a crear) | Scope corto | Depende de |
 |---|---|---|---|
-| 3.3 | `feature/phase2-order-client-ui` | MenuClient "+", CartPage, ConfirmadoPage, pantalla LISTO, ThumbmarkJS | 3.2 |
-| 3.4a | `feature/phase2-opshell-alerts` | OpShell grid + AlertCards `new_order` (render only) | 3.2 |
 | 3.4b | `feature/phase2-opshell-listo` | Acción LISTO + OrderDetailModal + redirect AdminScreen | 3.4a |
 
 Para detalle de scope de Sprint 3 ver [PHASE2_PLAN.md §Sprint 3](PHASE2_PLAN.md).
