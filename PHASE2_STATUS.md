@@ -2,7 +2,7 @@
 
 Tracker live de los sub-PRs de Fase 2. Una línea por sub-PR con commit, branch, PR# y estado.
 
-**Última actualización:** 2026-05-16
+**Última actualización:** 2026-05-17
 
 > Cuando un PR se mergea, mover su sub-PR a "✅ Mergeado" abajo y actualizar el [PHASE2_PLAN.md](PHASE2_PLAN.md) si corresponde (cambiar 🚧 → ✅ para el sprint completo cuando todas las sub-PRs estén in).
 
@@ -12,11 +12,7 @@ Tracker live de los sub-PRs de Fase 2. Una línea por sub-PR con commit, branch,
 
 | Sub-PR | Branch | Commit | PR | Notas |
 |---|---|---|---|---|
-| 1.1 | `feature/phase2-roles-middleware` | `b11c118` | [#3](https://github.com/LeandroMagonza/HeyMozo/pull/3) | feat(auth): add `User.role` ENUM + `requireRole` middleware |
-| 1.2 | `feature/phase2-tablesession-device` | `95ec92e` | [#4](https://github.com/LeandroMagonza/HeyMozo/pull/4) | feat(session): add Device + TableSession + TableSessionDevice models |
-| 1.3 | `feature/phase2-shells` | `21630fc` | — (pendiente abrir) | feat(shells): add OpShell, CajaShell, AdminShell + routing |
-| 1.4 | `feature/phase2-client-url` | `515a616` | — (pendiente abrir) | feat(routing): migrate customer URL `/user/` → `/m/` |
-| 2.1 | `feature/phase2-menu-models` | `ea536a9` | [#7](https://github.com/LeandroMagonza/HeyMozo/pull/7) | feat(menu): add Category + MenuItem models + `Branch.modality` |
+| 3.2 | `feature/phase2-order-endpoints` | _(local)_ | — (a abrir) | feat(orders): device cookie + session attach + order confirm/merge/mark-ready |
 
 ---
 
@@ -24,18 +20,28 @@ Tracker live de los sub-PRs de Fase 2. Una línea por sub-PR con commit, branch,
 
 | Sub-PR | Branch (a crear) | Scope corto | Depende de |
 |---|---|---|---|
-| 2.2 | `feature/phase2-menu-endpoints` | CRUD endpoints menú admin | 2.1 |
-| 2.3 | `feature/phase2-menu-admin` | Vista admin `/config/:c/:b/menu` | 2.2 |
-| 2.4 | `feature/phase2-branch-wizard` | `BranchCreate.js` wizard 3 pasos | — (paralelizable) |
-| 2.5 | `feature/phase2-menu-client` | Vista cliente `/m/:c/:b/:t/menu` + fallback link viejo | 2.2 |
+| 3.3 | `feature/phase2-order-client-ui` | MenuClient "+", CartPage, ConfirmadoPage, pantalla LISTO, ThumbmarkJS | 3.2 |
+| 3.4a | `feature/phase2-opshell-alerts` | OpShell grid + AlertCards `new_order` (render only) | 3.2 |
+| 3.4b | `feature/phase2-opshell-listo` | Acción LISTO + OrderDetailModal + redirect AdminScreen | 3.4a |
 
-Para detalle de scope de cada sub-PR de Sprint 2 ver [PHASE2_PLAN.md §Sprint 2 — desglose](PHASE2_PLAN.md).
+Para detalle de scope de Sprint 3 ver [PHASE2_PLAN.md §Sprint 3](PHASE2_PLAN.md).
 
 ---
 
 ## ✅ Mergeado
 
-_(vacío hasta que Leandro mergee la primera sub-PR de Fase 2)_
+| Sub-PR | Branch | Commit | PR | Notas |
+|---|---|---|---|---|
+| 1.1 | `feature/phase2-roles-middleware` | `b11c118` | [#3](https://github.com/LeandroMagonza/HeyMozo/pull/3) | feat(auth): `User.role` ENUM + `requireRole` middleware |
+| 1.2 | `feature/phase2-tablesession-device` | `95ec92e` | [#4](https://github.com/LeandroMagonza/HeyMozo/pull/4) | feat(session): Device + TableSession + TableSessionDevice |
+| 1.3 | `feature/phase2-shells` | `21630fc` | [#5](https://github.com/LeandroMagonza/HeyMozo/pull/5) | feat(shells): OpShell + CajaShell + AdminShell + routing |
+| 1.4 | `feature/phase2-client-url` | `515a616` | [#6](https://github.com/LeandroMagonza/HeyMozo/pull/6) | feat(routing): customer URL `/user/` → `/m/` |
+| 2.1 | `feature/phase2-menu-models` | `ea536a9` | [#7](https://github.com/LeandroMagonza/HeyMozo/pull/7) | feat(menu): Category + MenuItem + `Branch.modality` |
+| 2.2 | `feature/phase2-menu-endpoints` | — | [#8](https://github.com/LeandroMagonza/HeyMozo/pull/8) | feat(menu): CRUD endpoints menú admin |
+| 2.3 | `feature/phase2-menu-admin` | — | [#9](https://github.com/LeandroMagonza/HeyMozo/pull/9) | feat(menu): vista admin `/config/:c/:b/menu` |
+| 2.4 | `feature/phase2-branch-wizard` | — | [#11](https://github.com/LeandroMagonza/HeyMozo/pull/11) | feat(branch): wizard 3 pasos |
+| 2.5 | `feature/phase2-menu-client` | — | [#12](https://github.com/LeandroMagonza/HeyMozo/pull/12) | feat(menu): vista cliente `/m/:c/:b/:t/menu` |
+| 3.1 | `feature/phase2-order-models` | `fe31025` | [#13](https://github.com/LeandroMagonza/HeyMozo/pull/13) | feat(orders): Order + OrderItem + EventType "Nuevo Pedido" |
 
 ---
 

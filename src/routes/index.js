@@ -1030,4 +1030,51 @@ router.delete('/categories/:categoryId/items/:itemId', async (req, res) => {
   }
 });
 
-module.exports = router; 
+// ============================================================
+// Sprint 3.2 — Staff order endpoints (autenticados)
+// ============================================================
+
+const orderService = require('../services/orders');
+
+// GET /api/branches/:branchId/orders/active — lista pedidos pending de la
+// sucursal para alimentar las AlertCards purple del piso (OpShell).
+router.get('/branches/:branchId/orders/active', authMiddleware.checkBranchPermission, async (req, res) => {
+  try {
+    const orders = await orderService.listActiveOrders({ branchId: parseInt(req.params.branchId) });
+    res.json(orders);
+  } catch (error) {
+    console.error('Error fetching active orders:', error);
+    res.status(500).json({ error: 'Error fetching active orders' });
+  }
+});
+
+// POST /api/orders/:orderId/mark-ready — mozo marca pedido como entregado.
+// Status pending → ready + Event "Nuevo Pedido" se marca seenAt (la card
+// purple desaparece y futuros pedidos NO mergean en este order).
+router.post('/orders/:orderId/mark-ready', async (req, res) => {
+  try {
+    const orderId = parseInt(req.params.orderId);
+    const { Order } = require('../models');
+    const existing = await Order.findByPk(orderId);
+    if (!existing) {
+      return res.status(404).json({ error: 'Order no encontrado' });
+    }
+
+    // Permisos: requiere acceso al branch del order.
+    if (!req.user.isAdmin) {
+      const authService = require('../services/auth');
+      const hasAccess = await authService.hasPermission(req.user.id, 'branch', existing.branchId);
+      if (!hasAccess) {
+        return res.status(403).json({ error: 'Access denied to this branch' });
+      }
+    }
+
+    const order = await orderService.markOrderReady({ orderId });
+    res.json(order);
+  } catch (error) {
+    console.error('Error marking order ready:', error);
+    res.status(error.statusCode || 500).json({ error: error.message || 'Error marking order ready' });
+  }
+});
+
+module.exports = router;

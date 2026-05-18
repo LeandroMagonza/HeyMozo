@@ -37,9 +37,9 @@ module.exports = (sequelize) => {
       allowNull: true,
       references: { model: 'Devices', key: 'id' }
     },
-    // FK al Event "Nuevo Pedido" que dispara la AlertCard purple. Si ese
-    // Event sigue unseen (seenAt IS NULL), próximas confirmaciones de la
-    // misma sesión mergean OrderItems acá en vez de crear Order nuevo.
+    // FK al Event "Nuevo Pedido" que dispara la AlertCard purple del mozo.
+    // Relación 1:1 — cada Order tiene su Event propio. Al marcar el Order
+    // como 'ready', el Event se marca seenAt=now y la card desaparece.
     eventId: {
       type: DataTypes.INTEGER,
       allowNull: true,

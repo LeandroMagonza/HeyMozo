@@ -4,6 +4,7 @@ require('dotenv').config({ path: `.env.${environment}` });
 const express = require('express');
 const path = require('path');
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
 const sequelize = require('./src/config/database');
 const { 
   Company, 
@@ -23,6 +24,7 @@ const authRoutes = require('./src/routes/auth');
 const usersRoutes = require('./src/routes/users');
 const eventsRoutes = require('./src/routes/events');
 const apiRoutes = require('./src/routes/index');
+const customerSessionsRoutes = require('./src/routes/customerSessions');
 const authMiddleware = require('./src/middleware/auth');
 
 const app = express();
@@ -30,9 +32,15 @@ const PORT = process.env.PORT || 3001;
 
 console.log('Starting server setup');
 
-// Middleware para parsear JSON y CORS
+// Middleware para parsear JSON, cookies y CORS
 app.use(express.json());
-app.use(cors());
+app.use(cookieParser());
+// CORS con credentials: necesario para que el browser envíe la cookie HttpOnly
+// `hm_device` (Sprint 3.2) en cross-origin (CRA dev server :3000 → API :3001).
+app.use(cors({
+  origin: (origin, callback) => callback(null, origin || true),
+  credentials: true
+}));
 
 // Add request logging middleware
 app.use((req, res, next) => {
@@ -408,6 +416,12 @@ app.post('/api/tables/:id/events', async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
+// PUBLIC ROUTES (Sprint 3.2): identificación de device + sesión + pedidos del
+// cliente. Montadas ANTES de eventsRoutes y del authMiddleware. La cookie
+// HttpOnly `hm_device` reemplaza al JWT para la identidad del cliente.
+console.log('🔧 Mounting PUBLIC customer session routes at /api (before auth)');
+app.use('/api', customerSessionsRoutes);
 
 console.log('🔧 Mounting events routes at /api');
 app.use('/api', eventsRoutes);
