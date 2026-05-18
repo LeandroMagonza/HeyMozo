@@ -6,6 +6,7 @@
     "@faker-js/faker": "^8.0.2",
     "@react-pdf/renderer": "^4.2.1",
     "@sendgrid/mail": "^8.1.4",
+    "@thumbmarkjs/thumbmarkjs": "^1.9.0",
     "axios": "^1.7.7",
     "concurrently": "^9.0.1",
     "cookie-parser": "^1.4.7",

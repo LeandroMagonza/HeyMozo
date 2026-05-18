@@ -1,11 +1,19 @@
 // src/components/MenuClient.js
 // Route: /m/:companyId/:branchId/:tableId/menu
-// Browse-only menu for customers. Cart/ordering comes in Sprint 3.
+// Browse menu + agregar al carrito (Sprint 3.3).
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Phone from './Phone';
 import { getBranch, getCompany, getPublicMenu } from '../services/api';
+import { bootstrapCustomerSession } from '../services/device';
+import {
+  addItem,
+  readCart,
+  cartTotalCents,
+  cartItemCount,
+  subscribeCart,
+} from '../services/cart';
 import './MenuClient.css';
 
 const formatPrice = (cents) => {
@@ -22,10 +30,18 @@ const MenuClient = () => {
   const [restaurantName, setRestaurantName] = useState('');
   const [activeCategoryId, setActiveCategoryId] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [cartCount, setCartCount] = useState(0);
+  const [cartTotal, setCartTotal] = useState(0);
 
   const sectionRefs = useRef({});
   const pillsRef = useRef(null);
   const scrollingFromPill = useRef(false);
+
+  const refreshCart = useCallback(() => {
+    const c = readCart(branchId, tableId);
+    setCartCount(cartItemCount(c));
+    setCartTotal(cartTotalCents(c));
+  }, [branchId, tableId]);
 
   useEffect(() => {
     const load = async () => {
@@ -49,15 +65,28 @@ const MenuClient = () => {
       }
     };
     load();
-  }, [branchId, companyId]);
+    refreshCart();
+  }, [branchId, companyId, refreshCart]);
 
-  // Scroll to category section when pill is clicked
+  // Bootstrap device + sesión en background (no bloquea render).
+  // Si falla, el cliente igual puede browsear; el error real saldrá al confirmar.
+  useEffect(() => {
+    bootstrapCustomerSession(tableId).catch((err) => {
+      console.warn('No se pudo bootstrappear sesión del cliente:', err && err.message);
+    });
+  }, [tableId]);
+
+  // Suscripción a cambios del carrito (otra tab, vuelta desde CartPage, etc.).
+  useEffect(() => {
+    refreshCart();
+    return subscribeCart(branchId, tableId, refreshCart);
+  }, [branchId, tableId, refreshCart]);
+
   const handlePillClick = (catId) => {
     setActiveCategoryId(catId);
     scrollingFromPill.current = true;
     const el = sectionRefs.current[catId];
     if (el) {
-      // Header (49px) + pills (44px) + gap (8px) = 101px offset
       const offset = 101;
       const top = el.getBoundingClientRect().top + window.scrollY - offset;
       window.scrollTo({ top, behavior: 'smooth' });
@@ -65,7 +94,6 @@ const MenuClient = () => {
     setTimeout(() => { scrollingFromPill.current = false; }, 700);
   };
 
-  // Track active category while scrolling
   useEffect(() => {
     const handleScroll = () => {
       if (scrollingFromPill.current) return;
@@ -79,7 +107,6 @@ const MenuClient = () => {
       }
       if (current && current !== activeCategoryId) {
         setActiveCategoryId(current);
-        // Scroll the active pill into view
         const pill = pillsRef.current?.querySelector(`[data-cat="${current}"]`);
         if (pill) pill.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
       }
@@ -88,8 +115,14 @@ const MenuClient = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [categories, activeCategoryId]);
 
-  const handleBack = () => {
-    navigate(-1);
+  const handleBack = () => navigate(-1);
+
+  const handleAdd = (item) => {
+    addItem(branchId, tableId, item);
+  };
+
+  const handleViewCart = () => {
+    navigate(`/m/${companyId}/${branchId}/${tableId}/pedido`);
   };
 
   if (loading) {
@@ -132,7 +165,6 @@ const MenuClient = () => {
 
   return (
     <Phone className="menu-client">
-      {/* Sticky header */}
       <header className="menu-client__header">
         <button className="menu-client__back" onClick={handleBack} type="button">
           <span className="material-symbols-outlined">arrow_back_ios</span>
@@ -142,7 +174,6 @@ const MenuClient = () => {
         </span>
       </header>
 
-      {/* Sticky category pills */}
       <div className="menu-client__pills-wrap" ref={pillsRef}>
         <div className="menu-client__pills">
           {categories.map((cat) => (
@@ -159,7 +190,6 @@ const MenuClient = () => {
         </div>
       </div>
 
-      {/* Category sections */}
       <main className="menu-client__main">
         {categories.map((cat) => (
           <section
@@ -181,19 +211,29 @@ const MenuClient = () => {
                       )}
                       <span className="menu-client__item-price">{formatPrice(item.priceCents)}</span>
                     </div>
-                    <div className="menu-client__item-image-wrap">
-                      {item.imageUrl ? (
-                        <img
-                          src={item.imageUrl}
-                          alt={item.name}
-                          className="menu-client__item-image"
-                          loading="lazy"
-                        />
-                      ) : (
-                        <div className="menu-client__item-image-placeholder">
-                          <span className="material-symbols-outlined">lunch_dining</span>
-                        </div>
-                      )}
+                    <div className="menu-client__item-right">
+                      <div className="menu-client__item-image-wrap">
+                        {item.imageUrl ? (
+                          <img
+                            src={item.imageUrl}
+                            alt={item.name}
+                            className="menu-client__item-image"
+                            loading="lazy"
+                          />
+                        ) : (
+                          <div className="menu-client__item-image-placeholder">
+                            <span className="material-symbols-outlined">lunch_dining</span>
+                          </div>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        className="menu-client__item-add rd-tap-scale"
+                        onClick={() => handleAdd(item)}
+                        aria-label={`Agregar ${item.name}`}
+                      >
+                        <span className="material-symbols-outlined">add</span>
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -203,6 +243,18 @@ const MenuClient = () => {
         ))}
         <div className="menu-client__bottom-spacer" />
       </main>
+
+      {cartCount > 0 && (
+        <button
+          type="button"
+          className="menu-client__cart-bar rd-tap-scale"
+          onClick={handleViewCart}
+        >
+          <span className="menu-client__cart-bar-count">{cartCount}</span>
+          <span className="menu-client__cart-bar-label">Ver Pedido</span>
+          <span className="menu-client__cart-bar-total">{formatPrice(cartTotal)}</span>
+        </button>
+      )}
     </Phone>
   );
 };
