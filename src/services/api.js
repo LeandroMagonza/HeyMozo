@@ -165,6 +165,9 @@ export const getActiveOrders = (branchId) =>
 export const markOrderReady = (orderId) =>
   api.post(`/orders/${orderId}/mark-ready`);
 
+export const staffAddOrder = (data) =>
+  api.post('/orders/staff', data);
+
 // Customer device + session + orders (Sprint 3.2/3.3) — usan cookie HttpOnly `hm_device`
 export const identifyDevice = (fingerprint, name) =>
   api.post('/devices/identify', { fingerprint, name });
