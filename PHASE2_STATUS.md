@@ -2,7 +2,7 @@
 
 Tracker live de los sub-PRs de Fase 2. Una línea por sub-PR con commit, branch, PR# y estado.
 
-**Última actualización:** 2026-05-18
+**Última actualización:** 2026-05-19
 
 > Cuando un PR se mergea, mover su sub-PR a "✅ Mergeado" abajo y actualizar el [PHASE2_PLAN.md](PHASE2_PLAN.md) si corresponde (cambiar 🚧 → ✅ para el sprint completo cuando todas las sub-PRs estén in).
 
@@ -13,6 +13,7 @@ Tracker live de los sub-PRs de Fase 2. Una línea por sub-PR con commit, branch,
 | Sub-PR | Branch | Commit | PR | Notas |
 |---|---|---|---|---|
 | 3.3 | `feature/phase2-order-client-ui` | `5fafa30` | [#15](https://github.com/LeandroMagonza/HeyMozo/pull/15) | feat(client): MenuClient "+", CartPage, ConfirmadoPage + polling LISTO, ThumbmarkJS |
+| 4.2 | `feature/phase2-staff-order-endpoint` | — | — | feat(orders): `POST /api/orders/staff` (requireRole waiter/cashier/owner + checkBranchPermission derivado de tableId). **Depende de Sprint 4.1** (`staffAddOrder` en `orderService`) — mergear 4.1 primero. |
 
 ---
 

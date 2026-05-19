@@ -1048,6 +1048,48 @@ router.get('/branches/:branchId/orders/active', authMiddleware.checkBranchPermis
   }
 });
 
+// POST /api/orders/staff — staff carga un pedido en persona desde OpShell.
+// Crea Order con createdByDeviceId=null y createdByUserId=req.user.id.
+// Permisos: rol waiter/cashier/owner (platformAdmin/isAdmin pasan) +
+// acceso al branch de la mesa.
+router.post(
+  '/orders/staff',
+  authMiddleware.requireRole('waiter', 'cashier', 'owner'),
+  async (req, res) => {
+    try {
+      const { tableId, items, notes } = req.body || {};
+      const parsedTableId = parseInt(tableId, 10);
+      if (!Number.isFinite(parsedTableId)) {
+        return res.status(400).json({ error: 'tableId requerido' });
+      }
+
+      const table = await Table.findByPk(parsedTableId);
+      if (!table) {
+        return res.status(404).json({ error: 'Mesa no encontrada' });
+      }
+
+      if (!req.user.isAdmin) {
+        const authService = require('../services/auth');
+        const hasAccess = await authService.hasPermission(req.user.id, 'branch', table.branchId);
+        if (!hasAccess) {
+          return res.status(403).json({ error: 'Access denied to this branch' });
+        }
+      }
+
+      const order = await orderService.staffAddOrder({
+        tableId: parsedTableId,
+        userId: req.user.id,
+        items,
+        notes
+      });
+      res.status(201).json(order);
+    } catch (error) {
+      console.error('Error creating staff order:', error);
+      res.status(error.statusCode || 500).json({ error: error.message || 'Error creating staff order' });
+    }
+  }
+);
+
 // POST /api/orders/:orderId/mark-ready — mozo marca pedido como entregado.
 // Status pending → ready + Event "Nuevo Pedido" se marca seenAt (la card
 // purple desaparece y futuros pedidos NO mergean en este order).
