@@ -2,7 +2,7 @@
 
 Tracker live de los sub-PRs de Fase 2. Una línea por sub-PR con commit, branch, PR# y estado.
 
-**Última actualización:** 2026-05-18
+**Última actualización:** 2026-05-19
 
 > Cuando un PR se mergea, mover su sub-PR a "✅ Mergeado" abajo y actualizar el [PHASE2_PLAN.md](PHASE2_PLAN.md) si corresponde (cambiar 🚧 → ✅ para el sprint completo cuando todas las sub-PRs estén in).
 
@@ -13,14 +13,16 @@ Tracker live de los sub-PRs de Fase 2. Una línea por sub-PR con commit, branch,
 | Sub-PR | Branch | Commit | PR | Notas |
 |---|---|---|---|---|
 | 3.3 | `feature/phase2-order-client-ui` | `5fafa30` | [#15](https://github.com/LeandroMagonza/HeyMozo/pull/15) | feat(client): MenuClient "+", CartPage, ConfirmadoPage + polling LISTO, ThumbmarkJS |
+| 4.2 | `feature/phase2-staff-order-endpoint` | `6d7cd85` | — | feat(orders): `POST /api/orders/staff` + `staffAddOrder` en servicio (Event auto-seen, sesión find-or-create). |
+| 4.3 | `feature/phase2-add-order-modal` | `865c981` | — | feat(opshell): AddOrderModal — mesa selector, menú por categorías, steppers qty. Botón "Nuevo pedido" en OpShell topnav. **Depende de 4.2 — mergear primero.** |
 
 ---
 
 ## 📝 Pendientes (próximos)
 
-_(Sprint 3 cerrado tras 3.3. Próximo Sprint 4 — ver [PHASE2_PLAN.md §Sprint 4](PHASE2_PLAN.md))._
+_(Sprint 4 en review. Próximo Sprint 5 — ver [PHASE2_PLAN.md §Sprint 5](PHASE2_PLAN.md))._
 
-Para detalle de scope de Sprint 3 ver [PHASE2_PLAN.md §Sprint 3](PHASE2_PLAN.md).
+Para detalle de scope de Sprint 4 ver [PHASE2_PLAN.md §Sprint 4](PHASE2_PLAN.md).
 
 ---
 
