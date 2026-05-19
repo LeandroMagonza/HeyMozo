@@ -12,9 +12,9 @@ Tracker live de los sub-PRs de Fase 2. Una línea por sub-PR con commit, branch,
 
 | Sub-PR | Branch | Commit | PR | Notas |
 |---|---|---|---|---|
-| 3.3 | `feature/phase2-order-client-ui` | `5fafa30` | [#15](https://github.com/LeandroMagonza/HeyMozo/pull/15) | feat(client): MenuClient "+", CartPage, ConfirmadoPage + polling LISTO, ThumbmarkJS |
-| 4.2 | `feature/phase2-staff-order-endpoint` | `6d7cd85` | — | feat(orders): `POST /api/orders/staff` + `staffAddOrder` en servicio (Event auto-seen, sesión find-or-create). |
-| 4.3 | `feature/phase2-add-order-modal` | `865c981` | — | feat(opshell): AddOrderModal — mesa selector, menú por categorías, steppers qty. Botón "Nuevo pedido" en OpShell topnav. **Depende de 4.2 — mergear primero.** |
+| 4.1 | `feature/phase2-staff-order-service` | `14633c3` | [#19](https://github.com/LeandroMagonza/HeyMozo/pull/19) | feat(orders): `staffAddOrder` + `Order.createdByUserId` migration + `ensureActiveSessionForStaff` helper. Event queda **unseen** (mozo de piso debe ver la card). |
+| 4.2 | `feature/phase2-staff-order-endpoint` | `653d008` | [#20](https://github.com/LeandroMagonza/HeyMozo/pull/20) | feat(orders): `POST /api/orders/staff` (requireRole waiter/cashier/owner + checkBranchPermission). **Depende de 4.1.** |
+| 4.3 | `feature/phase2-add-order-modal` | — | [#21](https://github.com/LeandroMagonza/HeyMozo/pull/21) | feat(opshell): AddOrderModal — mesa selector, menú por categorías con search + tabs sticky, steppers qty. Botón "Nuevo pedido" en topnav. **Depende de 4.1 + 4.2.** |
 
 ---
 
@@ -41,6 +41,7 @@ Para detalle de scope de Sprint 4 ver [PHASE2_PLAN.md §Sprint 4](PHASE2_PLAN.md
 | 2.5 | `feature/phase2-menu-client` | — | [#12](https://github.com/LeandroMagonza/HeyMozo/pull/12) | feat(menu): vista cliente `/m/:c/:b/:t/menu` |
 | 3.1 | `feature/phase2-order-models` | `fe31025` | [#13](https://github.com/LeandroMagonza/HeyMozo/pull/13) | feat(orders): Order + OrderItem + EventType "Nuevo Pedido" |
 | 3.2 | `feature/phase2-order-endpoints` | `6c9b332` | [#14](https://github.com/LeandroMagonza/HeyMozo/pull/14) | feat(orders): device cookie + session attach + order endpoints |
+| 3.3 | `feature/phase2-order-client-ui` | `5fafa30` | [#15](https://github.com/LeandroMagonza/HeyMozo/pull/15) | feat(client): MenuClient "+", CartPage, ConfirmadoPage + polling LISTO, ThumbmarkJS |
 | 3.4a | `feature/phase2-opshell-alerts` | `dbfbfc4` | [#16](https://github.com/LeandroMagonza/HeyMozo/pull/16) | feat(opshell): grid AlertCards purple `new_order` + polling 6s (render only) |
 | 3.4b | `feature/phase2-opshell-listo` | `c7db4f1` | [#17](https://github.com/LeandroMagonza/HeyMozo/pull/17) | feat(opshell): acción LISTO + OrderDetailModal + redirect AdminScreen |
 
