@@ -162,6 +162,9 @@ export const reorderMenuItems = (categoryId, order) => api.put(`/categories/${ca
 export const getActiveOrders = (branchId) =>
   api.get(`/branches/${branchId}/orders/active`);
 
+export const getActiveAlerts = (branchId) =>
+  api.get(`/branches/${branchId}/active-alerts`);
+
 export const markOrderReady = (orderId) =>
   api.post(`/orders/${orderId}/mark-ready`);
 
