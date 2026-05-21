@@ -171,7 +171,9 @@ const MenuAdmin = () => {
       form: {
         name: item.name,
         description: item.description || '',
-        price: item.priceCents != null ? (item.priceCents / 100).toString() : '',
+        // Mostrar como entero (los venues AR no usan centavos; datos legacy con
+        // centavos se truncan visualmente y el próximo save los normaliza).
+        price: item.priceCents != null ? Math.floor(item.priceCents / 100).toString() : '',
         imageUrl: item.imageUrl || '',
         isAvailable: item.isAvailable,
       },
@@ -186,7 +188,9 @@ const MenuAdmin = () => {
     const payload = {
       name: form.name.trim(),
       description: form.description.trim() || null,
-      priceCents: form.price !== '' ? Math.round(parseFloat(form.price) * 100) : null,
+      // Forzamos pesos enteros: Math.round del input (no del input*100) descarta
+      // cualquier decimal que se haya colado, y después multiplicamos. AR-first.
+      priceCents: form.price !== '' ? Math.round(parseFloat(form.price)) * 100 : null,
       imageUrl: form.imageUrl.trim() || null,
       isAvailable: form.isAvailable,
     };
@@ -327,7 +331,7 @@ const MenuAdmin = () => {
                                               <span className="menu-item-row__name">{item.name}</span>
                                               {item.priceCents != null && (
                                                 <span className="menu-item-row__price">
-                                                  ${(item.priceCents / 100).toLocaleString('es-AR')}
+                                                  ${Math.floor(item.priceCents / 100).toLocaleString('es-AR')}
                                                 </span>
                                               )}
                                               <span
@@ -446,10 +450,12 @@ const MenuAdmin = () => {
               <input
                 type="number"
                 min="0"
-                step="0.01"
+                step="1"
+                inputMode="numeric"
                 value={itemModal.form.price}
                 onChange={e => setItemModal(m => ({ ...m, form: { ...m.form, price: e.target.value } }))}
-                placeholder="0.00"
+                onWheel={e => e.target.blur()}
+                placeholder="0"
               />
             </div>
             <div className="menu-modal__field">
