@@ -83,6 +83,71 @@ async function attachDeviceToTable({ tableId, deviceId }) {
   return { session, participant, isNewSession, isNewParticipant };
 }
 
+// Garantiza que la mesa tenga una TableSession activa, sin requerir un device.
+//
+// Pensado para el flujo "mozo agrega items en persona" (Sprint 4): el mozo no
+// es un device — no se atacha a TableSessionDevice ni queda como leader. Solo
+// necesitamos que exista una sesión activa contra la que colgar el Order.
+//
+// Comportamiento:
+//   - Si ya hay sesión activa: la devuelve tal cual (idempotente). NO crea
+//     evento OCCUPY ni TableSessionDevice.
+//   - Si no hay: crea TableSession con leaderDeviceId=null y dispara Event
+//     OCCUPY auto-seen (mismo patrón que attachDeviceToTable), para que la
+//     mesa figure ocupada en el piso. No se crea TableSessionDevice — el
+//     mozo no participa como follower.
+//
+// Devuelve { session, isNewSession }.
+async function ensureActiveSessionForStaff({ tableId }) {
+  if (!tableId) {
+    const err = new Error('tableId es requerido');
+    err.statusCode = 400;
+    throw err;
+  }
+
+  const table = await Table.findByPk(tableId, {
+    include: [{ model: Branch, include: [{ model: Company }] }]
+  });
+  if (!table) {
+    const err = new Error('Mesa no encontrada');
+    err.statusCode = 404;
+    throw err;
+  }
+
+  let session = await TableSession.findOne({
+    where: { tableId, status: 'active' },
+    order: [['openedAt', 'DESC']]
+  });
+
+  if (session) {
+    return { session, isNewSession: false };
+  }
+
+  session = await TableSession.create({
+    tableId,
+    status: 'active',
+    openedAt: new Date(),
+    leaderDeviceId: null
+  });
+
+  const companyId = table.Branch.Company.id;
+  const occupyEventType = await EventType.findOne({
+    where: { companyId, systemEventType: 'OCCUPY', isActive: true }
+  });
+  if (occupyEventType) {
+    const now = new Date();
+    await Event.create({
+      tableId,
+      eventTypeId: occupyEventType.id,
+      message: null,
+      createdAt: now,
+      seenAt: now
+    });
+  }
+
+  return { session, isNewSession: true };
+}
+
 // Busca la sesión activa de la mesa. Devuelve null si no hay.
 // Útil para el cliente que quiere saber si está adjunto antes de confirmar.
 async function getActiveSession(tableId) {
@@ -113,6 +178,7 @@ async function isDeviceAttached({ tableId, deviceId }) {
 
 module.exports = {
   attachDeviceToTable,
+  ensureActiveSessionForStaff,
   getActiveSession,
   isDeviceAttached
 };
