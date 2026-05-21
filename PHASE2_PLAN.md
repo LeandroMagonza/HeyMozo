@@ -129,12 +129,12 @@ Distinguir zombi (>30min sin heartbeat, pagos completos) vs realmente caliente:
 |---|---|---|---|
 | 1 | Foundation | ✅ | Roles + middleware + reorganización rutas + shells vacías + URL `/m/` + modelos `TableSession` + `Device` |
 | 2 | Menú + onboarding | ✅ | Wizard crear sucursal (modo B) + modelos `Category`/`MenuItem` + vista admin menú + vista cliente menú |
-| 3 | Pedido + identificación | 🚧 | `Order`/`OrderItem` + carrito + ConfirmadoPage + AlertCard `new_order` + polling cliente + pantalla "PEDIDO LISTO" + emoji auto. Aprobación transitiva postergada a Sprint 6. |
-| 4 | Mozo agrega items | 📝 | `POST /api/orders/staff` + `AddOrderModal` en OpShell (menú agrupado por categorías + stepper qty). Event "Nuevo Pedido" auto-seen. Reusa Order/OrderItem/MenuItem sin migrations. **Prerequisito de split de cuenta** (sin esto los items orales no están en sistema). |
+| 3 | Pedido + identificación | ✅ | `Order`/`OrderItem` + carrito + ConfirmadoPage + AlertCard `new_order` + polling cliente + pantalla "PEDIDO LISTO" + emoji auto. Aprobación transitiva postergada a Sprint 6. |
+| 4 | Mozo agrega items | 🚧 | `POST /api/orders/staff` + `staffAddOrder` service + `AddOrderModal` en OpShell (mesa selector + menú agrupado por categorías con search + tabs + steppers qty) + `Order.createdByUserId` para auditoría. Event "Nuevo Pedido" queda **unseen** (el mozo de piso debe ver la card aunque la haya cargado otro staff). Reusa Order/OrderItem/MenuItem. **Prerequisito de split de cuenta** (sin esto los items orales no están en sistema). |
 | 5 | Pagos digitales | 📝 | A diseñar: canal (MP nativo / transferencia con validación cajero / ambos) + `Payment` + PostPagoPage con rating + `Review`/`ReviewTag`. Decisión bloqueante para Sprint 7 (split). |
 | 6 | Trust + hard limits + transferencias mesa | 📝 | Trust dot + hard limits enforcement + transferencia cliente-iniciada + mozo-iniciada + "soy otra persona" con clasificación zombi + aprobación transitiva |
 | 7 | Split por item + modos de pago | 📝 | `OrderItemClaim { orderItemId, deviceId, qty }` + coordinación real-time entre devices + reglas items huérfanos + `TableSession.paymentMode` ENUM. Depende de Sprint 5 (pagos digitales reales). |
-| 8 | Pulso + QA + deploy | 📝 | Tab Pulso básica + Tab Pagos + bug bash + deploy venue piloto |
+| 8 | Gestión de users + Pulso + QA + deploy | 📝 | UI de gestión de users (crear/editar/asignar permisos, invitación por magic link reusando infra de Sprint 1.1) + Tab Pulso básica + Tab Pagos + bug bash + deploy venue piloto. **8.1 es bloqueante para deploy**: sin UI no se pueden crear mozos/cajeros en el venue piloto. |
 | 9 | (post-MVP) Sumar Modalidad A | 📝 | Habilitar `autoservicio` en wizard + PagarPage A simplificada (solo MP) + skipear flow de validación de mesa caliente + QA en venue A |
 
 Status: 📝 planeado · 🚧 en curso · ✅ mergeado
@@ -222,6 +222,35 @@ Aliases en lowercase (`'categories'`, `'items'`, `'branch'`, `'category'`) — g
 - **Promos en menú** — ver [ROADMAP.md](ROADMAP.md). Candidata a Sprint 2.6 o v1.5.
 - **Upload propio de imágenes** — sigue siendo URL externa. S3/Cloudinary post-MVP.
 - **Stock numérico funcional** — columna existe, lógica de decremento entra en Fase 3 delivery.
+
+### Sprint 8 — desglose en sub-PRs
+
+Sprint 8 es el cierre del MVP-B: agrega la última pieza que falta para operar (gestión de users), QA + métricas, y deploy al venue piloto. Se ordena por dependencias: **8.1 va primero porque sin él no se puede hacer QA con roles reales ni deployar**.
+
+| # | Branch | Scope | Depende de |
+|---|---|---|---|
+| **8.1** | `feature/phase2-user-management` | UI `/config/:companyId/users`: lista users con email + role + sucursales accesibles. Modal/form crear user (email + role + permisos branch). Editar role + permisos. Soft-delete. Al crear, dispara magic-link de bienvenida vía `/api/auth/login-request` (reusa Sprint 1.1). Permiso: solo `owner` (su company) y `platformAdmin`. **Backend ya tiene todos los endpoints (`/api/users/*`); este sub-PR es 100% frontend + cableado.** | — |
+| **8.2** | `feature/phase2-pulso-tab` | Tab Pulso básica en CajaShell: KPIs del día (mesas activas, pedidos del turno, ticket promedio, conversión). Datos derivados de queries existentes — sin modelos nuevos. | — |
+| **8.3** | `feature/phase2-pagos-tab` | Tab Pagos en CajaShell: lista de Payments con filtros, totales del día. Depende de Sprint 5 mergeado. | Sprint 5 |
+| **8.4** | `feature/phase2-bug-bash` | Fixes de bugs encontrados durante QA. Branch viva, varios commits. | 8.1, 8.2, 8.3 |
+| **8.5** | (deploy) | Deploy al venue piloto + onboarding del cliente. No es PR de código sino release activity. | Todo lo anterior |
+
+#### Decisiones explícitas (Sprint 8.1)
+
+- **Sin self-signup**: solo `owner` (su company) y `platformAdmin` pueden crear users. Coherente con la decisión cerrada de "sin auth de cliente, sin friction".
+- **Sin password**: la invitación dispara un magic-link al mail del nuevo user. El user clickea → `verify-token` → JWT → setea su sesión. Reusa exactamente la infra de Sprint 1.1.
+- **Permisos vía UI**: el form de crear/editar deja elegir sucursales accesibles para roles `waiter` / `cashier`. Para `owner` se asume permiso a toda la company.
+- **Edit role**: permitido para `owner` sobre sus users, EXCEPTO que un `owner` no puede degradarse a sí mismo (si quiere, otro owner o un platformAdmin lo hace). Para evitar lock-out.
+- **Soft-delete**: usa el `paranoid` existente. User borrado pierde acceso (los tokens activos invalidan en próximo `authenticate` por mirar el `deletedAt`).
+- **NO entra**: 2FA, password recovery (no hay password), audit log de cambios de permiso, bulk import. Todo eso es v1.5+.
+
+#### Lo que NO entra en Sprint 8 (capturado pero pospuesto)
+
+- **Tab Seguridad** (devices bloqueados, intentos de fraude) — v1.5.
+- **Tab Reseñas completa** — v1.5.
+- **Tab Club VIP** — v1.5.
+- **Audit log de cambios admin** — v1.5.
+- **Bulk import de menú o users** — v1.5.
 
 ---
 
