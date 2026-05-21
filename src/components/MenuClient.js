@@ -5,6 +5,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Phone from './Phone';
+import CartSheet from './CartSheet';
 import { getBranch, getCompany, getPublicMenu, getTableOrders } from '../services/api';
 import { bootstrapCustomerSession } from '../services/device';
 import {
@@ -32,8 +33,8 @@ const MenuClient = () => {
   const [loading, setLoading] = useState(true);
   const [cartCount, setCartCount] = useState(0);
   const [cartTotal, setCartTotal] = useState(0);
-  const [pastCount, setPastCount] = useState(0);
-  const [pastTotal, setPastTotal] = useState(0);
+  const [pastOrders, setPastOrders] = useState([]);
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   const sectionRefs = useRef({});
   const pillsRef = useRef(null);
@@ -86,9 +87,7 @@ const MenuClient = () => {
       try {
         const { data } = await getTableOrders(tableId);
         if (cancelled) return;
-        const list = data.orders || [];
-        setPastCount(list.length);
-        setPastTotal(list.reduce((s, o) => s + (o.totalCents || 0), 0));
+        setPastOrders(data.orders || []);
       } catch {
         // 401 / sin sesión: simplemente no hay pedidos previos.
       }
@@ -97,7 +96,7 @@ const MenuClient = () => {
     return () => { cancelled = true; };
   }, [tableId]);
 
-  // Suscripción a cambios del carrito (otra tab, vuelta desde CartPage, etc.).
+  // Suscripción a cambios del carrito (otra tab, otros componentes, etc.).
   useEffect(() => {
     refreshCart();
     return subscribeCart(branchId, tableId, refreshCart);
@@ -136,19 +135,18 @@ const MenuClient = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [categories, activeCategoryId]);
 
-  // Volver explícito al QR landing (UserScreen), no usar history.
-  // Antes era navigate(-1), que generaba loop con CartPage cuando el user
-  // navegaba menu → pedido → back-al-menu → back: volvía a /pedido en vez
-  // de a /m/c/b/t.
+  // Volver explícito al QR landing (UserScreen), no usar history (evita
+  // loops con el flujo de pedido).
   const handleBack = () => navigate(`/m/${companyId}/${branchId}/${tableId}`);
 
   const handleAdd = (item) => {
     addItem(branchId, tableId, item);
   };
 
-  const handleViewCart = () => {
-    navigate(`/m/${companyId}/${branchId}/${tableId}/pedido`);
-  };
+  const handleOpenCart = () => setSheetOpen(true);
+  const handleCloseCart = () => setSheetOpen(false);
+  const pastCount = pastOrders.length;
+  const pastTotal = pastOrders.reduce((s, o) => s + (o.totalCents || 0), 0);
 
   if (loading) {
     return (
@@ -197,6 +195,20 @@ const MenuClient = () => {
         <span className="menu-client__header-title">
           {restaurantName ? `${restaurantName}` : 'Menú'}
         </span>
+        <button
+          type="button"
+          className="menu-client__cart-icon rd-tap-scale"
+          onClick={handleOpenCart}
+          aria-label="Ver mi pedido"
+          disabled={cartCount === 0 && pastCount === 0}
+        >
+          <span className="material-symbols-outlined">shopping_bag</span>
+          {(cartCount > 0 || pastCount > 0) && (
+            <span className="menu-client__cart-icon-badge">
+              {cartCount > 0 ? cartCount : pastCount}
+            </span>
+          )}
+        </button>
       </header>
 
       <div className="menu-client__pills-wrap" ref={pillsRef}>
@@ -275,7 +287,7 @@ const MenuClient = () => {
           className={`menu-client__cart-bar rd-tap-scale${
             cartCount === 0 ? ' menu-client__cart-bar--past-only' : ''
           }`}
-          onClick={handleViewCart}
+          onClick={handleOpenCart}
         >
           {cartCount > 0 ? (
             <>
@@ -294,6 +306,15 @@ const MenuClient = () => {
           )}
         </button>
       )}
+
+      <CartSheet
+        open={sheetOpen}
+        onClose={handleCloseCart}
+        companyId={companyId}
+        branchId={branchId}
+        tableId={tableId}
+        pastOrders={pastOrders}
+      />
     </Phone>
   );
 };

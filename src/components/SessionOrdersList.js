@@ -1,7 +1,8 @@
 // src/components/SessionOrdersList.js
 //
 // Render dumb de pedidos de la sesión activa (read-only). El padre hace el
-// fetch y le pasa orders. Usado dentro de CartPage como sección "Ya pediste".
+// fetch y le pasa orders. Usado dentro de CartSheet como sección
+// "Ya enviado a cocina".
 
 import React from 'react';
 import './SessionOrdersList.css';
