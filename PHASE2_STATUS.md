@@ -2,7 +2,7 @@
 
 Tracker live de los sub-PRs de Fase 2. Una línea por sub-PR con commit, branch, PR# y estado.
 
-**Última actualización:** 2026-05-18
+**Última actualización:** 2026-05-19
 
 > Cuando un PR se mergea, mover su sub-PR a "✅ Mergeado" abajo y actualizar el [PHASE2_PLAN.md](PHASE2_PLAN.md) si corresponde (cambiar 🚧 → ✅ para el sprint completo cuando todas las sub-PRs estén in).
 
@@ -12,15 +12,15 @@ Tracker live de los sub-PRs de Fase 2. Una línea por sub-PR con commit, branch,
 
 | Sub-PR | Branch | Commit | PR | Notas |
 |---|---|---|---|---|
-| 3.3 | `feature/phase2-order-client-ui` | `5fafa30` | [#15](https://github.com/LeandroMagonza/HeyMozo/pull/15) | feat(client): MenuClient "+", CartPage, ConfirmadoPage + polling LISTO, ThumbmarkJS |
+| 4.1 | `feature/phase2-staff-order-service` | — | — | feat(orders): `staffAddOrder` + helper `_createOrderWithItemsTx` + `Order.createdByUserId` + `ensureActiveSessionForStaff` |
 
 ---
 
 ## 📝 Pendientes (próximos)
 
-_(Sprint 3 cerrado tras 3.3. Próximo Sprint 4 — ver [PHASE2_PLAN.md §Sprint 4](PHASE2_PLAN.md))._
+_(Sprint 4 en curso. Próximas sub-PRs 4.2 → 4.5 — ver [PHASE2_PLAN.md §Sprint 4](PHASE2_PLAN.md))._
 
-Para detalle de scope de Sprint 3 ver [PHASE2_PLAN.md §Sprint 3](PHASE2_PLAN.md).
+Para detalle de scope de Sprint 4 ver [PHASE2_PLAN.md §Sprint 4](PHASE2_PLAN.md).
 
 ---
 
@@ -41,6 +41,7 @@ Para detalle de scope de Sprint 3 ver [PHASE2_PLAN.md §Sprint 3](PHASE2_PLAN.md
 | 3.2 | `feature/phase2-order-endpoints` | `6c9b332` | [#14](https://github.com/LeandroMagonza/HeyMozo/pull/14) | feat(orders): device cookie + session attach + order endpoints |
 | 3.4a | `feature/phase2-opshell-alerts` | `dbfbfc4` | [#16](https://github.com/LeandroMagonza/HeyMozo/pull/16) | feat(opshell): grid AlertCards purple `new_order` + polling 6s (render only) |
 | 3.4b | `feature/phase2-opshell-listo` | `c7db4f1` | [#17](https://github.com/LeandroMagonza/HeyMozo/pull/17) | feat(opshell): acción LISTO + OrderDetailModal + redirect AdminScreen |
+| 3.3 | `feature/phase2-order-client-ui` | `a3e51c2` | [#15](https://github.com/LeandroMagonza/HeyMozo/pull/15) | feat(client): MenuClient "+", CartPage, ConfirmadoPage + polling LISTO, ThumbmarkJS |
 
 ---
 

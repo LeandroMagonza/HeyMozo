@@ -37,6 +37,13 @@ module.exports = (sequelize) => {
       allowNull: true,
       references: { model: 'Devices', key: 'id' }
     },
+    // Mozo/cajero que cargó el pedido en persona (vía OpShell). Null cuando
+    // el pedido fue confirmado por el cliente desde su device.
+    createdByUserId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: { model: 'Users', key: 'id' }
+    },
     // FK al Event "Nuevo Pedido" que dispara la AlertCard purple del mozo.
     // Relación 1:1 — cada Order tiene su Event propio. Al marcar el Order
     // como 'ready', el Event se marca seenAt=now y la card desaparece.
@@ -81,6 +88,10 @@ module.exports = (sequelize) => {
     Order.belongsTo(models.Device, {
       foreignKey: 'createdByDeviceId',
       as: 'createdByDevice'
+    });
+    Order.belongsTo(models.User, {
+      foreignKey: 'createdByUserId',
+      as: 'createdByUser'
     });
     Order.belongsTo(models.Event, {
       foreignKey: 'eventId',
