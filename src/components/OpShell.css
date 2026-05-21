@@ -239,6 +239,9 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 1.25rem;
+  /* Sin esto, un TableStack expandido fuerza a las cards de la misma fila
+     a estirarse a su altura. */
+  align-items: start;
 }
 
 @media (min-width: 640px) {

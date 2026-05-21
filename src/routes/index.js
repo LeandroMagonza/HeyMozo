@@ -1048,6 +1048,57 @@ router.get('/branches/:branchId/orders/active', authMiddleware.checkBranchPermis
   }
 });
 
+// GET /api/branches/:branchId/active-alerts — Events sin seenAt con
+// cardVariant!=null para la sucursal. Excluye system events (SCAN/MARK_SEEN/
+// OCCUPY/VACATE) y Events ya ligados a un Order (esos los surface
+// /orders/active como cards purple "Nuevo Pedido"). El resto — Llamar al
+// Mozo, Hielo, Condimentos, Servilletas, Pedir Cuenta, custom — viaja por
+// acá y OpShell los pinta usando eventType.cardVariant.
+router.get('/branches/:branchId/active-alerts', authMiddleware.checkBranchPermission, async (req, res) => {
+  try {
+    const branchId = parseInt(req.params.branchId);
+    const { Order } = require('../models');
+
+    const events = await Event.findAll({
+      where: { seenAt: null },
+      include: [
+        {
+          model: Table,
+          as: 'table',
+          where: { branchId },
+          attributes: ['id', 'tableName'],
+          required: true
+        },
+        {
+          model: EventType,
+          as: 'eventType',
+          where: {
+            cardVariant: { [Op.ne]: null },
+            systemEventType: null,
+            isActive: true
+          },
+          required: true
+        }
+      ],
+      order: [['createdAt', 'ASC']]
+    });
+
+    // Excluir Events que ya tienen un Order asociado (el "Nuevo Pedido" se
+    // surface por /orders/active y crearía duplicación en el grid).
+    const orderEventLinks = await Order.findAll({
+      where: { branchId, eventId: { [Op.ne]: null } },
+      attributes: ['eventId']
+    });
+    const excludeEventIds = new Set(orderEventLinks.map(o => o.eventId));
+
+    const alerts = events.filter(e => !excludeEventIds.has(e.id));
+    res.json(alerts);
+  } catch (error) {
+    console.error('Error fetching active alerts:', error);
+    res.status(500).json({ error: 'Error fetching active alerts' });
+  }
+});
+
 // POST /api/orders/staff — staff carga un pedido en persona desde OpShell.
 // Crea Order con createdByDeviceId=null y createdByUserId=req.user.id.
 // Permisos: rol waiter/cashier/owner (platformAdmin/isAdmin pasan) +
