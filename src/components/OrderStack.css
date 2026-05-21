@@ -1,0 +1,106 @@
+/* OrderStack.css — visual stack of AlertCards for the same table in OpShell */
+
+.order-stack {
+  position: relative;
+}
+
+/* ===== Collapsed ===== */
+
+.order-stack--collapsed {
+  /* Extra padding so shadow layers don't get clipped */
+  padding-bottom: 14px;
+  padding-right: 14px;
+}
+
+.order-stack__shadow {
+  position: absolute;
+  width: calc(100% - 14px); /* compensate for collapsed padding-right */
+  pointer-events: none;
+  border-radius: var(--rd-radius-lg, 14px);
+  overflow: hidden;
+  /* z-index is lower than .order-stack__top so shadows render behind */
+  z-index: 1;
+}
+
+.order-stack__top {
+  position: relative;
+  z-index: 3;
+}
+
+/* "+N" badge in lower-right corner of top card when there are hidden orders */
+.order-stack__more-badge {
+  position: absolute;
+  bottom: 0.625rem;
+  right: 0.625rem;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: 0.6875rem;
+  font-weight: 800;
+  padding: 0.1875rem 0.5rem;
+  border-radius: 999px;
+  letter-spacing: 0.03em;
+  pointer-events: none;
+  z-index: 4;
+}
+
+/* ===== Expanded ===== */
+
+.order-stack--expanded {
+  /* takes normal grid-cell width, grows vertically */
+}
+
+.order-stack__header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  background: rgba(147, 51, 234, 0.15);
+  border: 1px solid rgba(147, 51, 234, 0.4);
+  border-radius: var(--rd-radius-md, 8px);
+  margin-bottom: 0.625rem;
+  cursor: pointer;
+  color: #fff;
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  text-align: left;
+  transition: background 0.15s ease;
+}
+
+.order-stack__header:hover {
+  background: rgba(147, 51, 234, 0.24);
+}
+
+.order-stack__header-name {
+  flex: 1;
+}
+
+.order-stack__header-count {
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.order-stack__header-chevron {
+  font-size: 0.5625rem;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.order-stack__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  animation: order-stack-expand 0.2s ease-out;
+}
+
+@keyframes order-stack-expand {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
