@@ -4,8 +4,8 @@ const authMiddleware = require('../middleware/auth');
 const { EventType, EventConfiguration, Company, Branch, Table } = require('../models');
 const EventConfigService = require('../services/eventConfig');
 
-// Apply authentication middleware to all routes
-router.use(authMiddleware.authenticate);
+// Auth is applied at the parent mount in server.js
+// (app.use('/api', authMiddleware.authenticate, apiRoutes) — apiRoutes mounts this router).
 
 // GET /api/companies/:companyId/event-types - List company event types
 router.get('/companies/:companyId/event-types', authMiddleware.checkCompanyPermission, async (req, res) => {

@@ -22,7 +22,9 @@ const { Client } = require('pg');
 // Import auth routes and middleware
 const authRoutes = require('./src/routes/auth');
 const usersRoutes = require('./src/routes/users');
-const eventsRoutes = require('./src/routes/events');
+// eventsRoutes is now mounted inside apiRoutes (src/routes/index.js) so it shares the
+// single auth middleware applied at the /api mount below — instead of stacking a second
+// `router.use(authenticate)` that ran on every /api/* request and inflated auth calls 2-3×.
 const apiRoutes = require('./src/routes/index');
 const customerSessionsRoutes = require('./src/routes/customerSessions');
 const authMiddleware = require('./src/middleware/auth');
@@ -423,13 +425,8 @@ app.post('/api/tables/:id/events', async (req, res) => {
 console.log('🔧 Mounting PUBLIC customer session routes at /api (before auth)');
 app.use('/api', customerSessionsRoutes);
 
-console.log('🔧 Mounting events routes at /api');
-app.use('/api', eventsRoutes);
-
-// RUTA /api/mailing-list DUPLICADA ELIMINADA - Ahora está registrada al principio del archivo (línea ~57)
-// antes de que se monte eventsRoutes, para evitar que sea interceptada por otros middlewares
-
-// Mount API routes with authentication middleware
+// Mount API routes with authentication middleware. eventsRoutes is mounted INSIDE
+// apiRoutes (src/routes/index.js) so a single authenticate runs per request.
 console.log('🔧 Mounting protected API routes at /api with authentication middleware');
 console.log('⚠️  All routes registered AFTER this point will require authentication');
 app.use('/api', authMiddleware.authenticate, apiRoutes);

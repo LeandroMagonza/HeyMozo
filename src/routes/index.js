@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const authRoutes = require('./auth');
 const userRoutes = require('./users');
+const eventsRoutes = require('./events');
 const authMiddleware = require('../middleware/auth');
 const { Op } = require('sequelize');
 
@@ -23,11 +24,13 @@ const {
 // User management routes
 router.use('/users', userRoutes);
 
-// Apply authentication middleware to protected routes
-router.use('/companies', authMiddleware.authenticate);
-router.use('/branches', authMiddleware.authenticate);
-router.use('/tables', authMiddleware.authenticate);
-router.use('/categories', authMiddleware.authenticate);
+// Event types + event configuration routes (live under /api/companies, /api/event-types,
+// /api/resources, /api/tables). Mounted here — instead of as a separate top-level mount
+// in server.js — so auth runs only once (at the /api mount in server.js).
+router.use('/', eventsRoutes);
+
+// Auth is applied once at the parent mount in server.js
+// (`app.use('/api', authMiddleware.authenticate, apiRoutes)`).
 
 // Specific company routes
 router.get('/companies/:companyId', authMiddleware.checkCompanyPermission, async (req, res) => {
