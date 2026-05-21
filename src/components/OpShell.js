@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { NavLink, useParams } from 'react-router-dom';
-import { FaStore, FaSignOutAlt, FaUser } from 'react-icons/fa';
+import { FaStore, FaSignOutAlt, FaUser, FaPlus } from 'react-icons/fa';
 import authService from '../services/authService';
 import AlertCard from './AlertCard';
 import OrderDetailModal from './OrderDetailModal';
+import AddOrderModal from './AddOrderModal';
 import { getActiveOrders, markOrderReady } from '../services/api';
 import notificationSound from '../sounds/notification.mp3';
 import './OpShell.css';
@@ -34,6 +35,7 @@ const OpShell = () => {
   const [countdown, setCountdown] = useState(REFRESH_INTERVAL / 1000);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [markingId, setMarkingId] = useState(null);
+  const [showAddOrder, setShowAddOrder] = useState(false);
 
   const audioRef = useRef(new Audio(notificationSound));
   const prevCountRef = useRef(null);
@@ -133,11 +135,21 @@ const OpShell = () => {
       <main className="op-shell__main">
         <header className="op-shell__topnav">
           <h1 className="op-shell__topnav-title">Panel del Piso</h1>
-          <div className="op-shell__topnav-refresh">
-            {orders.length > 0 && (
-              <span className="op-shell__badge-total">{orders.length}</span>
-            )}
-            <span className="op-shell__countdown">Actualiza en {countdown}s</span>
+          <div className="op-shell__topnav-actions">
+            <button
+              className="op-shell__add-order-btn"
+              onClick={() => setShowAddOrder(true)}
+              title="Cargar pedido del mozo"
+            >
+              <FaPlus />
+              <span>Nuevo pedido</span>
+            </button>
+            <div className="op-shell__topnav-refresh">
+              {orders.length > 0 && (
+                <span className="op-shell__badge-total">{orders.length}</span>
+              )}
+              <span className="op-shell__countdown">Actualiza en {countdown}s</span>
+            </div>
           </div>
         </header>
 
@@ -181,6 +193,17 @@ const OpShell = () => {
           onClose={() => setSelectedOrder(null)}
           onReady={() => handleMarkReady(selectedOrder.id)}
           loading={markingId === selectedOrder.id}
+        />
+      )}
+
+      {showAddOrder && (
+        <AddOrderModal
+          branchId={branchId}
+          onClose={() => setShowAddOrder(false)}
+          onSuccess={() => {
+            setShowAddOrder(false);
+            fetchOrders();
+          }}
         />
       )}
     </div>
