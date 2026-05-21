@@ -5,7 +5,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Phone from './Phone';
-import { getBranch, getCompany, getPublicMenu } from '../services/api';
+import { getBranch, getCompany, getPublicMenu, getTableOrders } from '../services/api';
 import { bootstrapCustomerSession } from '../services/device';
 import {
   addItem,
@@ -32,6 +32,8 @@ const MenuClient = () => {
   const [loading, setLoading] = useState(true);
   const [cartCount, setCartCount] = useState(0);
   const [cartTotal, setCartTotal] = useState(0);
+  const [pastCount, setPastCount] = useState(0);
+  const [pastTotal, setPastTotal] = useState(0);
 
   const sectionRefs = useRef({});
   const pillsRef = useRef(null);
@@ -70,10 +72,29 @@ const MenuClient = () => {
 
   // Bootstrap device + sesión en background (no bloquea render).
   // Si falla, el cliente igual puede browsear; el error real saldrá al confirmar.
+  // Después del bootstrap, traemos el historial de pedidos de la sesión para
+  // alimentar el bottom bar cuando el carrito esté vacío.
   useEffect(() => {
-    bootstrapCustomerSession(tableId).catch((err) => {
-      console.warn('No se pudo bootstrappear sesión del cliente:', err && err.message);
-    });
+    let cancelled = false;
+    const init = async () => {
+      try {
+        await bootstrapCustomerSession(tableId);
+      } catch (err) {
+        console.warn('No se pudo bootstrappear sesión del cliente:', err && err.message);
+      }
+      if (cancelled) return;
+      try {
+        const { data } = await getTableOrders(tableId);
+        if (cancelled) return;
+        const list = data.orders || [];
+        setPastCount(list.length);
+        setPastTotal(list.reduce((s, o) => s + (o.totalCents || 0), 0));
+      } catch {
+        // 401 / sin sesión: simplemente no hay pedidos previos.
+      }
+    };
+    init();
+    return () => { cancelled = true; };
   }, [tableId]);
 
   // Suscripción a cambios del carrito (otra tab, vuelta desde CartPage, etc.).
@@ -248,15 +269,29 @@ const MenuClient = () => {
         <div className="menu-client__bottom-spacer" />
       </main>
 
-      {cartCount > 0 && (
+      {(cartCount > 0 || pastCount > 0) && (
         <button
           type="button"
-          className="menu-client__cart-bar rd-tap-scale"
+          className={`menu-client__cart-bar rd-tap-scale${
+            cartCount === 0 ? ' menu-client__cart-bar--past-only' : ''
+          }`}
           onClick={handleViewCart}
         >
-          <span className="menu-client__cart-bar-count">{cartCount}</span>
-          <span className="menu-client__cart-bar-label">Ver Pedido</span>
-          <span className="menu-client__cart-bar-total">{formatPrice(cartTotal)}</span>
+          {cartCount > 0 ? (
+            <>
+              <span className="menu-client__cart-bar-count">{cartCount}</span>
+              <span className="menu-client__cart-bar-label">Ver Pedido</span>
+              <span className="menu-client__cart-bar-total">{formatPrice(cartTotal)}</span>
+            </>
+          ) : (
+            <>
+              <span className="menu-client__cart-bar-count">
+                <span className="material-symbols-outlined">receipt_long</span>
+              </span>
+              <span className="menu-client__cart-bar-label">Mis pedidos</span>
+              <span className="menu-client__cart-bar-total">{formatPrice(pastTotal)}</span>
+            </>
+          )}
         </button>
       )}
     </Phone>

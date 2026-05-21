@@ -175,17 +175,9 @@
   margin-left: 0.25rem;
 }
 
-/* ===== Historial links ===== */
-.user-screen__history-links {
-  margin-top: 2rem;
-  display: flex;
-  gap: 0.625rem;
-  flex-wrap: wrap;
-  justify-content: center;
-}
-
+/* ===== Historial link ===== */
 .user-screen__history-link {
-  margin-top: 0;
+  margin-top: 2rem;
   background: transparent;
   border: 1px solid var(--rd-border);
   color: var(--rd-text-tertiary);

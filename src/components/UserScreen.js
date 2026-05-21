@@ -12,7 +12,6 @@ import Phone from './Phone';
 import DecorativeGlow from './DecorativeGlow';
 import CallWaiterSheet from './CallWaiterSheet';
 import HistoryModal from './HistoryModal';
-import OrderHistoryModal from './OrderHistoryModal';
 import { getCompany, getBranch, getTable, getPublicMenu, sendEvent } from '../services/api';
 import './UserScreen.css';
 
@@ -30,7 +29,6 @@ const UserScreen = () => {
   const [userEvents, setUserEvents] = useState([]); // session-only history
   const [sheetOpen, setSheetOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
-  const [ordersOpen, setOrdersOpen] = useState(false);
   const [toast, setToast] = useState(null); // { label, color }
   const scanSentRef = useRef(false);
 
@@ -195,23 +193,14 @@ const UserScreen = () => {
           </button>
         </div>
 
-        <div className="user-screen__history-links">
-          <button
-            type="button"
-            className="user-screen__history-link"
-            onClick={() => setHistoryOpen(true)}
-            disabled={userEvents.length === 0}
-          >
-            Ver mis avisos
-          </button>
-          <button
-            type="button"
-            className="user-screen__history-link"
-            onClick={() => setOrdersOpen(true)}
-          >
-            Ver mis pedidos
-          </button>
-        </div>
+        <button
+          type="button"
+          className="user-screen__history-link"
+          onClick={() => setHistoryOpen(true)}
+          disabled={userEvents.length === 0}
+        >
+          Ver mis avisos
+        </button>
       </main>
 
       <footer className="user-screen__footer">
@@ -238,12 +227,6 @@ const UserScreen = () => {
         onClose={() => setHistoryOpen(false)}
         events={userEvents}
         eventTypes={availableEventTypes.all}
-      />
-
-      <OrderHistoryModal
-        show={ordersOpen}
-        tableId={tableId}
-        onClose={() => setOrdersOpen(false)}
       />
     </Phone>
   );
