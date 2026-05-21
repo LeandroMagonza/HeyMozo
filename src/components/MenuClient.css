@@ -292,6 +292,13 @@
   z-index: var(--rd-z-sticky);
 }
 
+/* Override de rd-tap-scale: preservamos el translateX(-50%) que centra el
+   botón fijo, al combinarlo con el scale del tap feedback. Sin esto, al
+   apretar perdía el centrado y se "deslizaba" a la derecha. */
+.menu-client__cart-bar:active {
+  transform: translateX(-50%) scale(0.95);
+}
+
 .menu-client__cart-bar-count {
   display: inline-flex;
   align-items: center;

@@ -89,10 +89,6 @@ const ConfirmadoPage = () => {
     navigate(`/m/${companyId}/${branchId}/${tableId}`);
   };
 
-  const handleBackToMenu = () => {
-    navigate(`/m/${companyId}/${branchId}/${tableId}/menu`);
-  };
-
   const showToast = (label, color) => {
     setToast({ label, color });
     setTimeout(() => setToast(null), 1800);
@@ -121,8 +117,8 @@ const ConfirmadoPage = () => {
         <div className="confirmado-page__center">
           <span className="material-symbols-outlined confirmado-page__error-icon">error</span>
           <p className="confirmado-page__error-text">{error}</p>
-          <button type="button" className="confirmado-page__back rd-tap-scale" onClick={handleBackToMenu}>
-            Volver al menú
+          <button type="button" className="confirmado-page__back rd-tap-scale" onClick={handleBackToHome}>
+            Volver al inicio
           </button>
         </div>
       </Phone>
@@ -194,9 +190,9 @@ const ConfirmadoPage = () => {
           <button
             type="button"
             className="confirmado-page__primary rd-tap-scale"
-            onClick={handleBackToMenu}
+            onClick={handleBackToHome}
           >
-            {isReady ? 'Seguir pidiendo' : 'Volver al menú'}
+            Listo
           </button>
 
           <button
