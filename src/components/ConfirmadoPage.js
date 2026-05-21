@@ -89,10 +89,6 @@ const ConfirmadoPage = () => {
     navigate(`/m/${companyId}/${branchId}/${tableId}`);
   };
 
-  const handleBackToMenu = () => {
-    navigate(`/m/${companyId}/${branchId}/${tableId}/menu`);
-  };
-
   const showToast = (label, color) => {
     setToast({ label, color });
     setTimeout(() => setToast(null), 1800);
@@ -197,14 +193,6 @@ const ConfirmadoPage = () => {
             onClick={handleBackToHome}
           >
             Listo
-          </button>
-
-          <button
-            type="button"
-            className="confirmado-page__secondary rd-tap-scale"
-            onClick={handleBackToMenu}
-          >
-            Pedir más
           </button>
 
           <button

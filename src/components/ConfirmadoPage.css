@@ -144,13 +144,14 @@
   width: 100%;
   padding: 0.9375rem 1rem;
   border-radius: var(--rd-radius-full);
-  border: 1.5px solid var(--rd-border);
-  background: transparent;
+  border: none;
+  background: var(--rd-brand-purple);
   color: var(--rd-text);
   font-family: var(--rd-font-sans);
   font-size: 0.9375rem;
   font-weight: 700;
   cursor: pointer;
+  box-shadow: var(--rd-shadow-purple);
 }
 
 .confirmado-page--ready .confirmado-page__primary {
