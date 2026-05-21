@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { NavLink, useParams } from 'react-router-dom';
 import { FaStore, FaSignOutAlt, FaUser, FaPlus } from 'react-icons/fa';
 import authService from '../services/authService';
 import AlertCard from './AlertCard';
+import OrderStack from './OrderStack';
 import OrderDetailModal from './OrderDetailModal';
 import AddOrderModal from './AddOrderModal';
 import { getActiveOrders, markOrderReady } from '../services/api';
@@ -36,6 +37,33 @@ const OpShell = () => {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [markingId, setMarkingId] = useState(null);
   const [showAddOrder, setShowAddOrder] = useState(false);
+  const [expandedTableIds, setExpandedTableIds] = useState(new Set());
+
+  // Group orders by tableId, sorted: within each group by createdAt ASC (oldest first),
+  // groups sorted by their oldest order (most urgent table first).
+  const orderGroups = useMemo(() => {
+    const map = new Map();
+    orders.forEach(order => {
+      const key = order.tableId;
+      if (!map.has(key)) map.set(key, []);
+      map.get(key).push(order);
+    });
+    for (const group of map.values()) {
+      group.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+    }
+    return [...map.values()].sort(
+      (a, b) => new Date(a[0].createdAt) - new Date(b[0].createdAt)
+    );
+  }, [orders]);
+
+  const toggleStack = useCallback((tableId) => {
+    setExpandedTableIds(prev => {
+      const next = new Set(prev);
+      if (next.has(tableId)) next.delete(tableId);
+      else next.add(tableId);
+      return next;
+    });
+  }, []);
 
   const audioRef = useRef(new Audio(notificationSound));
   const prevCountRef = useRef(null);
@@ -166,22 +194,38 @@ const OpShell = () => {
             </div>
           ) : (
             <div className="op-shell__grid">
-              {orders.map((order) => (
-                <AlertCard
-                  key={order.id}
-                  variant="purple"
-                  tableName={order.table?.tableName ?? `Mesa ${order.tableId}`}
-                  title="Nuevo Pedido"
-                  subtitle={buildSubtitle(order)}
-                  waitTime={formatWaitTime(order.createdAt)}
-                  icon="FaShoppingCart"
-                  actionLabel="LISTO"
-                  badgeCount={order.items ? order.items.reduce((s, it) => s + it.qty, 0) : 0}
-                  disabledBtn={markingId === order.id}
-                  onClick={() => setSelectedOrder(order)}
-                  onActionClick={() => handleMarkReady(order.id)}
-                />
-              ))}
+              {orderGroups.map((group) => {
+                const order = group[0];
+                if (group.length === 1) {
+                  return (
+                    <AlertCard
+                      key={order.id}
+                      variant="purple"
+                      tableName={order.table?.tableName ?? `Mesa ${order.tableId}`}
+                      title="Nuevo Pedido"
+                      subtitle={buildSubtitle(order)}
+                      waitTime={formatWaitTime(order.createdAt)}
+                      icon="FaShoppingCart"
+                      actionLabel="LISTO"
+                      badgeCount={order.items ? order.items.reduce((s, it) => s + it.qty, 0) : 0}
+                      disabledBtn={markingId === order.id}
+                      onClick={() => setSelectedOrder(order)}
+                      onActionClick={() => handleMarkReady(order.id)}
+                    />
+                  );
+                }
+                return (
+                  <OrderStack
+                    key={order.tableId}
+                    orders={group}
+                    expanded={expandedTableIds.has(order.tableId)}
+                    onToggle={() => toggleStack(order.tableId)}
+                    onMarkReady={handleMarkReady}
+                    markingId={markingId}
+                    onSelectOrder={setSelectedOrder}
+                  />
+                );
+              })}
             </div>
           )}
         </div>
