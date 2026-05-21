@@ -115,7 +115,11 @@ const MenuClient = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [categories, activeCategoryId]);
 
-  const handleBack = () => navigate(-1);
+  // Volver explícito al QR landing (UserScreen), no usar history.
+  // Antes era navigate(-1), que generaba loop con CartPage cuando el user
+  // navegaba menu → pedido → back-al-menu → back: volvía a /pedido en vez
+  // de a /m/c/b/t.
+  const handleBack = () => navigate(`/m/${companyId}/${branchId}/${tableId}`);
 
   const handleAdd = (item) => {
     addItem(branchId, tableId, item);

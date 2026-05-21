@@ -121,8 +121,8 @@ const ConfirmadoPage = () => {
         <div className="confirmado-page__center">
           <span className="material-symbols-outlined confirmado-page__error-icon">error</span>
           <p className="confirmado-page__error-text">{error}</p>
-          <button type="button" className="confirmado-page__back rd-tap-scale" onClick={handleBackToMenu}>
-            Volver al menú
+          <button type="button" className="confirmado-page__back rd-tap-scale" onClick={handleBackToHome}>
+            Volver al inicio
           </button>
         </div>
       </Phone>
@@ -194,9 +194,17 @@ const ConfirmadoPage = () => {
           <button
             type="button"
             className="confirmado-page__primary rd-tap-scale"
+            onClick={handleBackToHome}
+          >
+            Listo
+          </button>
+
+          <button
+            type="button"
+            className="confirmado-page__secondary rd-tap-scale"
             onClick={handleBackToMenu}
           >
-            {isReady ? 'Seguir pidiendo' : 'Volver al menú'}
+            Pedir más
           </button>
 
           <button
