@@ -175,9 +175,17 @@
   margin-left: 0.25rem;
 }
 
-/* ===== Historial link ===== */
-.user-screen__history-link {
+/* ===== Historial links ===== */
+.user-screen__history-links {
   margin-top: 2rem;
+  display: flex;
+  gap: 0.625rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.user-screen__history-link {
+  margin-top: 0;
   background: transparent;
   border: 1px solid var(--rd-border);
   color: var(--rd-text-tertiary);

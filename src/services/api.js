@@ -187,4 +187,7 @@ export const confirmOrder = (tableId, payload) =>
 export const getOrder = (orderId) =>
   api.get(`/orders/${orderId}`);
 
+export const getTableOrders = (tableId) =>
+  api.get(`/tables/${tableId}/orders`);
+
 export default api;

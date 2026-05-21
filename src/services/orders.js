@@ -305,10 +305,39 @@ async function markOrderReady({ orderId }) {
   return getOrderById(orderId);
 }
 
+// Devuelve todos los Orders de la sesión activa de la mesa para el device dado.
+// Usado por el cliente en UserScreen para ver el historial de su sesión.
+//
+// Si no hay sesión activa, o el device no participa en ella, devuelve [].
+// No lanza error en esos casos — la UI simplemente muestra vacío.
+async function listSessionOrders({ tableId, deviceId }) {
+  const { TableSessionDevice } = require('../models');
+
+  const session = await TableSession.findOne({
+    where: { tableId, status: 'active' },
+    order: [['openedAt', 'DESC']]
+  });
+  if (!session) return [];
+
+  if (deviceId) {
+    const participation = await TableSessionDevice.findOne({
+      where: { tableSessionId: session.id, deviceId }
+    });
+    if (!participation) return [];
+  }
+
+  return Order.findAll({
+    where: { tableSessionId: session.id },
+    include: [{ model: OrderItem, as: 'items' }],
+    order: [['createdAt', 'DESC']]
+  });
+}
+
 module.exports = {
   confirmOrder,
   staffAddOrder,
   getOrderById,
   listActiveOrders,
-  markOrderReady
+  markOrderReady,
+  listSessionOrders
 };
