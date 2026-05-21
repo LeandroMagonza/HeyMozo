@@ -140,22 +140,6 @@
   border-radius: var(--rd-radius-lg);
 }
 
-.cart-sheet__item-qty {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 2rem;
-  height: 2rem;
-  padding: 0 0.4rem;
-  background: rgba(147, 51, 234, 0.18);
-  color: var(--rd-brand-purple-soft, #b78bff);
-  border-radius: var(--rd-radius-md);
-  font-size: 0.8125rem;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  flex-shrink: 0;
-}
-
 .cart-sheet__item-info {
   flex: 1;
   min-width: 0;
@@ -183,6 +167,15 @@
   display: flex;
   align-items: center;
   gap: 0.25rem;
+}
+
+.cart-sheet__qty-value {
+  min-width: 1.5rem;
+  text-align: center;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--rd-text);
 }
 
 .cart-sheet__qty-btn {

@@ -163,7 +163,6 @@ const CartSheet = ({
               <ul className="cart-sheet__items">
                 {cart.items.map((it) => (
                   <li key={it.menuItemId} className="cart-sheet__item">
-                    <span className="cart-sheet__item-qty">{it.qty}×</span>
                     <div className="cart-sheet__item-info">
                       <h4 className="cart-sheet__item-name">{it.name}</h4>
                       <span className="cart-sheet__item-price">
@@ -181,6 +180,7 @@ const CartSheet = ({
                           {it.qty <= 1 ? 'delete' : 'remove'}
                         </span>
                       </button>
+                      <span className="cart-sheet__qty-value">{it.qty}</span>
                       <button
                         type="button"
                         className="cart-sheet__qty-btn rd-tap-scale"

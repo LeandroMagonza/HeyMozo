@@ -195,20 +195,6 @@ const MenuClient = () => {
         <span className="menu-client__header-title">
           {restaurantName ? `${restaurantName}` : 'Menú'}
         </span>
-        <button
-          type="button"
-          className="menu-client__cart-icon rd-tap-scale"
-          onClick={handleOpenCart}
-          aria-label="Ver mi pedido"
-          disabled={cartCount === 0 && pastCount === 0}
-        >
-          <span className="material-symbols-outlined">shopping_bag</span>
-          {(cartCount > 0 || pastCount > 0) && (
-            <span className="menu-client__cart-icon-badge">
-              {cartCount > 0 ? cartCount : pastCount}
-            </span>
-          )}
-        </button>
       </header>
 
       <div className="menu-client__pills-wrap" ref={pillsRef}>
