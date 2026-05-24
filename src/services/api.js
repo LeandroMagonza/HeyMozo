@@ -190,4 +190,15 @@ export const getOrder = (orderId) =>
 export const getTableOrders = (tableId) =>
   api.get(`/tables/${tableId}/orders`);
 
+// Payment config (Sprint 5.3)
+export const disconnectBranchMp = (branchId) =>
+  api.delete(`/branches/${branchId}/mp/disconnect`);
+
+// User self-profile (Sprint 5.3)
+export const getMyProfile = () =>
+  api.get('/users/me');
+
+export const updateMyProfile = (data) =>
+  api.put('/users/me', data);
+
 export default api;

@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { getBranch, getTables, updateBranch, updateTable, createTable, deleteTable, getCompany } from '../services/api';
 import './BranchConfig.css';
-import { FaEye, FaQrcode, FaChair, FaSave, FaTrash, FaPlus, FaCalendarAlt, FaUtensils } from 'react-icons/fa';
+import { FaEye, FaQrcode, FaChair, FaSave, FaTrash, FaPlus, FaCalendarAlt, FaUtensils, FaCreditCard } from 'react-icons/fa';
 import '../styles/common.css';
 import AdminHeader from './AdminHeader';
 import EventConfigModal from './EventConfigModal';
@@ -267,6 +267,12 @@ const BranchConfig = () => {
               onClick={() => navigate(`/admin/${companyId}/${branchId}/menu`)}
             >
               <FaUtensils /> Gestionar Menú
+            </button>
+            <button
+              className="app-button"
+              onClick={() => navigate(`/config/${companyId}/${branchId}/payments`)}
+            >
+              <FaCreditCard /> Configurar Pagos
             </button>
           </div>
 

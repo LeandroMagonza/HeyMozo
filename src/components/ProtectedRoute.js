@@ -29,6 +29,7 @@ const ProtectedRoute = ({ children }) => {
       '/admin/company/create',
       '/config',
       '/config/company/create',
+      '/profile',
     ];
     if (FREE_PATHS.includes(location.pathname)) {
       setHasAccess(true);

@@ -258,7 +258,23 @@ router.put('/branches/:branchId', authMiddleware.checkBranchPermission, async (r
   }
 });
 
-// Tables routes with permission check  
+// Desconectar MP OAuth de una sucursal (Sprint 5.3)
+router.delete('/branches/:branchId/mp/disconnect', authMiddleware.checkBranchPermission, async (req, res) => {
+  try {
+    const branch = await Branch.findByPk(req.params.branchId);
+    if (!branch) {
+      return res.status(404).json({ error: 'Branch not found' });
+    }
+    await branch.update({ mpAccessToken: null, mpRefreshToken: null });
+    console.log(`🔌 MP disconnected for branch ${req.params.branchId}`);
+    res.json({ ok: true });
+  } catch (error) {
+    console.error('Error disconnecting MP:', error);
+    res.status(500).json({ error: 'Error disconnecting MP' });
+  }
+});
+
+// Tables routes with permission check
 router.get('/tables', async (req, res) => {
   try {
     const { branchId } = req.query;

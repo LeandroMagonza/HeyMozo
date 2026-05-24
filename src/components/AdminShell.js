@@ -1,6 +1,7 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { FaBuilding, FaSignOutAlt, FaUser } from 'react-icons/fa';
+import { FaBuilding, FaSignOutAlt, FaUser, FaIdCard } from 'react-icons/fa';
+import { Link } from 'react-router-dom';
 import authService from '../services/authService';
 import './AdminShell.css';
 
@@ -41,6 +42,10 @@ const AdminShell = ({ children }) => {
                 <FaUser className="admin-shell__user-icon" />
                 <span className="admin-shell__user-email">{currentUser.email}</span>
               </div>
+              <Link to="/profile" className="admin-shell__profile-link">
+                <FaIdCard />
+                Mi perfil
+              </Link>
               <button className="admin-shell__logout" onClick={handleLogout}>
                 <FaSignOutAlt />
                 Cerrar sesión

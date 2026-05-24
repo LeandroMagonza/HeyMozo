@@ -120,6 +120,28 @@
   white-space: nowrap;
 }
 
+.admin-shell__profile-link {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 0.4rem;
+  background: transparent;
+  border: 1px solid var(--rd-border, #3a3a3c);
+  border-radius: var(--rd-radius-md, 8px);
+  color: var(--rd-text-tertiary, #9ca3af);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.admin-shell__profile-link:hover {
+  background: rgba(0, 177, 234, 0.08);
+  border-color: rgba(0, 177, 234, 0.4);
+  color: #00b1ea;
+}
+
 .admin-shell__logout {
   display: flex;
   align-items: center;

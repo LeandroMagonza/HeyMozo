@@ -83,11 +83,66 @@ router.post('/',
 );
 
 /**
+ * Update current user's own profile (mpAlias, name)
+ * PUT /api/users/me
+ * Any authenticated user — updates their own record only.
+ */
+router.put('/me',
+  authMiddleware.authenticate,
+  async (req, res) => {
+    try {
+      const user = await User.findByPk(req.user.id);
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+      const { mpAlias, name } = req.body;
+      const updates = {};
+      if (mpAlias !== undefined) updates.mpAlias = mpAlias || null;
+      if (name !== undefined) updates.name = name || null;
+      await user.update(updates);
+      return res.json({
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        mpAlias: user.mpAlias,
+      });
+    } catch (error) {
+      console.error('Error updating user profile:', error);
+      return res.status(500).json({ error: 'Error updating profile' });
+    }
+  }
+);
+
+/**
+ * Get current user's own profile
+ * GET /api/users/me
+ * Any authenticated user.
+ */
+router.get('/me',
+  authMiddleware.authenticate,
+  async (req, res) => {
+    try {
+      const user = await User.findByPk(req.user.id, {
+        attributes: ['id', 'email', 'name', 'role', 'mpAlias', 'isAdmin'],
+      });
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+      return res.json(user);
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+      return res.status(500).json({ error: 'Error fetching profile' });
+    }
+  }
+);
+
+/**
  * Update a user
  * PUT /api/users/:userId
  * Admin only
  */
-router.put('/:userId', 
+router.put('/:userId',
   authMiddleware.authenticate, 
   authMiddleware.requireAdmin, 
   async (req, res) => {
