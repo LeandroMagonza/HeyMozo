@@ -5,7 +5,8 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Phone from './Phone';
-import { getBranch, getCompany, getPublicMenu } from '../services/api';
+import CartSheet from './CartSheet';
+import { getBranch, getCompany, getPublicMenu, getTableOrders } from '../services/api';
 import { bootstrapCustomerSession } from '../services/device';
 import {
   addItem,
@@ -32,6 +33,8 @@ const MenuClient = () => {
   const [loading, setLoading] = useState(true);
   const [cartCount, setCartCount] = useState(0);
   const [cartTotal, setCartTotal] = useState(0);
+  const [pastOrders, setPastOrders] = useState([]);
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   const sectionRefs = useRef({});
   const pillsRef = useRef(null);
@@ -70,13 +73,30 @@ const MenuClient = () => {
 
   // Bootstrap device + sesión en background (no bloquea render).
   // Si falla, el cliente igual puede browsear; el error real saldrá al confirmar.
+  // Después del bootstrap, traemos el historial de pedidos de la sesión para
+  // alimentar el bottom bar cuando el carrito esté vacío.
   useEffect(() => {
-    bootstrapCustomerSession(tableId).catch((err) => {
-      console.warn('No se pudo bootstrappear sesión del cliente:', err && err.message);
-    });
+    let cancelled = false;
+    const init = async () => {
+      try {
+        await bootstrapCustomerSession(tableId);
+      } catch (err) {
+        console.warn('No se pudo bootstrappear sesión del cliente:', err && err.message);
+      }
+      if (cancelled) return;
+      try {
+        const { data } = await getTableOrders(tableId);
+        if (cancelled) return;
+        setPastOrders(data.orders || []);
+      } catch {
+        // 401 / sin sesión: simplemente no hay pedidos previos.
+      }
+    };
+    init();
+    return () => { cancelled = true; };
   }, [tableId]);
 
-  // Suscripción a cambios del carrito (otra tab, vuelta desde CartPage, etc.).
+  // Suscripción a cambios del carrito (otra tab, otros componentes, etc.).
   useEffect(() => {
     refreshCart();
     return subscribeCart(branchId, tableId, refreshCart);
@@ -115,19 +135,18 @@ const MenuClient = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [categories, activeCategoryId]);
 
-  // Volver explícito al QR landing (UserScreen), no usar history.
-  // Antes era navigate(-1), que generaba loop con CartPage cuando el user
-  // navegaba menu → pedido → back-al-menu → back: volvía a /pedido en vez
-  // de a /m/c/b/t.
+  // Volver explícito al QR landing (UserScreen), no usar history (evita
+  // loops con el flujo de pedido).
   const handleBack = () => navigate(`/m/${companyId}/${branchId}/${tableId}`);
 
   const handleAdd = (item) => {
     addItem(branchId, tableId, item);
   };
 
-  const handleViewCart = () => {
-    navigate(`/m/${companyId}/${branchId}/${tableId}/pedido`);
-  };
+  const handleOpenCart = () => setSheetOpen(true);
+  const handleCloseCart = () => setSheetOpen(false);
+  const pastCount = pastOrders.length;
+  const pastTotal = pastOrders.reduce((s, o) => s + (o.totalCents || 0), 0);
 
   if (loading) {
     return (
@@ -248,17 +267,40 @@ const MenuClient = () => {
         <div className="menu-client__bottom-spacer" />
       </main>
 
-      {cartCount > 0 && (
+      {(cartCount > 0 || pastCount > 0) && (
         <button
           type="button"
-          className="menu-client__cart-bar rd-tap-scale"
-          onClick={handleViewCart}
+          className={`menu-client__cart-bar rd-tap-scale${
+            cartCount === 0 ? ' menu-client__cart-bar--past-only' : ''
+          }`}
+          onClick={handleOpenCart}
         >
-          <span className="menu-client__cart-bar-count">{cartCount}</span>
-          <span className="menu-client__cart-bar-label">Ver Pedido</span>
-          <span className="menu-client__cart-bar-total">{formatPrice(cartTotal)}</span>
+          {cartCount > 0 ? (
+            <>
+              <span className="menu-client__cart-bar-count">{cartCount}</span>
+              <span className="menu-client__cart-bar-label">Ver Pedido</span>
+              <span className="menu-client__cart-bar-total">{formatPrice(cartTotal)}</span>
+            </>
+          ) : (
+            <>
+              <span className="menu-client__cart-bar-count">
+                <span className="material-symbols-outlined">receipt_long</span>
+              </span>
+              <span className="menu-client__cart-bar-label">Mis pedidos</span>
+              <span className="menu-client__cart-bar-total">{formatPrice(pastTotal)}</span>
+            </>
+          )}
         </button>
       )}
+
+      <CartSheet
+        open={sheetOpen}
+        onClose={handleCloseCart}
+        companyId={companyId}
+        branchId={branchId}
+        tableId={tableId}
+        pastOrders={pastOrders}
+      />
     </Phone>
   );
 };

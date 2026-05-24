@@ -162,6 +162,28 @@ router.post('/tables/:tableId/orders', async (req, res) => {
   }
 });
 
+// GET /api/tables/:tableId/orders — historial de pedidos de la sesión activa
+// para el device de la cookie. Prerequisito de Pagos digitales (Sprint 7).
+// Devuelve [] si el device no tiene sesión activa en esta mesa.
+router.get('/tables/:tableId/orders', async (req, res) => {
+  try {
+    const deviceId = readDeviceIdFromCookie(req);
+    if (!deviceId) {
+      return res.status(401).json({ error: 'Device no identificado' });
+    }
+    const tableId = parseInt(req.params.tableId, 10);
+    if (!Number.isFinite(tableId)) {
+      return res.status(400).json({ error: 'tableId inválido' });
+    }
+
+    const orders = await orderService.listSessionOrders({ tableId, deviceId });
+    res.json({ orders });
+  } catch (err) {
+    console.error('❌ GET /tables/:tableId/orders:', err.message);
+    res.status(500).json({ error: 'Error fetching orders' });
+  }
+});
+
 // GET /api/orders/:orderId — el cliente polling para saber si su pedido fue
 // marcado como ready ("PEDIDO LISTO" en pantalla del Sprint 3.3).
 // Verifica que el device de la cookie haya participado en la sesión del order.

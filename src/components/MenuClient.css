@@ -320,3 +320,23 @@
 .menu-client__cart-bar-total {
   font-weight: 700;
 }
+
+/* Variante cuando no hay carrito en curso pero sí pedidos confirmados de
+   la sesión — el bar funciona como atajo "Mis pedidos" en lugar de CTA. */
+.menu-client__cart-bar--past-only {
+  background: var(--rd-bg-card);
+  color: var(--rd-text);
+  box-shadow: var(--rd-shadow-card);
+  border: 1px solid var(--rd-border);
+}
+
+.menu-client__cart-bar--past-only .menu-client__cart-bar-count {
+  background: rgba(255, 255, 255, 0.08);
+  min-width: 1.75rem;
+  padding: 0 0.2rem;
+}
+
+.menu-client__cart-bar--past-only .menu-client__cart-bar-count .material-symbols-outlined {
+  font-size: 1.05rem;
+  line-height: 1;
+}

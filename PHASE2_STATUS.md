@@ -13,6 +13,7 @@ Tracker live de los sub-PRs de Fase 2. Una línea por sub-PR con commit, branch,
 | Sub-PR | Branch | Commit | PR | Notas |
 |---|---|---|---|---|
 | 4.3 | `feature/phase2-add-order-modal` | — | [#21](https://github.com/LeandroMagonza/HeyMozo/pull/21) | feat(opshell): AddOrderModal — mesa selector, menú por categorías con search + tabs sticky, steppers qty. Botón "Nuevo pedido" en topnav. |
+| 5.1 | `feature/sprint-5.1-customer-order-history` | — | — | feat(client): historial de pedidos de sesión activa — GET /api/tables/:id/orders (cookie device) + sección "Ya pediste" en CartPage + bottom bar de MenuClient ampliada (Mis pedidos cuando hay confirmados pero carrito vacío). Prerequisito de Pagos digitales (Sprint 7). |
 
 ---
 
