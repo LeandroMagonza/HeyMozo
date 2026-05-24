@@ -12,7 +12,7 @@ Tracker live de los sub-PRs de Fase 2. Una línea por sub-PR con commit, branch,
 
 | Sub-PR | Branch | Commit | PR | Notas |
 |---|---|---|---|---|
-| 5.2 | `feature/phase2-payment-models` | — | — | feat(payments): migrations + modelos Payment/Review/ReviewTag/ReviewTagAssignment/ClubMember/ClubVisit/Voucher + campos nuevos en Branch y User. Seed de 8 ReviewTags negativos al crear branch. Sin endpoints, sin UI. |
+| 5.2 | `feature/phase2-payment-models` | `726be3d` | [#29](https://github.com/LeandroMagonza/HeyMozo/pull/29) | feat(payments): migrations + modelos Payment/Review/ReviewTag/ReviewTagAssignment/ClubMember/ClubVisit/Voucher + campos nuevos en Branch y User. Seed de 8 ReviewTags negativos al crear branch. Sin endpoints, sin UI. |
 
 ---
 
