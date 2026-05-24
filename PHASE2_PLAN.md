@@ -131,7 +131,7 @@ Distinguir zombi (>30min sin heartbeat, pagos completos) vs realmente caliente:
 | 2 | Menú + onboarding | ✅ | Wizard crear sucursal (modo B) + modelos `Category`/`MenuItem` + vista admin menú + vista cliente menú |
 | 3 | Pedido + identificación | ✅ | `Order`/`OrderItem` + carrito + ConfirmadoPage + AlertCard `new_order` + polling cliente + pantalla "PEDIDO LISTO" + emoji auto. Aprobación transitiva postergada a Sprint 6. |
 | 4 | Mozo agrega items | 🚧 | `POST /api/orders/staff` + `staffAddOrder` service + `AddOrderModal` en OpShell (mesa selector + menú agrupado por categorías con search + tabs + steppers qty) + `Order.createdByUserId` para auditoría. Event "Nuevo Pedido" queda **unseen** (el mozo de piso debe ver la card aunque la haya cargado otro staff). Reusa Order/OrderItem/MenuItem. **Prerequisito de split de cuenta** (sin esto los items orales no están en sistema). |
-| 5 | Pagos digitales | 📝 | A diseñar: canal (MP nativo / transferencia con validación cajero / ambos) + `Payment` + PostPagoPage con rating + `Review`/`ReviewTag`. Decisión bloqueante para Sprint 7 (split). |
+| 5 | Pagos digitales + Reviews + Club VIP | 🚧 | **5 canales** (MP nativo / Transferencia / MODO Nivel 1 deeplink / Tarjeta posnet / Efectivo) + propinas **nunca a cuenta del dueño** (flag `Branch.mpMarketplaceEnabled`, trámite Marketplace MP en paralelo) + Split por monto + PostPagoPage (stars 1-5, tags negativos condicionales si stars≤3, Google Maps link siempre, sección "Propina pendiente" si MP sin Marketplace) + **Club VIP completo** (modelos + captura en PostPago + tab CajaShell + voucher con entrega "próxima visita" + WhatsApp manual + canje por mozo en OpShell + loyalty acceleration configurable). **Club VIP movido del cubo v1.5 al MVP por decisión user 2026-05-24.** 10 sub-PRs (5.2 a 5.11). Diseño cerrado 2026-05-24. Bloqueante para Sprint 7 (split) y Sprint 8.3 (tab Pagos). |
 | 6 | Trust + hard limits + transferencias mesa | 📝 | Trust dot + hard limits enforcement + transferencia cliente-iniciada + mozo-iniciada + "soy otra persona" con clasificación zombi + aprobación transitiva |
 | 7 | Split por item + modos de pago | 📝 | `OrderItemClaim { orderItemId, deviceId, qty }` + coordinación real-time entre devices + reglas items huérfanos + `TableSession.paymentMode` ENUM. Depende de Sprint 5 (pagos digitales reales). |
 | 8 | Gestión de users + Pulso + QA + deploy | 📝 | UI de gestión de users (crear/editar/asignar permisos, invitación por magic link reusando infra de Sprint 1.1) + Tab Pulso básica + Tab Pagos + bug bash + deploy venue piloto. **8.1 es bloqueante para deploy**: sin UI no se pueden crear mozos/cajeros en el venue piloto. |
@@ -222,6 +222,104 @@ Aliases en lowercase (`'categories'`, `'items'`, `'branch'`, `'category'`) — g
 - **Promos en menú** — ver [ROADMAP.md](ROADMAP.md). Candidata a Sprint 2.6 o v1.5.
 - **Upload propio de imágenes** — sigue siendo URL externa. S3/Cloudinary post-MVP.
 - **Stock numérico funcional** — columna existe, lógica de decremento entra en Fase 3 delivery.
+
+### Sprint 5 — desglose en sub-PRs
+
+Sprint 5 cubre **pagos digitales (5 canales), reviews con tags y Google Maps, y Club VIP completo**. El user pidió "no importa el tiempo, importa que quede mejor posible y más funcional" → se diseñó sin recortar scope. Club VIP completo se movió del cubo v1.5 al MVP.
+
+#### Decisiones cerradas (NO re-discutir)
+
+**Canales y propinas:**
+- 5 canales habilitados: MP nativo, Transferencia, MODO (Nivel 1 = deeplink + analytics, sin Business API), Tarjeta posnet, Efectivo.
+- Propina default 10%. Excluida en transferencia/MODO (matchea decisión fiscal habitual del venue). Incluida en cash/posnet. **Excluida en MP hasta que Marketplace MP esté aprobado.**
+- **Propinas NUNCA pasan por la cuenta del dueño** (requisito no negociable del user — MP cobraría fee extra sobre el monto de propina). Cash/posnet: mozo cobra off-system. MP pre-Marketplace: PostPagoPage muestra selector "Propina pendiente" (cash al mozo / transfer a alias del mozo). MP post-Marketplace: split automático al MP del mozo.
+- Tracking en DB: `Payment.tipCents` + `Payment.collectedByUserId`. Suficiente para ranking de propinas por mozo (UI en Sprint 8).
+
+**Marketplace MP:**
+- Flag `Branch.mpMarketplaceEnabled` (default false). Mientras false: MP cobra solo consumo.
+- Trámite de registro Marketplace en MP devs arranca en paralelo a 5.2. Plazo 1-2 sem, no bloquea.
+- Sub-PR posterior al sprint activa split payment cuando llegue aprobación.
+
+**Setup MP:**
+- OAuth únicamente para el venue (sin paste manual). Registro app HeyMozo en MP devs es gratis e instantáneo.
+- OAuth del mozo (futuro post-Marketplace) desde auto-perfil del mozo, no centralizado por el dueño.
+
+**Split:**
+- Split por monto (foto 2 del mockup: "El total completo" / "Solo mi parte $X") entra en Sprint 5.
+- Split por ítem (claims, coordinación real-time entre devices) sigue en Sprint 7.
+
+**PostPagoPage:**
+- Stars 1-5 obligatorio.
+- Si stars ≤ 3: grilla de tags negativos multi-select + textarea comment opcional + submit rojo.
+- Si stars ≥ 4: solo botón submit amarillo. Cero tags. Cero comment.
+- Post-submit: link "Dejá tu valoración en Google Maps" **siempre visible** (razón user: Google no permite filtrar reviews por nota, no podemos manipular). Tracking `Review.derivedToGoogle`.
+- Card Club VIP siempre visible (independiente del rating).
+
+**ReviewTag:**
+- Solo negativos. 8 tags seed con emoji al crear branch: 🥶 Comida fría, ⏳ Demora en la atención, 🍳 Demora en la cocina, 😠 Mala atención del mozo, ❌ Pedido equivocado, 💰 Precios altos, 🧹 Lugar sucio, 🔊 Ambiente ruidoso.
+- Columna `category` ENUM('general','food','drink','service','ambience') default 'general'. UI MVP solo muestra 'general'. Puerta abierta a separar por categoría en v1.5+ sin migration.
+
+**Cajero — tab Acciones:**
+- Renombre de "Pagos pendientes" → "Acciones" (matchea MOCKUP_HANDOFF línea 196).
+- 4 tipos de cards en mismo feed: Transferencia con "Validar/Rechazar" (borde amarillo), MP/Tarjeta/Efectivo con solo "Entendido" (borde verde, acuse informativo).
+
+**Cliente — pantalla espera transferencia:**
+- Polling cada 5s a `GET /api/payments/:id/status`. Sin timeout automático. Botón "Cancelar pago" siempre visible.
+
+**Validación + comprobante:**
+- Comprobante de transferencia opcional. Cajero valida desde su app bancaria; si el cliente subió comprobante es ayuda extra.
+
+**Liberación mesa:**
+- **Auto-liberación**: cuando `sum(Payments paid.subtotalCents) >= sum(Orders.totalCents)`. Propina no cuenta para balance. Caso feliz, sin acción staff.
+- **Liberación manual individual** (entra en 5.8): endpoint + botón "Liberar mesa" en CajaShell/OpShell con `releaseReason` text opcional. Para casos edge donde balance > 0 (cobro off-system, comp del dueño, walkout). Permiso: cashier/owner; waiter también desde OpShell.
+- **Liberar todas las mesas** botón legacy ya existe en AdminScreen (`releaseAllTables(branchId)`) — sigue funcionando, no se toca.
+- **Casos edge complejos van en Sprint 6** (no Sprint 5): clasificación zombi vs caliente, modal "Soy otra persona" con 4 opciones, transferencias mesa-a-mesa, auto-close por inactividad >30min, tope absoluto 4-6h.
+
+**Config:**
+- Per-branch (cada sucursal tiene MP token, alias, toggles).
+- `Branch.paymentMethodPriority` (JSON array) controla jerarquía visual de botones — configurable per-branch.
+
+**Review waiterId:**
+- Híbrido D: auto-sugiere el mozo más activo de la sesión (más Orders), cliente puede cambiar a otro staff que tocó la mesa. Si solo hay un mozo, sin selector.
+
+**Refunds:**
+- NO en MVP. Status `refunded` existe en ENUM pero sin UI. Errores se resuelven off-system.
+
+#### Club VIP completo (movido v1.5 → MVP)
+
+- Modelos: `ClubMember` (phone, visits, lastVisitAt), `ClubVisit` (snapshot por sesión), `Voucher` (code único, reward snapshot, redeemedAt, redeemedByUserId).
+- Captura en PostPagoPage: card siempre visible con input WhatsApp + contador "X de Y visitas".
+- Config branch: `clubReward` (text), `clubGoal` (int default 5), `clubAccelerationAtVisit` (int nullable), `clubAccelerationMultiplier` (int default 2).
+- **Loyalty acceleration** (psicología endowed progress): en la visita N == `clubAccelerationAtVisit`, sumamos `clubAccelerationMultiplier` en lugar de 1. Configurable per-branch.
+- Entrega voucher: **dos métodos combinados** — (a) próxima visita: HeyMozo detecta voucher pendiente al escanear QR y lo muestra en UserScreen, (b) WhatsApp manual desde tab Club: batch de links `wa.me/...` con mensaje pre-armado.
+- Validación voucher: **mozo desde OpShell** (botón "Canjear voucher" → input/scanner código → marca redeemed + reset visits a 0).
+- Tab Club en CajaShell: lista members con filtros (días sin volver, voucher alcanzado, búsqueda phone), botón WhatsApp masivo client-side.
+- **Lo único que sigue post-MVP**: WhatsApp Business API server-side (paid feature post-F2). MVP usa `wa.me` client-side.
+
+#### Sub-PRs
+
+| # | Branch | Scope | Depende |
+|---|---|---|---|
+| **5.1** | `feature/sprint-5.1-customer-order-history` | (mergeado en PR #28) CartSheet bottom sheet + historial sesión + `SessionOrdersList`. | — |
+| **5.2** | `feature/phase2-payment-models` | Migrations + modelos Payment/Review/ReviewTag/ClubMember/ClubVisit/Voucher + asociaciones. Branch fields (mpMarketplaceEnabled, mpAccessToken/Refresh, transferAlias/Cbu/Titular/Cuit, googleMapsReviewUrl, paymentMethodPriority/Enabled, clubReward/Goal/Acceleration). User fields (mpAlias, mpAccessToken/Refresh). Seed 8 ReviewTags negativos al crear branch. Sin endpoints, sin UI. | — |
+| **5.3** | `feature/phase2-payment-config-ui` | UI `/config/:c/:b/payments` (OAuth MP, alias transfer, toggles paymentMethodsEnabled, paymentMethodPriority, googleMapsReviewUrl, clubReward/Goal/Acceleration). UI `/profile` mozo (mpAlias). Endpoint OAuth callback MP. | 5.2 |
+| **5.4** | `feature/phase2-payment-cash-card` | Endpoints + flow efectivo/tarjeta: Event `payment_request_cash`/`_card`, AlertCard mozo en OpShell, UI mozo "Cobré $X" → Payment paid. Opcional cash: cliente declara monto para vuelto. | 5.2 |
+| **5.5** | `feature/phase2-payment-transfer-modo` | Endpoints + flow transfer/MODO: alias copiable, deeplink `modo://` con fallback, comprobante opcional, pantalla espera cliente con polling 5s. UI cajero validar va en 5.8. | 5.2 |
+| **5.6** | `feature/phase2-payment-mp-native` | Endpoints + flow MP nativo: Checkout Pro o Payment Brick (decisión de UX al implementar), solo consumo cuando `mpMarketplaceEnabled=false`, webhook `POST /api/payments/mp/webhook` con verificación firma HMAC. | 5.2 |
+| **5.7** | `feature/phase2-payment-split-monto` | Bottom sheet "¿Cuánto vas a pagar?" (foto 2 mockup). Cliente declara monto → Payment parcial → balance se actualiza. Mesa sigue activa hasta balance=0. | 5.4 + 5.5 + 5.6 |
+| **5.8** | `feature/phase2-cajashell-acciones` | Tab "Acciones" en CajaShell con 4 tipos de cards. Push al cliente cuando cajero valida/rechaza transferencia. **+ Endpoint + botón "Liberar mesa" individual con `releaseReason` text opcional** (casos edge balance > 0). Refinamientos zombi/caliente quedan para Sprint 6. | 5.4 + 5.5 + 5.6 |
+| **5.9** | `feature/phase2-postpago-review` | PostPagoPage: stars + tags negativos condicionales (stars≤3) + comment opcional + submit + Google Maps link siempre + card Club VIP (input WhatsApp). Sección "Propina pendiente" si MP sin Marketplace. | 5.4 + 5.5 + 5.6 |
+| **5.10** | `feature/phase2-club-cajashell` | Tab Club en CajaShell: lista members con filtros (días sin volver, voucher alcanzado, búsqueda phone), botón WhatsApp masivo client-side (`wa.me/...`). | 5.9 |
+| **5.11** | `feature/phase2-club-voucher` | Generación automática Voucher al alcanzar goal. Entrega "próxima visita" (detección + UI UserScreen). Entrega WhatsApp manual desde tab Club. Botón "Canjear voucher" en OpShell mozo + endpoint validar + reset visits. | 5.10 |
+
+#### Lo que NO entra en Sprint 5 (capturado pero pospuesto)
+
+- **Split por ítem** (claims, coordinación real-time entre devices) → Sprint 7.
+- **MP Marketplace API activación** (split payment automático) → sub-PR posterior post-aprobación (trámite 1-2 sem en paralelo).
+- **MODO Nivel 2** (Business API con webhook) → post-MVP cuando se valide demanda.
+- **Tab Reseñas en CajaShell** (UI ranking mozos + feed reviews + edición ReviewTags) → Sprint 8 (nueva sub-PR a agregar al plan cuando se llegue).
+- **WhatsApp Business API server-side** (envío automatizado) → paid feature post-F2.
+- **Refunds UI** → v1.5.
 
 ### Sprint 8 — desglose en sub-PRs
 
@@ -326,7 +424,7 @@ A es mejor si los devs tienen skills muy distintos. B si los dos son full-stack 
 ## Lo que queda fuera del MVP (v1.5)
 
 - **Modalidad A completa** (sale en Sprint 9 con PagarPage A simplificada solamente; UI/QA completos para A en v1.5).
-- **Club VIP UI completa**.
+- ~~**Club VIP UI completa**~~ — **movido al MVP en Sprint 5** (decisión user 2026-05-24).
 - **Trust dot enforcement** (en MVP es solo informativo).
 - **Auditoría completa** (logs estructurados sí, dashboard no).
 - **Tab Seguridad** en CajaShell.

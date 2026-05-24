@@ -20,6 +20,13 @@ const tableSessionFactory = require('./TableSession');
 const tableSessionDeviceFactory = require('./TableSessionDevice');
 const orderFactory = require('./Order');
 const orderItemFactory = require('./OrderItem');
+const paymentFactory = require('./Payment');
+const reviewFactory = require('./Review');
+const reviewTagFactory = require('./ReviewTag');
+const reviewTagAssignmentFactory = require('./ReviewTagAssignment');
+const clubMemberFactory = require('./ClubMember');
+const clubVisitFactory = require('./ClubVisit');
+const voucherFactory = require('./Voucher');
 
 // Initialize new models
 const EventType = eventTypeFactory(sequelize);
@@ -30,9 +37,22 @@ const TableSession = tableSessionFactory(sequelize);
 const TableSessionDevice = tableSessionDeviceFactory(sequelize);
 const Order = orderFactory(sequelize);
 const OrderItem = orderItemFactory(sequelize);
+const Payment = paymentFactory(sequelize);
+const Review = reviewFactory(sequelize);
+const ReviewTag = reviewTagFactory(sequelize);
+const ReviewTagAssignment = reviewTagAssignmentFactory(sequelize);
+const ClubMember = clubMemberFactory(sequelize);
+const ClubVisit = clubVisitFactory(sequelize);
+const Voucher = voucherFactory(sequelize);
 
 // Set up new model associations
-const models = { User, Permission, AuthToken, Company, Branch, Table, Event, MailingList, EventType, EventConfiguration, Category, MenuItem, Device, TableSession, TableSessionDevice, Order, OrderItem };
+const models = {
+  User, Permission, AuthToken, Company, Branch, Table, Event, MailingList,
+  EventType, EventConfiguration, Category, MenuItem,
+  Device, TableSession, TableSessionDevice, Order, OrderItem,
+  Payment, Review, ReviewTag, ReviewTagAssignment,
+  ClubMember, ClubVisit, Voucher
+};
 Object.keys(models).forEach(modelName => {
   if (models[modelName].associate) {
     models[modelName].associate(models);
@@ -73,6 +93,13 @@ TableSession.hasMany(Order, { foreignKey: 'tableSessionId', as: 'orders' });
 Table.hasMany(Order, { foreignKey: 'tableId', as: 'orders' });
 Branch.hasMany(Order, { foreignKey: 'branchId', as: 'orders' });
 
+// Sprint 5.2: Payment / Review / Club VIP — hasMany inversos del lado contrario.
+// Los belongsTo se wireron en cada factory.associate vía el loop de arriba.
+TableSession.hasMany(Payment, { foreignKey: 'tableSessionId', as: 'payments' });
+TableSession.hasMany(Review, { foreignKey: 'tableSessionId', as: 'reviews' });
+Branch.hasMany(ReviewTag, { foreignKey: 'branchId', as: 'reviewTags' });
+Branch.hasMany(ClubMember, { foreignKey: 'branchId', as: 'clubMembers' });
+
 module.exports = {
   User,
   Permission,
@@ -90,5 +117,12 @@ module.exports = {
   TableSession,
   TableSessionDevice,
   Order,
-  OrderItem
+  OrderItem,
+  Payment,
+  Review,
+  ReviewTag,
+  ReviewTagAssignment,
+  ClubMember,
+  ClubVisit,
+  Voucher
 };
