@@ -1,0 +1,96 @@
+.user-profile {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 0 0 3rem;
+  font-family: var(--rd-font-sans);
+  color: var(--rd-text, #ffffff);
+}
+
+.up-section {
+  background: var(--rd-bg-card, #2c2c2e);
+  border: 1px solid var(--rd-border, #3a3a3c);
+  border-radius: var(--rd-radius-lg, 12px);
+  padding: 1.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.up-section__title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--rd-text, #ffffff);
+  margin: 0 0 1.25rem;
+}
+
+.up-avatar {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1.25rem;
+}
+.up-avatar__icon {
+  font-size: 2.5rem;
+  color: var(--rd-text-tertiary, #9ca3af);
+  background: var(--rd-bg, #1c1c1e);
+  border: 1px solid var(--rd-border, #3a3a3c);
+  border-radius: 50%;
+  padding: 1rem;
+}
+
+.up-info-row {
+  display: flex;
+  gap: 1rem;
+  padding: 0.55rem 0;
+  border-bottom: 1px solid var(--rd-border-subtle, #2c2c2e);
+  font-size: 0.9rem;
+}
+.up-info-row:last-of-type { border-bottom: none; }
+.up-label {
+  color: var(--rd-text-tertiary, #9ca3af);
+  min-width: 80px;
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 600;
+  padding-top: 0.1rem;
+}
+.up-value { color: var(--rd-text-secondary, #e4e2e4); font-weight: 500; }
+
+.up-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+}
+.up-field label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--rd-text-tertiary, #9ca3af);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.up-field input[type='text'] {
+  padding: 0.5rem 0.75rem;
+  background: var(--rd-bg, #1c1c1e);
+  color: var(--rd-text, #ffffff);
+  border: 1px solid var(--rd-border, #3a3a3c);
+  border-radius: var(--rd-radius-md, 8px);
+  font-family: inherit;
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.up-field input::placeholder {
+  color: var(--rd-text-disabled, #6b7280);
+}
+.up-field input:focus {
+  border-color: var(--rd-brand-mp, #009ee3);
+  box-shadow: 0 0 0 3px rgba(0, 158, 227, 0.18);
+}
+
+.up-hint {
+  font-size: 0.8rem;
+  color: var(--rd-text-muted, #636366);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.up-save-btn { min-width: 120px; }

@@ -12,6 +12,8 @@ import CompanyList from "./components/CompanyList";
 import CompanyCreate from "./components/CompanyCreate";
 import TableUrls from "./components/TableUrls";
 import MenuAdmin from "./components/MenuAdmin";
+import PaymentConfig from "./components/PaymentConfig";
+import UserProfile from "./components/UserProfile";
 import LoginPage from "./components/LoginPage";
 import LoginForm from "./components/LoginForm";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -344,6 +346,28 @@ function App() {
             <ProtectedRoute>
               <AdminShell>
                 <TableUrls />
+              </AdminShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/config/:companyId/:branchId/payments"
+          element={
+            <ProtectedRoute>
+              <AdminShell>
+                <PaymentConfig />
+              </AdminShell>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* User self-profile — any authenticated user */}
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <AdminShell>
+                <UserProfile />
               </AdminShell>
             </ProtectedRoute>
           }

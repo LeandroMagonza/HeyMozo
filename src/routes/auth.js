@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const axios = require('axios');
 const authService = require('../services/auth');
 const authMiddleware = require('../middleware/auth');
 const { User, Permission, Branch } = require('../models');
@@ -369,6 +370,36 @@ router.get('/check-access', authMiddleware.authenticate, async (req, res) => {
       }
     }
 
+    // ===== /config/:companyId/:branchId/payments — edit access (Sprint 5.3) =====
+    else if (routeRoot === 'config' && routeParts.length === 4 && routeParts[3] === 'payments') {
+      const companyId = parseInt(routeParts[1]);
+      const branchId = parseInt(routeParts[2]);
+      if (isNaN(companyId) || isNaN(branchId)) {
+        return res.status(400).json({ error: 'Invalid company or branch ID' });
+      }
+      if (user.isAdmin) {
+        hasAccess = true;
+        accessLevel = 'admin';
+        reason = 'User is admin';
+      } else {
+        const companyPermission = await Permission.findOne({
+          where: { userId: user.id, resourceType: 'company', resourceId: companyId }
+        });
+        if (companyPermission?.permissionLevel === 'edit') {
+          hasAccess = true;
+          accessLevel = 'edit';
+          reason = 'User has edit access to company';
+        } else {
+          const branchPermission = await Permission.findOne({
+            where: { userId: user.id, resourceType: 'branch', resourceId: branchId }
+          });
+          hasAccess = branchPermission?.permissionLevel === 'edit';
+          accessLevel = hasAccess ? 'edit' : null;
+          reason = hasAccess ? 'User has edit access to branch' : 'Requires edit access to company or branch';
+        }
+      }
+    }
+
     // ===== /config/:companyId/:branchId/urls — edit access (≡ /admin/:companyId/:branchId/urls) =====
     else if (routeRoot === 'config' && routeParts.length === 4 && routeParts[3] === 'urls') {
       const companyId = parseInt(routeParts[1]);
@@ -644,6 +675,62 @@ router.get('/check-access', authMiddleware.authenticate, async (req, res) => {
   } catch (error) {
     console.error('Error checking access:', error);
     return res.status(500).json({ error: 'Error checking access permissions' });
+  }
+});
+
+/**
+ * Mercado Pago OAuth callback
+ * GET /api/auth/mp/callback?code=xxx&state=branchId:companyId
+ * No auth middleware — browser is redirected here by MP.
+ */
+router.get('/mp/callback', async (req, res) => {
+  const { code, state } = req.query;
+  console.log('🟡 MP OAuth callback received, state:', state);
+
+  if (!code || !state) {
+    console.error('❌ MP callback: missing code or state');
+    return res.redirect('/config?mp=error');
+  }
+
+  const [branchId, companyId] = state.split(':');
+  if (!branchId || !companyId) {
+    console.error('❌ MP callback: malformed state:', state);
+    return res.redirect('/config?mp=error');
+  }
+
+  try {
+    const appId = process.env.MP_APP_ID;
+    const appSecret = process.env.MP_APP_SECRET;
+    const baseUrl = process.env.APP_BASE_URL || 'http://localhost:3001';
+    const redirectUri = `${baseUrl}/api/auth/mp/callback`;
+
+    const tokenRes = await axios.post(
+      'https://api.mercadopago.com/oauth/token',
+      {
+        client_id: appId,
+        client_secret: appSecret,
+        grant_type: 'authorization_code',
+        code,
+        redirect_uri: redirectUri,
+      },
+      { headers: { 'Content-Type': 'application/json' } }
+    );
+
+    const { access_token, refresh_token } = tokenRes.data;
+
+    const branch = await Branch.findByPk(branchId);
+    if (!branch) {
+      console.error('❌ MP callback: branch not found:', branchId);
+      return res.redirect(`/config?mp=error`);
+    }
+
+    await branch.update({ mpAccessToken: access_token, mpRefreshToken: refresh_token || null });
+    console.log(`✅ MP OAuth token saved for branch ${branchId}`);
+
+    return res.redirect(`/config/${companyId}/${branchId}/payments?mp=success`);
+  } catch (error) {
+    console.error('❌ MP OAuth token exchange failed:', error.response?.data || error.message);
+    return res.redirect(`/config/${companyId}/${branchId}/payments?mp=error`);
   }
 });
 
