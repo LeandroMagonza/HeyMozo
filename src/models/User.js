@@ -35,7 +35,14 @@ const User = sequelize.define('User', {
   lastLogout: {
     type: DataTypes.DATE,
     allowNull: true
-  }
+  },
+  // Sprint 5.2: alias MP para mostrar al cliente como destino de propina
+  // (cash/transfer) cuando MP nativo aún no tiene Marketplace activado.
+  mpAlias: DataTypes.STRING,
+  // Para split post-Marketplace: cada mozo conecta su MP via OAuth desde
+  // su auto-perfil (datos bancarios privados, no centralizado por dueño).
+  mpAccessToken: DataTypes.STRING,
+  mpRefreshToken: DataTypes.STRING
 }, {
   paranoid: true // Enable soft deletes
 });
