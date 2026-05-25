@@ -2,7 +2,7 @@
 
 Tracker live de los sub-PRs de Fase 2. Una línea por sub-PR con commit, branch, PR# y estado.
 
-**Última actualización:** 2026-05-24 (5.3)
+**Última actualización:** 2026-05-25 (5.3 abierta, 5.2 mergeada)
 
 > Cuando un PR se mergea, mover su sub-PR a "✅ Mergeado" abajo y actualizar el [PHASE2_PLAN.md](PHASE2_PLAN.md) si corresponde (cambiar 🚧 → ✅ para el sprint completo cuando todas las sub-PRs estén in).
 
@@ -13,7 +13,7 @@ Tracker live de los sub-PRs de Fase 2. Una línea por sub-PR con commit, branch,
 | Sub-PR | Branch | Commit | PR | Notas |
 |---|---|---|---|---|
 | 5.2 | `feature/phase2-payment-models` | `726be3d` | [#29](https://github.com/LeandroMagonza/HeyMozo/pull/29) | feat(payments): migrations + modelos Payment/Review/ReviewTag/ReviewTagAssignment/ClubMember/ClubVisit/Voucher + campos nuevos en Branch y User. Seed de 8 ReviewTags negativos al crear branch. Sin endpoints, sin UI. |
-| 5.3 | `feature/phase2-payment-config-ui` | — | — | feat(payments): UI `/config/:c/:b/payments` (OAuth MP, alias transfer, toggles paymentMethodsEnabled, prioridad drag-drop, googleMapsReviewUrl, Club VIP config). UI `/profile` mozo (mpAlias). Endpoint OAuth callback MP + PUT /users/me. Depende de #29 (5.2) — mergear primero. |
+| 5.3 | `feature/phase2-payment-config-ui` | `ecf75bd` | [#30](https://github.com/LeandroMagonza/HeyMozo/pull/30) | feat(payments): UI `/config/:c/:b/payments` (OAuth MP, alias transfer, toggles paymentMethodsEnabled, prioridad drag-drop, googleMapsReviewUrl, Club VIP config). UI `/profile` mozo (mpAlias). Endpoint OAuth callback MP + PUT /users/me. |
 
 ---
 

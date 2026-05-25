@@ -716,7 +716,7 @@ router.post('/companies', authMiddleware.authenticate, async (req, res) => {
 router.post('/branches', async (req, res) => {
   try {
     const { companyId } = req.body;
-    
+
     if (companyId) {
       // Check permission for specific company
       if (!req.user.isAdmin) {
@@ -727,8 +727,19 @@ router.post('/branches', async (req, res) => {
         }
       }
     }
-    
+
     const branch = await Branch.create(req.body);
+
+    // Sprint 5.2: seed de 8 ReviewTags negativos por branch. Idempotente
+    // (no duplica si ya existen). Si falla no rompe la creación, los tags
+    // se pueden crear manualmente después.
+    try {
+      const ReviewConfigService = require('../services/reviewConfig');
+      await ReviewConfigService.createDefaultReviewTags(branch.id);
+    } catch (seedError) {
+      console.error('⚠️  Failed to seed ReviewTags for new branch:', seedError);
+    }
+
     res.status(201).json(branch);
   } catch (error) {
     console.error('Error creating branch:', error);
