@@ -12,7 +12,7 @@ Tracker live de los sub-PRs de Fase 2. Una línea por sub-PR con commit, branch,
 
 | Sub-PR | Branch | Commit | PR | Notas |
 |---|---|---|---|---|
-| 5.4 | `feature/phase2-payment-cash-card` | — | — | feat(payments): flow cash/tarjeta. Migration `Payment.eventId` + seed 2 EventTypes (`Cobrar efectivo`/`Cobrar tarjeta`, cardVariant=red). Endpoints `POST /tables/:id/payments`, `GET /payments/:id/status`, `POST /payments/:id/cancel`, `POST /payments/:id/collect`. Cliente: `PaymentMethodSheet` (selector propina 10/15/Otro/Nada + cash/card), `WaitingPaymentPage` con polling, `PagoConfirmadoPage` placeholder. OpShell: AlertCard "Cobré $X" cuando el Event tiene Payment pending. Auto-cierre de TableSession si balance llega a 0. |
+| 5.4 | `feature/phase2-payment-cash-card` | `022817c` | [#31](https://github.com/LeandroMagonza/HeyMozo/pull/31) | feat(payments): flow cash/tarjeta. Migration `Payment.eventId` + seed 2 EventTypes (`Cobrar efectivo`/`Cobrar tarjeta`, cardVariant=red). Endpoints `POST /tables/:id/payments`, `GET /payments/:id/status`, `POST /payments/:id/cancel`, `POST /payments/:id/collect`. Cliente: `PaymentMethodSheet` (selector propina 10/15/Otro/Nada + cash/card), `WaitingPaymentPage` con polling, `PagoConfirmadoPage` placeholder. OpShell: AlertCard "Cobré $X" cuando el Event tiene Payment pending. Auto-cierre de TableSession si balance llega a 0. |
 
 ---
 
