@@ -15,6 +15,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaTimes } from 'react-icons/fa';
 import SessionOrdersList from './SessionOrdersList';
+import PaymentMethodSheet from './PaymentMethodSheet';
 import { confirmOrder as apiConfirmOrder } from '../services/api';
 import { bootstrapCustomerSession } from '../services/device';
 import {
@@ -43,6 +44,7 @@ const CartSheet = ({
   branchId,
   tableId,
   pastOrders = [],
+  branch = null,
 }) => {
   const navigate = useNavigate();
 
@@ -50,6 +52,7 @@ const CartSheet = ({
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
+  const [payOpen, setPayOpen] = useState(false);
 
   const refresh = useCallback(() => {
     setCart(readCart(branchId, tableId));
@@ -246,7 +249,7 @@ const CartSheet = ({
               >
                 Seguir eligiendo
               </button>
-              {hasCart && (
+              {hasCart ? (
                 <button
                   type="button"
                   className="cart-sheet__primary rd-tap-scale"
@@ -255,11 +258,32 @@ const CartSheet = ({
                 >
                   {submitting ? 'Enviando…' : `Confirmar Pedido (${formatPrice(cartTotal)})`}
                 </button>
+              ) : (
+                hasPast && (
+                  <button
+                    type="button"
+                    className="cart-sheet__primary rd-tap-scale"
+                    onClick={() => setPayOpen(true)}
+                  >
+                    {`Pagar (${formatPrice(pastTotal)})`}
+                  </button>
+                )
               )}
             </div>
           </div>
         )}
       </div>
+
+      <PaymentMethodSheet
+        open={payOpen}
+        onClose={() => setPayOpen(false)}
+        companyId={companyId}
+        branchId={branchId}
+        tableId={tableId}
+        pendingTotalCents={pastTotal}
+        paymentMethodsEnabled={branch?.paymentMethodsEnabled}
+        paymentMethodPriority={branch?.paymentMethodPriority}
+      />
     </div>
   );
 };

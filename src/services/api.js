@@ -194,6 +194,19 @@ export const getTableOrders = (tableId) =>
 export const disconnectBranchMp = (branchId) =>
   api.delete(`/branches/${branchId}/mp/disconnect`);
 
+// Payments cash/card (Sprint 5.4)
+export const requestPayment = (tableId, payload) =>
+  api.post(`/tables/${tableId}/payments`, payload);
+
+export const getPaymentStatus = (paymentId) =>
+  api.get(`/payments/${paymentId}/status`);
+
+export const cancelPayment = (paymentId) =>
+  api.post(`/payments/${paymentId}/cancel`);
+
+export const collectPayment = (paymentId, payload = {}) =>
+  api.post(`/payments/${paymentId}/collect`, payload);
+
 // User self-profile (Sprint 5.3)
 export const getMyProfile = () =>
   api.get('/users/me');

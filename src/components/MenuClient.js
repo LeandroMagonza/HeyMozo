@@ -28,6 +28,7 @@ const MenuClient = () => {
 
   const [categories, setCategories] = useState([]);
   const [externalMenu, setExternalMenu] = useState('');
+  const [branch, setBranch] = useState(null);
   const [restaurantName, setRestaurantName] = useState('');
   const [activeCategoryId, setActiveCategoryId] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -60,6 +61,7 @@ const MenuClient = () => {
         if (cats.length > 0) setActiveCategoryId(cats[0].id);
 
         setExternalMenu(branchRes.data.menu || '');
+        setBranch(branchRes.data || null);
         setRestaurantName(companyRes.data.name || '');
       } catch (err) {
         console.error('Error cargando menú:', err);
@@ -300,6 +302,7 @@ const MenuClient = () => {
         branchId={branchId}
         tableId={tableId}
         pastOrders={pastOrders}
+        branch={branch}
       />
     </Phone>
   );

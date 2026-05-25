@@ -78,6 +78,14 @@ module.exports = (sequelize) => {
     paidAt: {
       type: DataTypes.DATE,
       allowNull: true
+    },
+    // Alerta que dispara el cobro en OpShell (cash/card pending). Permite a
+    // /branches/:id/active-alerts surface el Payment con el Event y al hacer
+    // POST /payments/:id/collect marcar el Event seenAt en una transacción.
+    eventId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: { model: 'Events', key: 'id' }
     }
   }, {
     tableName: 'Payments',
@@ -85,7 +93,8 @@ module.exports = (sequelize) => {
     indexes: [
       { fields: ['tableSessionId', 'status'] },
       { fields: ['status'] },
-      { fields: ['mpPaymentId'] }
+      { fields: ['mpPaymentId'] },
+      { fields: ['eventId'] }
     ]
   });
 
@@ -105,6 +114,10 @@ module.exports = (sequelize) => {
     Payment.hasOne(models.Review, {
       foreignKey: 'paymentId',
       as: 'review'
+    });
+    Payment.belongsTo(models.Event, {
+      foreignKey: 'eventId',
+      as: 'event'
     });
   };
 

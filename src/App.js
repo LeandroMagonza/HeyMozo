@@ -5,6 +5,8 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useParams } from "rea
 import UserScreen from "./components/UserScreen";
 import MenuClient from "./components/MenuClient";
 import ConfirmadoPage from "./components/ConfirmadoPage";
+import WaitingPaymentPage from "./components/WaitingPaymentPage";
+import PagoConfirmadoPage from "./components/PagoConfirmadoPage";
 import BranchConfig from "./components/BranchConfig";
 import BranchCreate from "./components/BranchCreate";
 import CompanyConfig from "./components/CompanyConfig";
@@ -271,6 +273,16 @@ function App() {
         <Route
           path="/m/:companyId/:branchId/:tableId/confirmado/:orderId"
           element={<ConfirmadoPage />}
+        />
+
+        {/* Customer payment flow (Sprint 5.4) — espera y confirmación post-cobro */}
+        <Route
+          path="/m/:companyId/:branchId/:tableId/waiting-payment/:paymentId"
+          element={<WaitingPaymentPage />}
+        />
+        <Route
+          path="/m/:companyId/:branchId/:tableId/pago-confirmado/:paymentId"
+          element={<PagoConfirmadoPage />}
         />
 
         {/* Authentication routes */}
