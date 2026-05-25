@@ -207,6 +207,9 @@ export const cancelPayment = (paymentId) =>
 export const collectPayment = (paymentId, payload = {}) =>
   api.post(`/payments/${paymentId}/collect`, payload);
 
+export const getPendingPayment = (tableId) =>
+  api.get(`/tables/${tableId}/pending-payment`);
+
 // User self-profile (Sprint 5.3)
 export const getMyProfile = () =>
   api.get('/users/me');

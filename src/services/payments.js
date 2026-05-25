@@ -142,6 +142,20 @@ async function requestPayment({ tableId, deviceId, tableSessionId, method, tipCe
   }
 }
 
+// Devuelve el Payment pending más reciente para la sesión (cash/card) o null.
+// Lo usa el banner sticky del cliente: pollea cada N segundos y mientras haya
+// uno pending muestra "Esperando cobro $X", al transitar a paid/failed redirige.
+async function findPendingForSession(tableSessionId) {
+  return Payment.findOne({
+    where: {
+      tableSessionId,
+      status: 'pending',
+      method: { [Op.in]: SUPPORTED_METHODS }
+    },
+    order: [['createdAt', 'DESC']]
+  });
+}
+
 // Devuelve { id, status, subtotalCents, tipCents, totalCents, method, paidAt,
 // collectedByUserId } — todo lo que el cliente necesita para mostrar el estado.
 async function getPaymentForClient(paymentId) {
@@ -262,5 +276,6 @@ module.exports = {
   requestPayment,
   collectPayment,
   cancelPayment,
-  getPaymentForClient
+  getPaymentForClient,
+  findPendingForSession
 };

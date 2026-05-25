@@ -151,6 +151,17 @@
   box-shadow: var(--rd-shadow-green);
 }
 
+.user-screen__cta--pay-waiting {
+  background: var(--rd-bg-card-strong, #3a3a3c);
+  box-shadow: none;
+  border: 1px dashed var(--rd-brand-green-soft, #4ade80);
+  color: var(--rd-brand-green-soft, #4ade80);
+}
+
+.user-screen__cta--pay-waiting:hover {
+  background: var(--rd-bg-card, #2c2c2e);
+}
+
 .user-screen__cta--coming-soon {
   background: var(--rd-bg-card);
   box-shadow: none;

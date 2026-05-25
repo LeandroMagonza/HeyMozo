@@ -5,7 +5,6 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useParams } from "rea
 import UserScreen from "./components/UserScreen";
 import MenuClient from "./components/MenuClient";
 import ConfirmadoPage from "./components/ConfirmadoPage";
-import WaitingPaymentPage from "./components/WaitingPaymentPage";
 import PagoConfirmadoPage from "./components/PagoConfirmadoPage";
 import BranchConfig from "./components/BranchConfig";
 import BranchCreate from "./components/BranchCreate";
@@ -275,11 +274,9 @@ function App() {
           element={<ConfirmadoPage />}
         />
 
-        {/* Customer payment flow (Sprint 5.4) — espera y confirmación post-cobro */}
-        <Route
-          path="/m/:companyId/:branchId/:tableId/waiting-payment/:paymentId"
-          element={<WaitingPaymentPage />}
-        />
+        {/* Customer payment flow (Sprint 5.4) — confirmación post-cobro.
+            La espera ya no es bloqueante: vive en el banner sticky + modal
+            "Mozo en camino" (no requiere ruta dedicada). */}
         <Route
           path="/m/:companyId/:branchId/:tableId/pago-confirmado/:paymentId"
           element={<PagoConfirmadoPage />}

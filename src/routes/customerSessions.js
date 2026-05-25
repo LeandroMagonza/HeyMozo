@@ -314,6 +314,48 @@ router.get('/payments/:paymentId/status', async (req, res) => {
   }
 });
 
+// GET /api/tables/:tableId/pending-payment — banner sticky del cliente.
+// Devuelve { payment: {...} | null }. Polling cada ~4s. Cuando hay payment
+// pending → banner visible; cuando transitó a paid/failed → null y el front
+// redirige según corresponda.
+router.get('/tables/:tableId/pending-payment', async (req, res) => {
+  try {
+    const deviceId = readDeviceIdFromCookie(req);
+    if (!deviceId) {
+      return res.json({ payment: null });
+    }
+    const tableId = parseInt(req.params.tableId, 10);
+    if (!Number.isFinite(tableId)) {
+      return res.status(400).json({ error: 'tableId inválido' });
+    }
+
+    const { attached, session } = await sessionService.isDeviceAttached({ tableId, deviceId });
+    if (!attached) {
+      return res.json({ payment: null });
+    }
+
+    const payment = await paymentService.findPendingForSession(session.id);
+    if (!payment) {
+      return res.json({ payment: null });
+    }
+
+    res.json({
+      payment: {
+        id: payment.id,
+        method: payment.method,
+        status: payment.status,
+        subtotalCents: payment.subtotalCents,
+        tipCents: payment.tipCents,
+        totalCents: payment.totalCents,
+        deviceId: payment.deviceId
+      }
+    });
+  } catch (err) {
+    console.error('❌ GET /tables/:tableId/pending-payment:', err.message);
+    res.status(500).json({ error: 'Error obteniendo pago pendiente' });
+  }
+});
+
 // POST /api/payments/:paymentId/cancel — cliente cancela su Payment pending.
 // Marca Payment.failed + Event.seenAt (la AlertCard del mozo desaparece).
 router.post('/payments/:paymentId/cancel', async (req, res) => {

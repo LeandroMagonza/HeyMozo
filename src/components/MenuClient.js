@@ -6,6 +6,7 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Phone from './Phone';
 import CartSheet from './CartSheet';
+import usePendingPayment from '../hooks/usePendingPayment';
 import { getBranch, getCompany, getPublicMenu, getTableOrders } from '../services/api';
 import { bootstrapCustomerSession } from '../services/device';
 import {
@@ -25,6 +26,11 @@ const formatPrice = (cents) => {
 const MenuClient = () => {
   const { companyId, branchId, tableId } = useParams();
   const navigate = useNavigate();
+
+  // Polling silencioso del Payment pending. No mostramos UI acá (la única
+  // affordance de "esperando al mozo" vive en UserScreen), pero el hook se
+  // encarga del auto-redirect a /pago-confirmado cuando el mozo cobra.
+  usePendingPayment();
 
   const [categories, setCategories] = useState([]);
   const [externalMenu, setExternalMenu] = useState('');
@@ -302,7 +308,6 @@ const MenuClient = () => {
         branchId={branchId}
         tableId={tableId}
         pastOrders={pastOrders}
-        branch={branch}
       />
     </Phone>
   );
