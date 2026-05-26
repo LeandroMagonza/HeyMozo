@@ -2,7 +2,7 @@
 
 Tracker live de los sub-PRs de Fase 2. Una línea por sub-PR con commit, branch, PR# y estado.
 
-**Última actualización:** 2026-05-25 (5.4 abierta)
+**Última actualización:** 2026-05-25 (5.4 abierta — UX redesign no bloqueante)
 
 > Cuando un PR se mergea, mover su sub-PR a "✅ Mergeado" abajo y actualizar el [PHASE2_PLAN.md](PHASE2_PLAN.md) si corresponde (cambiar 🚧 → ✅ para el sprint completo cuando todas las sub-PRs estén in).
 
@@ -12,7 +12,7 @@ Tracker live de los sub-PRs de Fase 2. Una línea por sub-PR con commit, branch,
 
 | Sub-PR | Branch | Commit | PR | Notas |
 |---|---|---|---|---|
-| 5.4 | `feature/phase2-payment-cash-card` | `022817c` | [#31](https://github.com/LeandroMagonza/HeyMozo/pull/31) | feat(payments): flow cash/tarjeta. Migration `Payment.eventId` + seed 2 EventTypes (`Cobrar efectivo`/`Cobrar tarjeta`, cardVariant=red). Endpoints `POST /tables/:id/payments`, `GET /payments/:id/status`, `POST /payments/:id/cancel`, `POST /payments/:id/collect`. Cliente: `PaymentMethodSheet` (selector propina 10/15/Otro/Nada + cash/card), `WaitingPaymentPage` con polling, `PagoConfirmadoPage` placeholder. OpShell: AlertCard "Cobré $X" cuando el Event tiene Payment pending. Auto-cierre de TableSession si balance llega a 0. |
+| 5.4 | `feature/phase2-payment-cash-card` | `3bcafe3` | [#31](https://github.com/LeandroMagonza/HeyMozo/pull/31) | feat(payments): flow cash/tarjeta + UX redesign no bloqueante. **Commits:** `022817c` (backend + flow base) + `3bcafe3` (redesign UX post-smoke). Migration `Payment.eventId` + seed 2 EventTypes (`Cobrar efectivo`/`Cobrar tarjeta`, cardVariant=red). Endpoints `POST /tables/:id/payments`, `GET /payments/:id/status`, `POST /payments/:id/cancel`, `POST /payments/:id/collect`, `GET /tables/:id/pending-payment`. Cliente: `PaymentMethodSheet` rediseñada según mockup (items agrupados + propina 10/15/Otro/Nada + jerarquía MP/Transferencia/Tarjeta+Efectivo + total grande verde). UX no bloqueante: botón "Pagar" en UserScreen muta a "Esperando al mozo · efectivo/tarjeta" cuando hay Payment pending; re-tap abre `WaiterOnTheWaySheet` (modal con "Entendido, lo espero" + "Cancelar pago y elegir otro método") en lugar de bloquear con `WaitingPaymentPage` (eliminada). Hook `usePendingPayment` con polling silencioso 4s + auto-redirect a `/pago-confirmado` cuando el mozo cobra. OpShell: AlertCard "Cobré $X" cuando el Event tiene Payment pending. Auto-cierre de TableSession si balance llega a 0. |
 
 ---
 
