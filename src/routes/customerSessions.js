@@ -356,8 +356,38 @@ router.get('/tables/:tableId/pending-payment', async (req, res) => {
   }
 });
 
-// POST /api/payments/:paymentId/cancel — cliente cancela su Payment pending.
-// Marca Payment.failed + Event.seenAt (la AlertCard del mozo desaparece).
+// POST /api/payments/:paymentId/declare-paid — Sprint 5.5.
+// Cliente avisa que ya transfirió (o pagó en MODO). Payment.pending →
+// awaiting_validation. proofUrl opcional (super opcional: el cajero valida
+// desde su app bancaria igual). Solo aplica a transfer/modo — cash/card
+// se cierran por el endpoint /collect del mozo.
+router.post('/payments/:paymentId/declare-paid', async (req, res) => {
+  try {
+    const deviceId = readDeviceIdFromCookie(req);
+    if (!deviceId) {
+      return res.status(401).json({ error: 'Device no identificado' });
+    }
+    const paymentId = parseInt(req.params.paymentId, 10);
+    if (!Number.isFinite(paymentId)) {
+      return res.status(400).json({ error: 'paymentId inválido' });
+    }
+    const { proofUrl } = req.body || {};
+    const payment = await paymentService.declarePaid({ paymentId, deviceId, proofUrl });
+    res.json({
+      id: payment.id,
+      method: payment.method,
+      status: payment.status,
+      proofUrl: payment.proofUrl
+    });
+  } catch (err) {
+    console.error('❌ POST /payments/:paymentId/declare-paid:', err.message);
+    res.status(err.statusCode || 500).json({ error: err.message || 'Error declarando pago' });
+  }
+});
+
+// POST /api/payments/:paymentId/cancel — cliente cancela su Payment activo
+// (pending o awaiting_validation). Marca Payment.failed + Event.seenAt si
+// hay Event linkeado (cash/card). Para transfer/modo no hay Event.
 router.post('/payments/:paymentId/cancel', async (req, res) => {
   try {
     const deviceId = readDeviceIdFromCookie(req);

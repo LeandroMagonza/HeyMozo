@@ -1281,4 +1281,130 @@ router.post(
   }
 );
 
+// ============================================================
+// Sprint 5.5 — Staff payment endpoints (transferencia / MODO)
+// ============================================================
+
+// Helper: resolve branchId del Payment y validar acceso del usuario al branch.
+// Devuelve { payment, branchId } o lanza res-ready error (false-y return).
+async function _resolvePaymentBranchAccess(req, res) {
+  const paymentId = parseInt(req.params.paymentId, 10);
+  if (!Number.isFinite(paymentId)) {
+    res.status(400).json({ error: 'paymentId inválido' });
+    return null;
+  }
+  const { Payment, TableSession, Table } = require('../models');
+  const payment = await Payment.findByPk(paymentId, {
+    include: [{
+      model: TableSession,
+      as: 'session',
+      include: [{ model: Table, as: 'table', attributes: ['id', 'branchId'] }]
+    }]
+  });
+  if (!payment) {
+    res.status(404).json({ error: 'Payment no encontrado' });
+    return null;
+  }
+  const branchId = payment.session && payment.session.table && payment.session.table.branchId;
+  if (!branchId) {
+    res.status(500).json({ error: 'No se pudo resolver el branch del Payment' });
+    return null;
+  }
+  if (!req.user.isAdmin) {
+    const authService = require('../services/auth');
+    const hasAccess = await authService.hasPermission(req.user.id, 'branch', branchId);
+    if (!hasAccess) {
+      res.status(403).json({ error: 'Sin acceso a este branch' });
+      return null;
+    }
+  }
+  return { payment, branchId };
+}
+
+function _serializePaymentForStaff(p) {
+  return {
+    id: p.id,
+    method: p.method,
+    status: p.status,
+    subtotalCents: p.subtotalCents,
+    tipCents: p.tipCents,
+    totalCents: p.totalCents,
+    paidAt: p.paidAt,
+    collectedByUserId: p.collectedByUserId,
+    proofUrl: p.proofUrl,
+    tableSessionId: p.tableSessionId,
+    createdAt: p.createdAt
+  };
+}
+
+// POST /api/payments/:paymentId/validate — cajero/owner confirma que el
+// dinero llegó (transfer/MODO). awaiting_validation → paid. Auto-cierra
+// la sesión si el balance llega a 0.
+router.post(
+  '/payments/:paymentId/validate',
+  authMiddleware.requireRole('cashier', 'owner'),
+  async (req, res) => {
+    try {
+      const ctx = await _resolvePaymentBranchAccess(req, res);
+      if (!ctx) return;
+      const updated = await paymentService.validatePayment({
+        paymentId: ctx.payment.id,
+        userId: req.user.id
+      });
+      res.json(_serializePaymentForStaff(updated));
+    } catch (err) {
+      console.error('❌ POST /payments/:paymentId/validate:', err.message);
+      res.status(err.statusCode || 500).json({ error: err.message || 'Error validando Payment' });
+    }
+  }
+);
+
+// POST /api/payments/:paymentId/reject — cajero/owner rechaza el Payment
+// transfer/MODO. awaiting_validation → failed. El cliente verá por polling
+// y podrá elegir otro método.
+router.post(
+  '/payments/:paymentId/reject',
+  authMiddleware.requireRole('cashier', 'owner'),
+  async (req, res) => {
+    try {
+      const ctx = await _resolvePaymentBranchAccess(req, res);
+      if (!ctx) return;
+      const updated = await paymentService.rejectPayment({
+        paymentId: ctx.payment.id,
+        userId: req.user.id
+      });
+      res.json(_serializePaymentForStaff(updated));
+    } catch (err) {
+      console.error('❌ POST /payments/:paymentId/reject:', err.message);
+      res.status(err.statusCode || 500).json({ error: err.message || 'Error rechazando Payment' });
+    }
+  }
+);
+
+// GET /api/branches/:branchId/payments/awaiting-validation — feed que
+// alimenta el tab "Acciones" en CajaShell (Sprint 5.8). Listo en 5.5 para
+// smoke-test y para no acoplar 5.8 al merge de este sub-PR.
+router.get(
+  '/branches/:branchId/payments/awaiting-validation',
+  authMiddleware.checkBranchPermission,
+  async (req, res) => {
+    try {
+      const branchId = parseInt(req.params.branchId, 10);
+      if (!Number.isFinite(branchId)) {
+        return res.status(400).json({ error: 'branchId inválido' });
+      }
+      const list = await paymentService.listAwaitingValidationForBranch(branchId);
+      res.json(list.map(p => ({
+        ..._serializePaymentForStaff(p),
+        table: p.session && p.session.table
+          ? { id: p.session.table.id, tableName: p.session.table.tableName }
+          : null
+      })));
+    } catch (err) {
+      console.error('❌ GET /branches/:branchId/payments/awaiting-validation:', err.message);
+      res.status(500).json({ error: 'Error listando pagos a validar' });
+    }
+  }
+);
+
 module.exports = router;

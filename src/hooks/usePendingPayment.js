@@ -1,13 +1,17 @@
 // src/hooks/usePendingPayment.js
 //
-// Polling del Payment pending de la sesión activa del cliente. Devuelve el
-// payment vigente (o null), la función para cancelarlo y un refresh manual.
-// Cuando el payment transita de pending → paid (porque el mozo cobró),
-// redirige automáticamente al `/pago-confirmado/:id` sin importar en qué
-// pantalla esté el cliente.
+// Polling del Payment activo (pending o awaiting_validation) de la sesión
+// del cliente. Devuelve el payment vigente (o null), la función para
+// cancelarlo y un refresh manual.
+//
+// Cuando el payment transita de pending/awaiting_validation → paid (porque
+// el mozo cobró cash/card, o el cajero validó la transfer/MODO), redirige
+// automáticamente al `/pago-confirmado/:id` sin importar en qué pantalla
+// esté el cliente. Si transita a failed (cajero rechazó la transfer), el
+// banner desaparece y el cliente puede elegir otro método.
 //
 // Mantiene en un ref el último id observado para distinguir "todavía no
-// había payment" de "estaba pending y ahora desapareció" (típicamente: paid).
+// había payment" de "estaba activo y ahora desapareció" (paid o failed).
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
