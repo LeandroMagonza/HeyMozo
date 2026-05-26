@@ -1,0 +1,134 @@
+/* src/components/WaiterOnTheWaySheet.css — modal "Mozo en camino" (Sprint 5.4) */
+
+.wotw__overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.78);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  z-index: var(--rd-z-modal, 1000);
+  animation: rd-fade-in 0.2s ease-out;
+  font-family: var(--rd-font-sans);
+}
+
+.wotw__sheet {
+  --accent: #16a34a;
+  background: var(--rd-bg-sheet, #1c1c1e);
+  border: 1px solid var(--rd-border, #3a3a3c);
+  border-radius: var(--rd-radius-lg, 16px);
+  width: 100%;
+  max-width: 22rem;
+  padding: 1.75rem 1.5rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  color: var(--rd-text, #ffffff);
+  box-shadow: var(--rd-shadow-modal);
+  animation: rd-slide-up 0.25s var(--rd-ease-out, ease-out) forwards;
+}
+
+.wotw__icon {
+  width: 4.5rem;
+  height: 4.5rem;
+  border-radius: var(--rd-radius-full, 9999px);
+  background: color-mix(in oklab, var(--accent) 22%, transparent);
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.9rem;
+  margin-bottom: 1rem;
+}
+
+.wotw__title {
+  margin: 0 0 0.4rem;
+  font-size: 1.45rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.wotw__subtitle {
+  margin: 0 0 1.1rem;
+  font-size: 0.95rem;
+  color: var(--rd-text-secondary, #e4e2e4);
+  max-width: 18rem;
+}
+
+.wotw__subtitle strong {
+  color: var(--rd-text, #ffffff);
+  font-weight: 700;
+}
+
+.wotw__amount {
+  width: 100%;
+  background: var(--rd-bg, #1c1c1e);
+  border: 1px solid var(--rd-border, #3a3a3c);
+  border-radius: var(--rd-radius-md, 10px);
+  padding: 0.8rem 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  align-items: center;
+  margin-bottom: 1.15rem;
+}
+
+.wotw__amount-label {
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  color: var(--rd-text-tertiary, #9ca3af);
+  font-weight: 700;
+}
+
+.wotw__amount-value {
+  font-size: 1.55rem;
+  font-weight: 800;
+  color: var(--rd-text, #ffffff);
+  letter-spacing: -0.01em;
+}
+
+.wotw__cta {
+  width: 100%;
+  background: var(--rd-brand-green, #16a34a);
+  color: #ffffff;
+  border: none;
+  border-radius: var(--rd-radius-md, 10px);
+  padding: 0.95rem 1rem;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: filter 0.15s ease;
+}
+
+.wotw__cta:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+.wotw__cta:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.wotw__cancel {
+  margin-top: 0.7rem;
+  background: transparent;
+  color: var(--rd-text-tertiary, #9ca3af);
+  border: none;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0.2rem 0.4rem;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.wotw__cancel:hover:not(:disabled) {
+  color: var(--rd-text-secondary, #e4e2e4);
+}
+
+.wotw__cancel:disabled {
+  opacity: 0.5;
+  cursor: progress;
+}

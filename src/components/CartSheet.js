@@ -228,7 +228,7 @@ const CartSheet = ({
           )}
         </div>
 
-        {/* ── Footer: total acumulado + CTAs ──────────────── */}
+        {/* ── Footer: total acumulado + CTA confirmar ─────── */}
         {(hasCart || hasPast) && (
           <div className="cart-sheet__footer">
             <div className="cart-sheet__total">

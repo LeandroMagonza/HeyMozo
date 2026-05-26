@@ -1089,6 +1089,7 @@ router.get('/branches/:branchId/active-alerts', authMiddleware.checkBranchPermis
     const branchId = parseInt(req.params.branchId);
     const { Order } = require('../models');
 
+    const { Payment } = require('../models');
     const events = await Event.findAll({
       where: { seenAt: null },
       include: [
@@ -1108,6 +1109,15 @@ router.get('/branches/:branchId/active-alerts', authMiddleware.checkBranchPermis
             isActive: true
           },
           required: true
+        },
+        // Sprint 5.4: si el Event corresponde a un Payment pending de cash/card,
+        // el OpShell necesita el monto + paymentId para renderear "Cobré $X".
+        {
+          model: Payment,
+          as: 'payment',
+          required: false,
+          where: { status: 'pending' },
+          attributes: ['id', 'method', 'subtotalCents', 'tipCents', 'totalCents']
         }
       ],
       order: [['createdAt', 'ASC']]
@@ -1199,5 +1209,76 @@ router.post('/orders/:orderId/mark-ready', async (req, res) => {
     res.status(error.statusCode || 500).json({ error: error.message || 'Error marking order ready' });
   }
 });
+
+// ============================================================
+// Sprint 5.4 — Staff payment endpoints (cash / tarjeta)
+// ============================================================
+
+const paymentService = require('../services/payments');
+
+// POST /api/payments/:paymentId/collect — mozo confirma que cobró cash/tarjeta.
+// Payment.status → 'paid' + paidAt + collectedByUserId. Event asociado se
+// marca seen (la AlertCard desaparece de OpShell). Si el balance de la sesión
+// llega a 0, la TableSession se cierra automáticamente.
+//
+// Permisos: rol waiter/cashier/owner + acceso al branch de la mesa del Payment.
+router.post(
+  '/payments/:paymentId/collect',
+  authMiddleware.requireRole('waiter', 'cashier', 'owner'),
+  async (req, res) => {
+    try {
+      const paymentId = parseInt(req.params.paymentId, 10);
+      if (!Number.isFinite(paymentId)) {
+        return res.status(400).json({ error: 'paymentId inválido' });
+      }
+
+      const { Payment, TableSession, Table } = require('../models');
+      const payment = await Payment.findByPk(paymentId, {
+        include: [{
+          model: TableSession,
+          as: 'session',
+          include: [{ model: Table, as: 'table', attributes: ['id', 'branchId'] }]
+        }]
+      });
+      if (!payment) {
+        return res.status(404).json({ error: 'Payment no encontrado' });
+      }
+
+      const branchId = payment.session && payment.session.table && payment.session.table.branchId;
+      if (!branchId) {
+        return res.status(500).json({ error: 'No se pudo resolver el branch del Payment' });
+      }
+
+      if (!req.user.isAdmin) {
+        const authService = require('../services/auth');
+        const hasAccess = await authService.hasPermission(req.user.id, 'branch', branchId);
+        if (!hasAccess) {
+          return res.status(403).json({ error: 'Sin acceso a este branch' });
+        }
+      }
+
+      const { cashTenderedCents } = req.body || {};
+      const updated = await paymentService.collectPayment({
+        paymentId,
+        userId: req.user.id,
+        cashTenderedCents: Number(cashTenderedCents) || null
+      });
+
+      res.json({
+        id: updated.id,
+        status: updated.status,
+        method: updated.method,
+        subtotalCents: updated.subtotalCents,
+        tipCents: updated.tipCents,
+        totalCents: updated.totalCents,
+        paidAt: updated.paidAt,
+        collectedByUserId: updated.collectedByUserId
+      });
+    } catch (err) {
+      console.error('❌ POST /payments/:paymentId/collect:', err.message);
+      res.status(err.statusCode || 500).json({ error: err.message || 'Error cobrando Payment' });
+    }
+  }
+);
 
 module.exports = router;

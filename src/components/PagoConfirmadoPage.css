@@ -1,0 +1,83 @@
+/* src/components/PagoConfirmadoPage.css — Sprint 5.4 placeholder */
+
+.pc-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  background: var(--rd-bg, #1c1c1e);
+  color: var(--rd-text, #ffffff);
+  font-family: var(--rd-font-sans);
+}
+
+.pc-card {
+  width: 100%;
+  max-width: 22rem;
+  background: var(--rd-bg-card, #2c2c2e);
+  border: 1px solid var(--rd-border, #3a3a3c);
+  border-radius: var(--rd-radius-lg, 12px);
+  padding: 1.75rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  text-align: center;
+}
+
+.pc-card__icon {
+  font-size: 3rem;
+  color: var(--rd-brand-green-soft, #4ade80);
+}
+
+.pc-card__title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.pc-card__subtitle {
+  margin: 0;
+  color: var(--rd-text-secondary, #e4e2e4);
+  font-size: 0.95rem;
+}
+
+.pc-card__breakdown {
+  width: 100%;
+  background: var(--rd-bg, #1c1c1e);
+  border: 1px solid var(--rd-border, #3a3a3c);
+  border-radius: var(--rd-radius-md, 8px);
+  padding: 0.8rem 0.95rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  text-align: left;
+}
+
+.pc-card__row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+  color: var(--rd-text-secondary, #e4e2e4);
+}
+
+.pc-card__row--muted {
+  color: var(--rd-text-tertiary, #9ca3af);
+  font-size: 0.82rem;
+}
+
+.pc-card__row--total {
+  margin-top: 0.4rem;
+  padding-top: 0.55rem;
+  border-top: 1px solid var(--rd-border, #3a3a3c);
+  font-weight: 800;
+  color: var(--rd-text, #ffffff);
+  font-size: 1rem;
+}
+
+.pc-card__hint {
+  margin: 0.25rem 0 0;
+  font-size: 0.82rem;
+  color: var(--rd-text-tertiary, #9ca3af);
+}

@@ -11,6 +11,7 @@ import {
   getActiveAlerts,
   markOrderReady,
   markTableEventsSeen,
+  collectPayment,
 } from '../services/api';
 import notificationSound from '../sounds/notification.mp3';
 import './OpShell.css';
@@ -38,6 +39,7 @@ const OpShell = () => {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [markingId, setMarkingId] = useState(null);
   const [markingTableId, setMarkingTableId] = useState(null);
+  const [collectingPaymentId, setCollectingPaymentId] = useState(null);
   const [showAddOrder, setShowAddOrder] = useState(false);
   const [expandedTableIds, setExpandedTableIds] = useState(new Set());
 
@@ -168,6 +170,24 @@ const OpShell = () => {
     }
   }, [fetchData]);
 
+  // Sprint 5.4: mozo aprieta "Cobré $X" en una AlertCard de payment_request_*.
+  // Marca el Payment paid + Event seen — la card desaparece en el próximo poll.
+  const handleCollectPayment = useCallback(async (paymentId) => {
+    setCollectingPaymentId(paymentId);
+    try {
+      await collectPayment(paymentId);
+      await fetchData();
+    } catch (err) {
+      console.error('🍽️ OpShell — error cobrando payment:', err);
+      alert(
+        (err && err.response && err.response.data && err.response.data.error)
+          || 'No se pudo registrar el cobro. Reintentá.'
+      );
+    } finally {
+      setCollectingPaymentId(null);
+    }
+  }, [fetchData]);
+
   // Render genérico de un item del stack como AlertCard. `asShadow` apaga
   // wait/badge/actions (se usa para las cards-shadow del collapsed stack).
   // `onCardClick` permite que el TableStack capture el click para expandir.
@@ -198,6 +218,32 @@ const OpShell = () => {
     const ev = item.event;
     const et = ev.eventType || {};
     const tableId = ev.table?.id ?? ev.tableId;
+
+    // Sprint 5.4: si el Event tiene Payment pending de cash/card asociado,
+    // la card cobra protagonismo: subtitle muestra monto + método; el botón
+    // "Cobré $X" ejecuta collectPayment en vez de mark-seen genérico.
+    if (ev.payment && ev.payment.id) {
+      const p = ev.payment;
+      const methodLabel = p.method === 'cash' ? 'efectivo' : 'tarjeta';
+      const subtitle = p.tipCents > 0
+        ? `${formatPrice(p.totalCents)} (incluye ${formatPrice(p.tipCents)} de propina) · ${methodLabel}`
+        : `${formatPrice(p.totalCents)} · ${methodLabel}`;
+      return (
+        <AlertCard
+          variant={et.cardVariant || 'red'}
+          tableName={ev.table?.tableName ?? `Mesa ${tableId}`}
+          title={et.eventName || 'Pago pendiente'}
+          subtitle={subtitle}
+          waitTime={asShadow ? '' : formatWaitTime(ev.createdAt)}
+          icon={et.userIcon}
+          actionLabel={`Cobré ${formatPrice(p.totalCents)}`}
+          disabledBtn={asShadow || collectingPaymentId === p.id}
+          onClick={asShadow ? undefined : onCardClick}
+          onActionClick={asShadow ? undefined : () => handleCollectPayment(p.id)}
+        />
+      );
+    }
+
     return (
       <AlertCard
         variant={et.cardVariant || 'orange'}
@@ -212,7 +258,7 @@ const OpShell = () => {
         onActionClick={asShadow ? undefined : () => handleAttendTable(tableId)}
       />
     );
-  }, [markingId, markingTableId, handleMarkReady, handleAttendTable]);
+  }, [markingId, markingTableId, collectingPaymentId, handleMarkReady, handleAttendTable, handleCollectPayment]);
 
   const handleLogout = () => {
     if (window.confirm('¿Está seguro que desea cerrar sesión?')) {

@@ -3,16 +3,32 @@
 // Cliente: pantalla de aterrizaje post-QR.
 // Layout del redesign: header con logo+nombre, saludo gigante,
 // 3 botones grandes (Ver Menu, Llamar al Mozo, Pagar), footer.
-// El bottom sheet de mozo expone los availableEventTypes resueltos
-// por el backend (getCustomerEventsForTable).
+//
+// Sprint 5.4: el CTA "Pagar / Dejar Propina" tiene 2 estados:
+//   1. Sin Payment pending → label "Pagar / Dejar Propina", abre PaymentMethodSheet
+//      con el desglose de consumo + propina + método.
+//   2. Con Payment pending → label "Esperando al mozo · efectivo/tarjeta",
+//      al tocar abre el modal "¡Mozo en camino!" con opción de cancelar
+//      el pago para elegir otro método.
+// El polling del hook usePendingPayment redirige automáticamente al cliente
+// a /pago-confirmado cuando el mozo apretó "Cobré".
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Phone from './Phone';
 import DecorativeGlow from './DecorativeGlow';
 import CallWaiterSheet from './CallWaiterSheet';
-import HistoryModal from './HistoryModal';
-import { getCompany, getBranch, getTable, getPublicMenu, sendEvent } from '../services/api';
+import PaymentMethodSheet from './PaymentMethodSheet';
+import WaiterOnTheWaySheet from './WaiterOnTheWaySheet';
+import usePendingPayment from '../hooks/usePendingPayment';
+import {
+  getCompany,
+  getBranch,
+  getTable,
+  getPublicMenu,
+  sendEvent,
+  getTableOrders,
+} from '../services/api';
 import './UserScreen.css';
 
 const EMPTY_GROUPS = { quickActions: [], mainActions: [], all: [] };
@@ -26,26 +42,24 @@ const UserScreen = () => {
   const [availableEventTypes, setAvailableEventTypes] = useState(EMPTY_GROUPS);
   const [menuLink, setMenuLink] = useState('');
   const [hasInternalMenu, setHasInternalMenu] = useState(false);
-  const [userEvents, setUserEvents] = useState([]); // session-only history
   const [sheetOpen, setSheetOpen] = useState(false);
-  const [historyOpen, setHistoryOpen] = useState(false);
   const [toast, setToast] = useState(null); // { label, color }
+  const [pastOrders, setPastOrders] = useState([]);
+  const [paySheetOpen, setPaySheetOpen] = useState(false);
+  const [mozoSheetOpen, setMozoSheetOpen] = useState(false);
   const scanSentRef = useRef(false);
 
-  const addToLocalHistory = (eventType, message = null) => {
-    setUserEvents((prev) => [
-      {
-        id: Date.now() + Math.random(),
-        timestamp: new Date().toISOString(),
-        eventName: eventType?.eventName || 'Evento',
-        eventColor: eventType?.userColor || '#9333ea',
-        fontColor: eventType?.userFontColor || '#ffffff',
-        message,
-        type: 'user_generated',
-      },
-      ...prev,
-    ]);
-  };
+  const { payment: pendingPayment, cancel: cancelPendingPayment, cancelling: cancelInProgress, refresh: refreshPayment } =
+    usePendingPayment();
+
+  const refreshPastOrders = useCallback(async () => {
+    try {
+      const { data } = await getTableOrders(tableId);
+      setPastOrders(data.orders || []);
+    } catch (err) {
+      setPastOrders([]);
+    }
+  }, [tableId]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -61,18 +75,11 @@ const UserScreen = () => {
         setBranch(branchData.data);
         setTable(tableData.data);
 
-        // Back devuelve { quickActions, mainActions, all }. Toleramos también
-        // el formato array por compat con respuestas viejas.
         const raw = tableData.data.availableEventTypes;
         const groups = Array.isArray(raw)
           ? { quickActions: raw, mainActions: [], all: raw }
           : raw || EMPTY_GROUPS;
         setAvailableEventTypes(groups);
-
-        const scanEventConfig = tableData.data.scanEvent;
-        if (scanEventConfig) {
-          addToLocalHistory(scanEventConfig);
-        }
 
         const branchMenu = branchData.data.menu;
         const companyMenu = companyData.data.menu;
@@ -93,7 +100,8 @@ const UserScreen = () => {
     };
 
     loadData();
-  }, [companyId, branchId, tableId]);
+    refreshPastOrders();
+  }, [companyId, branchId, tableId, refreshPastOrders]);
 
   const showToast = (label, color) => {
     setToast({ label, color });
@@ -103,7 +111,6 @@ const UserScreen = () => {
   const handleEventTypeSelected = async (eventType) => {
     try {
       await sendEvent(tableId, { eventTypeId: eventType.id, message: null });
-      addToLocalHistory(eventType);
       showToast(`✓ ${eventType.eventName} enviado`, eventType.userColor || '#9333ea');
     } catch (err) {
       console.error('Error sending event:', err);
@@ -121,9 +128,41 @@ const UserScreen = () => {
     }
   };
 
+  // Click del botón Pagar — bifurca según si hay payment pending o no.
+  const handlePayClick = async () => {
+    if (pendingPayment) {
+      setMozoSheetOpen(true);
+      return;
+    }
+    await refreshPastOrders();
+    setPaySheetOpen(true);
+  };
+
+  const handlePaymentCreated = (paymentData) => {
+    setPaySheetOpen(false);
+    refreshPayment();
+    setMozoSheetOpen(true);
+  };
+
+  const handleCancelPending = async () => {
+    const ok = await cancelPendingPayment();
+    if (ok) {
+      setMozoSheetOpen(false);
+      await refreshPastOrders();
+      setPaySheetOpen(true);
+    }
+  };
+
   const restaurantName = company?.name || 'Cargando...';
   const tableName = table?.tableName ? `la ${table.tableName}` : '';
   const hasMenu = hasInternalMenu || Boolean(menuLink);
+
+  const pastTotalCents = pastOrders.reduce((s, o) => s + (o.totalCents || 0), 0);
+  const hasConsumo = pastOrders.length > 0 && pastTotalCents > 0;
+  const payDisabled = !pendingPayment && !hasConsumo;
+  const payMethodLabel = pendingPayment
+    ? (pendingPayment.method === 'cash' ? 'efectivo' : 'tarjeta')
+    : null;
 
   return (
     <Phone className="user-screen">
@@ -180,27 +219,22 @@ const UserScreen = () => {
 
           <button
             type="button"
-            className="user-screen__cta user-screen__cta--pay user-screen__cta--coming-soon"
-            disabled
-            aria-disabled="true"
-            title="Próximamente"
+            className={`user-screen__cta user-screen__cta--pay rd-tap-scale ${pendingPayment ? 'user-screen__cta--pay-waiting' : ''}`}
+            onClick={handlePayClick}
+            disabled={payDisabled}
+            aria-disabled={payDisabled}
+            title={payDisabled ? 'Todavía no hay consumo pendiente' : undefined}
           >
-            <span className="material-symbols-outlined user-screen__cta-icon">credit_card</span>
+            <span className="material-symbols-outlined user-screen__cta-icon">
+              {pendingPayment ? 'hourglass_top' : 'credit_card'}
+            </span>
             <span className="user-screen__cta-label">
-              Pagar / Dejar Propina
-              <span className="user-screen__cta-pill">Próximamente</span>
+              {pendingPayment
+                ? `Esperando al mozo · ${payMethodLabel}`
+                : 'Pagar / Dejar Propina'}
             </span>
           </button>
         </div>
-
-        <button
-          type="button"
-          className="user-screen__history-link"
-          onClick={() => setHistoryOpen(true)}
-          disabled={userEvents.length === 0}
-        >
-          Ver mis avisos
-        </button>
       </main>
 
       <footer className="user-screen__footer">
@@ -222,11 +256,23 @@ const UserScreen = () => {
         onClose={() => setSheetOpen(false)}
       />
 
-      <HistoryModal
-        show={historyOpen}
-        onClose={() => setHistoryOpen(false)}
-        events={userEvents}
-        eventTypes={availableEventTypes.all}
+      <PaymentMethodSheet
+        open={paySheetOpen}
+        onClose={() => setPaySheetOpen(false)}
+        tableId={tableId}
+        pastOrders={pastOrders}
+        pendingTotalCents={pastTotalCents}
+        paymentMethodsEnabled={branch?.paymentMethodsEnabled}
+        paymentMethodPriority={branch?.paymentMethodPriority}
+        onPaymentCreated={handlePaymentCreated}
+      />
+
+      <WaiterOnTheWaySheet
+        open={mozoSheetOpen && Boolean(pendingPayment)}
+        payment={pendingPayment}
+        onClose={() => setMozoSheetOpen(false)}
+        onCancel={handleCancelPending}
+        cancelling={cancelInProgress}
       />
     </Phone>
   );

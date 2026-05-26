@@ -171,6 +171,34 @@ class EventConfigService {
         customerDisplay: 'hidden',
         cardVariant: 'purple',
         isDefault: true
+      },
+
+      // ─── Sprint 5.4: pagos cash/card disparan AlertCard roja en OpShell ─
+      {
+        eventName: 'Cobrar efectivo',
+        stateName: 'Pago en efectivo pendiente',
+        userColor: '#16a34a',
+        userFontColor: '#ffffff',
+        userIcon: 'FaMoneyBillWave',
+        adminColor: '#dc2626',
+        priority: 95,
+        systemEventType: null,
+        customerDisplay: 'hidden',
+        cardVariant: 'red',
+        isDefault: true
+      },
+      {
+        eventName: 'Cobrar tarjeta',
+        stateName: 'Pago con tarjeta pendiente',
+        userColor: '#2563eb',
+        userFontColor: '#ffffff',
+        userIcon: 'FaCreditCard',
+        adminColor: '#dc2626',
+        priority: 95,
+        systemEventType: null,
+        customerDisplay: 'hidden',
+        cardVariant: 'red',
+        isDefault: true
       }
     ];
 

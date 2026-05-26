@@ -60,6 +60,11 @@ module.exports = (sequelize) => {
       foreignKey: 'eventTypeId',
       as: 'eventType'
     });
+
+    Event.hasOne(models.Payment, {
+      foreignKey: 'eventId',
+      as: 'payment'
+    });
   };
 
   return Event;
