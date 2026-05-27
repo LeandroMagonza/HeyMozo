@@ -83,6 +83,32 @@ Cuando se apruebe el trámite Marketplace MP (ver [memoria `project_mp_marketpla
 
 ---
 
+## 6.5. Smoke pre-prod en sandbox MP (puente dev → prod)
+
+Antes de tocar credenciales productivas hay que validar **en sandbox** todo lo que durante el desarrollo se salteó con flags/fallbacks. Sirve para descubrir bugs de OAuth o de firma sin riesgo de plata real.
+
+El setup recomendado:
+
+- [ ] Crear (o usar) una **app TEST dedicada** en MP devs — distinta de la app que se va a usar en prod.
+- [ ] Server local con `NODE_ENV=development` pero **sin** `MP_SKIP_WEBHOOK_SIGNATURE` y **sin** `MP_ACCESS_TOKEN` global seteado. Esto fuerza el código a usar el AT del branch (no el fallback) y a verificar firma de verdad.
+- [ ] Levantar ngrok contra el puerto 3001 (igual que en el smoke local pasado).
+- [ ] Crear el webhook MP **una sola vez**, contra la URL ngrok actual, copiar la Clave Secreta a `MP_WEBHOOK_SECRET`.
+
+Verificaciones del smoke pre-prod:
+
+- [ ] **OAuth real**: como un usuario `owner`, ir a `/config/<c>/<b>/payments` y completar el OAuth contra una **cuenta MP TEST** (creada en `https://www.mercadopago.com.ar/developers/panel/test-users`). Confirmar en DB que `Branch.mpAccessToken` quedó poblado.
+- [ ] Pagar desde un cliente test con tarjeta TEST APRO contra esa branch. Verificar que:
+  - El log dice `MP: usando Branch.mpAccessToken` y **NO** dice `usando MP_ACCESS_TOKEN global (fallback DEV-only)`. (Si dice el fallback, el OAuth no funcionó o `Branch.mpAccessToken` está vacío.)
+  - El webhook llega y `verifyWebhookSignature` **pasa sin errores** (sin escape hatch). Log esperado: `💳 MP webhook OK — payment X → paid` sin un `⚠️ signature SKIPPED` arriba.
+- [ ] Probar también **rechazo** con tarjeta TEST OTHE — verificar `Payment.status='failed'`.
+- [ ] Probar **revocar OAuth** desde MP devs (panel del test user → conexiones de apps → revocar). El próximo pago debe responder error de AT inválido — útil para confirmar que no nos estamos cayendo silenciosamente al fallback global.
+
+Si algún ítem falla acá, el problema **es** del PR/config y hay que arreglarlo antes de tocar prod. Si todo pasa, recién ahí cumplir los pasos 7+ con credenciales productivas reales.
+
+> Heurística: el smoke pre-prod en sandbox debe ser **idéntico** al productivo, salvo por las credenciales TEST y la URL ngrok en vez de `heymozo.com.ar`. Si hay alguna otra diferencia (flag dev, fallback, etc.), ese es exactamente el lugar donde van a aparecer los bugs en prod.
+
+---
+
 ## 7. Smoke productivo (primer pago real)
 
 Antes de avisar al venue que ya pueden cobrar por MP:
