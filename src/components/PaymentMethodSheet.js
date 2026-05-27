@@ -1,14 +1,16 @@
 // src/components/PaymentMethodSheet.js
 //
 // Sheet de pagar/dejar propina.
-// Layout (post-5.6 — todos los métodos funcionales):
+// Layout (post-5.7 — split por monto activado):
 //   • Header "PAGAR / DEJAR PROPINA"
 //   • Card de consumo: items agrupados de la sesión + SUBTOTAL CONSUMO
 //   • Card de propina: chips 10/15/Otro/Nada (la propina se aplica solo a
 //     cash/tarjeta; transfer/MODO/MP ignoran el tip — la propina post-pago
 //     digital se resuelve en PostPagoPage en Sprint 5.9)
-//   • Total grande verde (Consumo + Propina)
-//   • Link "Dividir cuenta" (función real en Sprint 5.7, solo visual ahora)
+//   • Total grande verde (Parte a pagar + Propina)
+//   • Botón "Dividir cuenta" → abre SplitAmountSheet (Sprint 5.7). Si se
+//     declara monto parcial, aparece un chip "Pagás $X de $Y · cambiar" y
+//     se manda splitAmountCents al backend.
 //   • Métodos con jerarquía:
 //       - MP nativo (primary CTA azul, fullwidth) — Sprint 5.6: redirect a
 //         Checkout Pro de MP; vuelve por back_url a /pago-confirmado
@@ -25,8 +27,12 @@
 // padre monta el waiting sheet correspondiente.
 //
 // Nota propina: la decisión cerrada de Fase 2 (PHASE2_PLAN §Sprint 5) excluye
-// propina en transfer/MODO. La sheet sigue mostrando el bloque para no romper
-// el layout, pero el backend ignora tipCents para esos métodos.
+// propina en transfer/MODO/MP. La sheet sigue mostrando el bloque para no
+// romper el layout, pero el backend ignora tipCents para esos métodos.
+//
+// Nota split: la propina se calcula sobre `payableCents` (la parte que paga
+// el cliente), no sobre el balance total. Coherente con "10% de lo que
+// consumí" cuando el cliente declara su parte.
 
 import React, { useState, useMemo } from 'react';
 import {
@@ -37,6 +43,7 @@ import {
   FaMobileAlt,
 } from 'react-icons/fa';
 import { requestPayment } from '../services/api';
+import SplitAmountSheet from './SplitAmountSheet';
 import './PaymentMethodSheet.css';
 
 const formatPrice = (cents) =>
@@ -100,10 +107,19 @@ const PaymentMethodSheet = ({
   const [customTipText, setCustomTipText] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
+  // Sprint 5.7 — null = cliente paga el total. Number = cents de la parte que
+  // declaró pagar (resto queda para otros devices / pagos futuros).
+  const [splitAmountCents, setSplitAmountCents] = useState(null);
+  const [splitOpen, setSplitOpen] = useState(false);
 
   const items = useMemo(() => groupItems(pastOrders), [pastOrders]);
 
   if (!open) return null;
+
+  // payableCents = lo que efectivamente va a pagar este device. Si el cliente
+  // declaró un split, es el monto declarado; sino, el balance entero.
+  const payableCents = splitAmountCents != null ? splitAmountCents : pendingTotalCents;
+  const isPartialPayment = splitAmountCents != null && splitAmountCents < pendingTotalCents;
 
   const selectedTip = TIP_OPTIONS.find((t) => t.id === tipOptionId) || TIP_OPTIONS[0];
 
@@ -114,10 +130,12 @@ const PaymentMethodSheet = ({
       return v * 100;
     }
     if (selectedTip.pct === 0) return 0;
-    return Math.round((pendingTotalCents * selectedTip.pct) / 100);
+    // Propina sobre la parte que paga el cliente, no sobre el total — coherente
+    // con "10% de lo que consumí" cuando hay split.
+    return Math.round((payableCents * selectedTip.pct) / 100);
   })();
 
-  const grandTotal = pendingTotalCents + tipCents;
+  const grandTotal = payableCents + tipCents;
 
   // Solo mostramos métodos que el branch tiene enabled. Mantiene el orden de
   // `paymentMethodPriority` aunque visualmente cada variant cae en su lugar.
@@ -137,6 +155,8 @@ const PaymentMethodSheet = ({
       const { data } = await requestPayment(tableId, {
         method: method.apiMethod,
         tipCents,
+        // Sprint 5.7 — null cuando el cliente paga el total (back lo computa).
+        splitAmountCents,
       });
       // MP nativo: el backend devuelve mpInitPoint → redirect al checkout
       // hosteado de MP. No montamos waiting sheet (el cliente sale del SPA).
@@ -239,11 +259,24 @@ const PaymentMethodSheet = ({
           {/* ── Total grande ──────────────────────────────── */}
           <div className="pm-sheet__total-block">
             <div className="pm-sheet__total-value">{formatPrice(grandTotal)}</div>
-            <div className="pm-sheet__total-label">Total a pagar (Consumo + Propina)</div>
-            <button type="button" className="pm-sheet__split" disabled title="Próximamente">
+            <div className="pm-sheet__total-label">
+              {isPartialPayment
+                ? `Tu parte + propina (de ${formatPrice(pendingTotalCents)} totales)`
+                : 'Total a pagar (Consumo + Propina)'}
+            </div>
+            <button
+              type="button"
+              className="pm-sheet__split pm-sheet__split--active rd-tap-scale"
+              onClick={() => setSplitOpen(true)}
+            >
               <span className="material-symbols-outlined">receipt_long</span>
-              Dividir cuenta
+              {isPartialPayment ? 'Cambiar mi parte' : 'Dividir cuenta'}
             </button>
+            {isPartialPayment && (
+              <div className="pm-sheet__split-summary">
+                Pagás <strong>{formatPrice(splitAmountCents)}</strong> de {formatPrice(pendingTotalCents)}
+              </div>
+            )}
           </div>
 
           {/* ── Métodos ────────────────────────────────────── */}
@@ -305,6 +338,17 @@ const PaymentMethodSheet = ({
           {error && <div className="pm-sheet__error">{error}</div>}
         </div>
       </div>
+
+      <SplitAmountSheet
+        open={splitOpen}
+        onClose={() => setSplitOpen(false)}
+        outstandingCents={pendingTotalCents}
+        initialSplitCents={splitAmountCents}
+        onConfirm={(cents) => {
+          setSplitAmountCents(cents);
+          setSplitOpen(false);
+        }}
+      />
     </div>
   );
 };

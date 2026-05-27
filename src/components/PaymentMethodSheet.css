@@ -250,8 +250,29 @@
   opacity: 0.7;
 }
 
+.pm-sheet__split--active {
+  color: var(--rd-brand-green-soft, #4ade80);
+  cursor: pointer;
+  opacity: 1;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+}
+
 .pm-sheet__split .material-symbols-outlined {
   font-size: 1rem;
+}
+
+.pm-sheet__split-summary {
+  margin-top: 0.35rem;
+  font-size: 0.82rem;
+  color: var(--rd-text-tertiary, #9ca3af);
+  text-align: center;
+}
+
+.pm-sheet__split-summary strong {
+  color: var(--rd-text, #ffffff);
+  font-weight: 700;
 }
 
 /* ── Métodos ───────────────────────────────────────── */
