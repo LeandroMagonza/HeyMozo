@@ -2,7 +2,7 @@
 
 Tracker live de los sub-PRs de Fase 2. Una línea por sub-PR con commit, branch, PR# y estado.
 
-**Última actualización:** 2026-05-25 (5.4 abierta — UX redesign no bloqueante)
+**Última actualización:** 2026-05-26 (5.4 mergeado; 5.5 abierto)
 
 > Cuando un PR se mergea, mover su sub-PR a "✅ Mergeado" abajo y actualizar el [PHASE2_PLAN.md](PHASE2_PLAN.md) si corresponde (cambiar 🚧 → ✅ para el sprint completo cuando todas las sub-PRs estén in).
 
@@ -12,7 +12,7 @@ Tracker live de los sub-PRs de Fase 2. Una línea por sub-PR con commit, branch,
 
 | Sub-PR | Branch | Commit | PR | Notas |
 |---|---|---|---|---|
-| 5.4 | `feature/phase2-payment-cash-card` | `3bcafe3` | [#31](https://github.com/LeandroMagonza/HeyMozo/pull/31) | feat(payments): flow cash/tarjeta + UX redesign no bloqueante. **Commits:** `022817c` (backend + flow base) + `3bcafe3` (redesign UX post-smoke). Migration `Payment.eventId` + seed 2 EventTypes (`Cobrar efectivo`/`Cobrar tarjeta`, cardVariant=red). Endpoints `POST /tables/:id/payments`, `GET /payments/:id/status`, `POST /payments/:id/cancel`, `POST /payments/:id/collect`, `GET /tables/:id/pending-payment`. Cliente: `PaymentMethodSheet` rediseñada según mockup (items agrupados + propina 10/15/Otro/Nada + jerarquía MP/Transferencia/Tarjeta+Efectivo + total grande verde). UX no bloqueante: botón "Pagar" en UserScreen muta a "Esperando al mozo · efectivo/tarjeta" cuando hay Payment pending; re-tap abre `WaiterOnTheWaySheet` (modal con "Entendido, lo espero" + "Cancelar pago y elegir otro método") en lugar de bloquear con `WaitingPaymentPage` (eliminada). Hook `usePendingPayment` con polling silencioso 4s + auto-redirect a `/pago-confirmado` cuando el mozo cobra. OpShell: AlertCard "Cobré $X" cuando el Event tiene Payment pending. Auto-cierre de TableSession si balance llega a 0. |
+| 5.5 | `feature/phase2-payment-transfer-modo` | `f94f831` | — | feat(payments): flow transferencia + MODO cliente + endpoints cajero. **Backend:** `requestPayment` extendido a `transfer`/`modo` (sin Event, tipCents=0). Estados `pending → awaiting_validation → paid` via nuevas funciones `declarePaid` (cliente apretó "Ya transferí") / `validatePayment` (cajero confirma → auto-cierra sesión si balance=0) / `rejectPayment`. `findPendingForSession` y `cancelPayment` extendidos a awaiting_validation. Endpoints: `POST /payments/:id/declare-paid` (cliente), `POST /payments/:id/validate` y `/reject` (cashier/owner), `GET /branches/:id/payments/awaiting-validation` (feed para tab Acciones — UI Sprint 5.8). **Frontend:** chips MODO + Tarjeta separados en PaymentMethodSheet; transferencia funcional. `OnlinePaymentSheet` nuevo con alias copiable + CBU/titular/CUIT, monto sin propina, CTA "Ya transferí/pagué", estado "esperando validación", comprobante super-opcional (toggle URL). MODO: botón "Abrir app MODO" con deeplink `modo://`. UserScreen bifurca sheet por método (cash/card → WaiterOnTheWay; online → OnlinePaymentSheet). Sin migrations. |
 
 ---
 
@@ -20,7 +20,7 @@ Tracker live de los sub-PRs de Fase 2. Una línea por sub-PR con commit, branch,
 
 _(Sprint 4 cerrado. Sprint 5.1 mergeado. Sprint 5 (Pagos digitales + Club VIP) en curso — diseño cerrado 2026-05-24, ver [PHASE2_PLAN.md](PHASE2_PLAN.md) §Sprint 5)._
 
-Próximos sub-PRs Sprint 5: 5.5 (transfer/MODO) → 5.6 (MP nativo) → 5.7 (split monto) → 5.8 (CajaShell Acciones + liberar mesa) → 5.9 (PostPagoPage) → 5.10 (Club CajaShell) → 5.11 (Vouchers).
+Próximos sub-PRs Sprint 5: 5.6 (MP nativo) → 5.7 (split monto) → 5.8 (CajaShell Acciones + liberar mesa) → 5.9 (PostPagoPage) → 5.10 (Club CajaShell) → 5.11 (Vouchers).
 
 ---
 
@@ -51,6 +51,7 @@ Próximos sub-PRs Sprint 5: 5.5 (transfer/MODO) → 5.6 (MP nativo) → 5.7 (spl
 | 5.1 | `feature/sprint-5.1-customer-order-history` | `3ca6d20` | [#28](https://github.com/LeandroMagonza/HeyMozo/pull/28) | feat(client): historial de pedidos de sesión + CartSheet — GET /api/tables/:id/orders, `CartSheet` bottom sheet reemplaza `CartPage`, `SessionOrdersList`, bottom bar ampliada. Prerequisito de Pagos digitales (Sprint 5). |
 | 5.2 | `feature/phase2-payment-models` | `9e9f6a2` | [#29](https://github.com/LeandroMagonza/HeyMozo/pull/29) | feat(payments): migrations + modelos Payment/Review/ReviewTag/ReviewTagAssignment/ClubMember/ClubVisit/Voucher + campos nuevos en Branch y User. Seed de 8 ReviewTags negativos al crear branch. Sin endpoints, sin UI. |
 | 5.3 | `feature/phase2-payment-config-ui` | `83ceaf4` | [#30](https://github.com/LeandroMagonza/HeyMozo/pull/30) | feat(payments): UI `/config/:c/:b/payments` (OAuth MP, alias transfer, toggles paymentMethodsEnabled, prioridad drag-drop, googleMapsReviewUrl, Club VIP config). UI `/profile` mozo (mpAlias). Endpoint OAuth callback MP + PUT /users/me. |
+| 5.4 | `feature/phase2-payment-cash-card` | `fcc28f7` | [#31](https://github.com/LeandroMagonza/HeyMozo/pull/31) | feat(payments): flow cash/tarjeta + UX redesign no bloqueante. Migration `Payment.eventId` + seed 2 EventTypes (`Cobrar efectivo`/`Cobrar tarjeta`, cardVariant=red). Endpoints `POST /tables/:id/payments`, `GET /payments/:id/status`, `POST /payments/:id/cancel`, `POST /payments/:id/collect`, `GET /tables/:id/pending-payment`. `PaymentMethodSheet` (items + propina 10/15/Otro/Nada + jerarquía MP/Transferencia/Tarjeta+Efectivo). UX no bloqueante: botón "Pagar" en UserScreen muta a "Esperando al mozo · efectivo/tarjeta"; re-tap abre `WaiterOnTheWaySheet`. Hook `usePendingPayment` con polling 4s + auto-redirect a `/pago-confirmado`. OpShell: AlertCard "Cobré $X". Auto-cierre TableSession si balance=0. |
 
 ---
 

@@ -4,14 +4,16 @@
 // Layout del redesign: header con logo+nombre, saludo gigante,
 // 3 botones grandes (Ver Menu, Llamar al Mozo, Pagar), footer.
 //
-// Sprint 5.4: el CTA "Pagar / Dejar Propina" tiene 2 estados:
-//   1. Sin Payment pending → label "Pagar / Dejar Propina", abre PaymentMethodSheet
-//      con el desglose de consumo + propina + método.
-//   2. Con Payment pending → label "Esperando al mozo · efectivo/tarjeta",
-//      al tocar abre el modal "¡Mozo en camino!" con opción de cancelar
-//      el pago para elegir otro método.
-// El polling del hook usePendingPayment redirige automáticamente al cliente
-// a /pago-confirmado cuando el mozo apretó "Cobré".
+// El CTA "Pagar / Dejar Propina" tiene 2 estados:
+//   1. Sin Payment activo → label "Pagar / Dejar Propina", abre
+//      PaymentMethodSheet con el desglose de consumo + propina + método.
+//   2. Con Payment activo (pending o awaiting_validation) → label dinámico
+//      según método (efectivo/tarjeta/transferencia/MODO). Al tocar abre:
+//        • cash/card → WaiterOnTheWaySheet ("¡Mozo en camino!")
+//        • transfer/modo → OnlinePaymentSheet (alias + datos + "Ya transferí")
+// El polling del hook usePendingPayment redirige automáticamente a
+// /pago-confirmado cuando el Payment transita a paid (mozo cobró cash/card
+// o cajero validó transfer/MODO).
 
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -20,6 +22,7 @@ import DecorativeGlow from './DecorativeGlow';
 import CallWaiterSheet from './CallWaiterSheet';
 import PaymentMethodSheet from './PaymentMethodSheet';
 import WaiterOnTheWaySheet from './WaiterOnTheWaySheet';
+import OnlinePaymentSheet from './OnlinePaymentSheet';
 import usePendingPayment from '../hooks/usePendingPayment';
 import {
   getCompany,
@@ -46,7 +49,10 @@ const UserScreen = () => {
   const [toast, setToast] = useState(null); // { label, color }
   const [pastOrders, setPastOrders] = useState([]);
   const [paySheetOpen, setPaySheetOpen] = useState(false);
-  const [mozoSheetOpen, setMozoSheetOpen] = useState(false);
+  // Sheet de pago activo. cash/card → "mozo en camino"; transfer/modo →
+  // OnlinePaymentSheet con alias + "ya transferí". Una sola flag — el
+  // método del pendingPayment elige cuál renderear.
+  const [activeSheetOpen, setActiveSheetOpen] = useState(false);
   const scanSentRef = useRef(false);
 
   const { payment: pendingPayment, cancel: cancelPendingPayment, cancelling: cancelInProgress, refresh: refreshPayment } =
@@ -128,10 +134,10 @@ const UserScreen = () => {
     }
   };
 
-  // Click del botón Pagar — bifurca según si hay payment pending o no.
+  // Click del botón Pagar — bifurca según si hay payment activo o no.
   const handlePayClick = async () => {
     if (pendingPayment) {
-      setMozoSheetOpen(true);
+      setActiveSheetOpen(true);
       return;
     }
     await refreshPastOrders();
@@ -141,16 +147,24 @@ const UserScreen = () => {
   const handlePaymentCreated = (paymentData) => {
     setPaySheetOpen(false);
     refreshPayment();
-    setMozoSheetOpen(true);
+    setActiveSheetOpen(true);
   };
 
   const handleCancelPending = async () => {
     const ok = await cancelPendingPayment();
     if (ok) {
-      setMozoSheetOpen(false);
+      setActiveSheetOpen(false);
       await refreshPastOrders();
       setPaySheetOpen(true);
     }
+  };
+
+  // Cliente apretó "Ya transferí" / "Ya pagué" en OnlinePaymentSheet.
+  // Re-refrescamos el polling — el sheet sigue abierto pero su contenido
+  // pasa a estado "esperando validación" (porque pendingPayment.status
+  // ahora es awaiting_validation).
+  const handlePaymentDeclared = () => {
+    refreshPayment();
   };
 
   const restaurantName = company?.name || 'Cargando...';
@@ -160,9 +174,27 @@ const UserScreen = () => {
   const pastTotalCents = pastOrders.reduce((s, o) => s + (o.totalCents || 0), 0);
   const hasConsumo = pastOrders.length > 0 && pastTotalCents > 0;
   const payDisabled = !pendingPayment && !hasConsumo;
-  const payMethodLabel = pendingPayment
-    ? (pendingPayment.method === 'cash' ? 'efectivo' : 'tarjeta')
-    : null;
+
+  const isOnlinePayment = pendingPayment
+    && (pendingPayment.method === 'transfer' || pendingPayment.method === 'modo');
+  const isAwaitingValidation = pendingPayment
+    && pendingPayment.status === 'awaiting_validation';
+
+  const METHOD_LABELS = {
+    cash: 'efectivo',
+    card_terminal: 'tarjeta',
+    transfer: 'transferencia',
+    modo: 'MODO',
+  };
+  const payMethodLabel = pendingPayment ? METHOD_LABELS[pendingPayment.method] : null;
+  const payCtaText = pendingPayment
+    ? (isAwaitingValidation
+        ? `Validando ${payMethodLabel}…`
+        : (isOnlinePayment
+            ? `Pagar por ${payMethodLabel}`
+            : `Esperando al mozo · ${payMethodLabel}`))
+    : 'Pagar / Dejar Propina';
+  const payIcon = pendingPayment ? 'hourglass_top' : 'credit_card';
 
   return (
     <Phone className="user-screen">
@@ -226,13 +258,9 @@ const UserScreen = () => {
             title={payDisabled ? 'Todavía no hay consumo pendiente' : undefined}
           >
             <span className="material-symbols-outlined user-screen__cta-icon">
-              {pendingPayment ? 'hourglass_top' : 'credit_card'}
+              {payIcon}
             </span>
-            <span className="user-screen__cta-label">
-              {pendingPayment
-                ? `Esperando al mozo · ${payMethodLabel}`
-                : 'Pagar / Dejar Propina'}
-            </span>
+            <span className="user-screen__cta-label">{payCtaText}</span>
           </button>
         </div>
       </main>
@@ -268,9 +296,19 @@ const UserScreen = () => {
       />
 
       <WaiterOnTheWaySheet
-        open={mozoSheetOpen && Boolean(pendingPayment)}
+        open={activeSheetOpen && Boolean(pendingPayment) && !isOnlinePayment}
         payment={pendingPayment}
-        onClose={() => setMozoSheetOpen(false)}
+        onClose={() => setActiveSheetOpen(false)}
+        onCancel={handleCancelPending}
+        cancelling={cancelInProgress}
+      />
+
+      <OnlinePaymentSheet
+        open={activeSheetOpen && Boolean(pendingPayment) && isOnlinePayment}
+        payment={pendingPayment}
+        branch={branch}
+        onClose={() => setActiveSheetOpen(false)}
+        onDeclared={handlePaymentDeclared}
         onCancel={handleCancelPending}
         cancelling={cancelInProgress}
       />

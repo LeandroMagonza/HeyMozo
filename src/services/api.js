@@ -210,6 +210,19 @@ export const collectPayment = (paymentId, payload = {}) =>
 export const getPendingPayment = (tableId) =>
   api.get(`/tables/${tableId}/pending-payment`);
 
+// Payments transfer/MODO (Sprint 5.5)
+export const declarePaymentPaid = (paymentId, payload = {}) =>
+  api.post(`/payments/${paymentId}/declare-paid`, payload);
+
+export const validatePayment = (paymentId) =>
+  api.post(`/payments/${paymentId}/validate`);
+
+export const rejectPayment = (paymentId) =>
+  api.post(`/payments/${paymentId}/reject`);
+
+export const getAwaitingValidationPayments = (branchId) =>
+  api.get(`/branches/${branchId}/payments/awaiting-validation`);
+
 // User self-profile (Sprint 5.3)
 export const getMyProfile = () =>
   api.get('/users/me');

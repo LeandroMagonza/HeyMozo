@@ -1,20 +1,26 @@
 // src/components/PaymentMethodSheet.js
 //
-// Sheet de pagar/dejar propina (Sprint 5.4).
-// Layout final (preparado para Sprint 5.5/5.6):
+// Sheet de pagar/dejar propina.
+// Layout (post-5.5; MP queda disabled hasta 5.6):
 //   • Header "PAGAR / DEJAR PROPINA"
 //   • Card de consumo: items agrupados de la sesión + SUBTOTAL CONSUMO
-//   • Card de propina: chips 10/15/Otro/Nada
+//   • Card de propina: chips 10/15/Otro/Nada (oculta en transfer/MODO)
 //   • Total grande verde (Consumo + Propina)
 //   • Link "Dividir cuenta" (función real en Sprint 5.7, solo visual ahora)
 //   • Métodos con jerarquía:
 //       - MP (primary CTA azul, fullwidth) — disabled hasta 5.6
-//       - Transferencia (secondary fullwidth) — disabled hasta 5.5
-//       - Grid 2-col: Tarjeta/MODO + Efectivo (los 2 funcionales en 5.4)
+//       - Transferencia (secondary fullwidth) — funcional desde 5.5
+//       - Grid 2-col: Tarjeta + MODO + Efectivo — Tarjeta/Efectivo funcionales
+//         desde 5.4, MODO desde 5.5
 //
 // El sheet llama onPaymentCreated(payment) cuando el POST /payments responde
-// 200. El padre se encarga de mostrar el modal "¡Mozo en camino!" y de
-// arrancar el polling del banner sticky.
+// 200. El padre se encarga de mostrar el waiting sheet adecuado según
+// payment.method (WaiterOnTheWay para cash/card; Transfer/Modo waiting para
+// los online) y de arrancar el polling.
+//
+// Nota propina: la decisión cerrada de Fase 2 (PHASE2_PLAN §Sprint 5) excluye
+// propina en transfer/MODO. La sheet sigue mostrando el bloque para no romper
+// el layout, pero el backend ignora tipCents para esos métodos.
 
 import React, { useState, useMemo } from 'react';
 import {
@@ -22,6 +28,7 @@ import {
   FaMoneyBillWave,
   FaCreditCard,
   FaUniversity,
+  FaMobileAlt,
 } from 'react-icons/fa';
 import { requestPayment } from '../services/api';
 import './PaymentMethodSheet.css';
@@ -43,13 +50,11 @@ const TIP_OPTIONS = [
 // Catálogo de métodos. `apiMethod = null` significa "aún no implementado" y
 // el chip aparece deshabilitado con "Próximamente". Los IDs (`mp`, `transfer`,
 // `card`, `modo`, `cash`) coinciden con `Branch.paymentMethodsEnabled`.
-// El chip 'card' incluye Tarjeta + MODO según el mockup ("Tarjeta / MODO" como
-// CTA único). Cuando Sprint 5.5 implemente MODO real, decidiremos si separar
-// en dos chips o mantener combinado con selector secundario.
 const METHOD_DEFS = {
-  mp:       { id: 'mp',       apiMethod: null,            label: 'Mercado Pago', Icon: null,           variant: 'primary' },
-  transfer: { id: 'transfer', apiMethod: null,            label: 'Transferencia', Icon: FaUniversity,  variant: 'secondary' },
-  card:     { id: 'card',     apiMethod: 'card_terminal', label: 'Tarjeta / MODO', Icon: FaCreditCard, variant: 'chip' },
+  mp:       { id: 'mp',       apiMethod: null,            label: 'Mercado Pago',  Icon: null,            variant: 'primary' },
+  transfer: { id: 'transfer', apiMethod: 'transfer',      label: 'Transferencia', Icon: FaUniversity,    variant: 'secondary' },
+  card:     { id: 'card',     apiMethod: 'card_terminal', label: 'Tarjeta',       Icon: FaCreditCard,    variant: 'chip' },
+  modo:     { id: 'modo',     apiMethod: 'modo',          label: 'MODO',          Icon: FaMobileAlt,     variant: 'chip' },
   cash:     { id: 'cash',     apiMethod: 'cash',          label: 'Efectivo',      Icon: FaMoneyBillWave, variant: 'chip' },
 };
 
