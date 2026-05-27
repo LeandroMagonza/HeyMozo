@@ -2,7 +2,7 @@
 
 Tracker live de los sub-PRs de Fase 2. Una línea por sub-PR con commit, branch, PR# y estado.
 
-**Última actualización:** 2026-05-26 (5.4 mergeado; 5.5 abierto)
+**Última actualización:** 2026-05-26 (5.5 mergeado; 5.6 abierto)
 
 > Cuando un PR se mergea, mover su sub-PR a "✅ Mergeado" abajo y actualizar el [PHASE2_PLAN.md](PHASE2_PLAN.md) si corresponde (cambiar 🚧 → ✅ para el sprint completo cuando todas las sub-PRs estén in).
 
@@ -12,7 +12,7 @@ Tracker live de los sub-PRs de Fase 2. Una línea por sub-PR con commit, branch,
 
 | Sub-PR | Branch | Commit | PR | Notas |
 |---|---|---|---|---|
-| 5.5 | `feature/phase2-payment-transfer-modo` | `f94f831` | — | feat(payments): flow transferencia + MODO cliente + endpoints cajero. **Backend:** `requestPayment` extendido a `transfer`/`modo` (sin Event, tipCents=0). Estados `pending → awaiting_validation → paid` via nuevas funciones `declarePaid` (cliente apretó "Ya transferí") / `validatePayment` (cajero confirma → auto-cierra sesión si balance=0) / `rejectPayment`. `findPendingForSession` y `cancelPayment` extendidos a awaiting_validation. Endpoints: `POST /payments/:id/declare-paid` (cliente), `POST /payments/:id/validate` y `/reject` (cashier/owner), `GET /branches/:id/payments/awaiting-validation` (feed para tab Acciones — UI Sprint 5.8). **Frontend:** chips MODO + Tarjeta separados en PaymentMethodSheet; transferencia funcional. `OnlinePaymentSheet` nuevo con alias copiable + CBU/titular/CUIT, monto sin propina, CTA "Ya transferí/pagué", estado "esperando validación", comprobante super-opcional (toggle URL). MODO: botón "Abrir app MODO" con deeplink `modo://`. UserScreen bifurca sheet por método (cash/card → WaiterOnTheWay; online → OnlinePaymentSheet). Sin migrations. |
+| 5.6 | `feature/phase2-payment-mp-native` | — | — | feat(payments): MP nativo (Checkout Pro) + webhook HMAC. **Backend:** nuevo service `src/services/mercadoPago.js` (SDK oficial v3) con `createPreference` (Checkout Pro, items/external_reference/back_urls/auto_return/binary_mode), `fetchMpPayment`, `verifyWebhookSignature` (vía `WebhookSignatureValidator` de la SDK, tolerancia 10min), `mapMpStatus`. Helper `_resolveAccessToken` usa `Branch.mpAccessToken` (OAuth de 5.3) con fallback dev-only a `MP_ACCESS_TOKEN` global. `payments.js`: agrega `MP_METHODS=['mp_native']` a `SUPPORTED_METHODS`, `requestPayment` para mp_native fuerza tipCents=0 y no crea Event, y nuevo `applyMpPayment({ paymentId, nextStatus, mpPaymentId, mpRawPayload })` idempotente que marca paid/failed + auto-cierra sesión si balance=0. `customerSessions.js`: POST `/tables/:id/payments` extendido — si method='mp_native' crea preference y devuelve `mpInitPoint`. Nuevo endpoint **público** `POST /api/payments/mp/webhook?payment_id=<local>&data.id=<mp>` que verifica firma → resuelve branch desde Payment local → fetch MP payment con AT del branch → `applyMpPayment`. **Frontend:** `PaymentMethodSheet` activa chip MP (`apiMethod='mp_native'`); cuando el POST devuelve `mpInitPoint` redirige con `window.location.href`. `PagoConfirmadoPage` reescrito con polling 2s/timeout 30s mientras Payment está pending o awaiting_validation; muestra estados visuales para procesando/error/listo + subtítulos según método. **Env:** nueva `MP_WEBHOOK_SECRET` en `.env.example`, nota sobre ngrok para `APP_BASE_URL` en dev. **Sin migrations** (ENUM `mp_native` ya existía de 5.2). Sin smoke MP real todavía — espera ngrok + secret del user. |
 
 ---
 
@@ -20,7 +20,7 @@ Tracker live de los sub-PRs de Fase 2. Una línea por sub-PR con commit, branch,
 
 _(Sprint 4 cerrado. Sprint 5.1 mergeado. Sprint 5 (Pagos digitales + Club VIP) en curso — diseño cerrado 2026-05-24, ver [PHASE2_PLAN.md](PHASE2_PLAN.md) §Sprint 5)._
 
-Próximos sub-PRs Sprint 5: 5.6 (MP nativo) → 5.7 (split monto) → 5.8 (CajaShell Acciones + liberar mesa) → 5.9 (PostPagoPage) → 5.10 (Club CajaShell) → 5.11 (Vouchers).
+Próximos sub-PRs Sprint 5: 5.7 (split monto) → 5.8 (CajaShell Acciones + liberar mesa) → 5.9 (PostPagoPage) → 5.10 (Club CajaShell) → 5.11 (Vouchers).
 
 ---
 

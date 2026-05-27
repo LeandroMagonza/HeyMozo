@@ -16,6 +16,7 @@ const deviceService = require('../services/devices');
 const sessionService = require('../services/sessions');
 const orderService = require('../services/orders');
 const paymentService = require('../services/payments');
+const mercadoPago = require('../services/mercadoPago');
 
 const DEVICE_COOKIE = 'hm_device';
 
@@ -252,14 +253,43 @@ router.post('/tables/:tableId/payments', async (req, res) => {
       tipCents: Number(tipCents) || 0
     });
 
-    res.status(201).json({
+    const response = {
       id: payment.id,
       method: payment.method,
       status: payment.status,
       subtotalCents: payment.subtotalCents,
       tipCents: payment.tipCents,
       totalCents: payment.totalCents
-    });
+    };
+
+    // MP nativo: armar la preference y devolver el initPoint para que el
+    // front haga `window.location.href = initPoint`. Si el cliente apretó
+    // dos veces y `requestPayment` devolvió el Payment existente, recreamos
+    // la preference igual — MP no expira preferences rápido pero el front
+    // no las cachea. Idempotente del lado MP.
+    if (payment.method === 'mp_native') {
+      const { Branch, Table } = require('../models');
+      const tableRow = await Table.findByPk(tableId, {
+        include: [{ model: Branch, attributes: ['id', 'name', 'companyId', 'mpAccessToken'] }]
+      });
+      const branch = tableRow.Branch;
+      const pref = await mercadoPago.createPreference({
+        payment,
+        branch,
+        table: tableRow,
+        companyId: branch.companyId,
+        baseUrl: process.env.APP_BASE_URL
+      });
+      // Guardamos preferenceId en mpRawPayload para debugging — no es
+      // source-of-truth (el webhook usa external_reference + payment_id query).
+      await payment.update({
+        mpRawPayload: { preferenceId: pref.preferenceId }
+      });
+      response.mpInitPoint = pref.initPoint;
+      response.mpSandboxInitPoint = pref.sandboxInitPoint;
+    }
+
+    res.status(201).json(response);
   } catch (err) {
     console.error('❌ POST /tables/:tableId/payments:', err.message);
     res.status(err.statusCode || 500).json({ error: err.message || 'Error solicitando pago' });
@@ -404,6 +434,103 @@ router.post('/payments/:paymentId/cancel', async (req, res) => {
   } catch (err) {
     console.error('❌ POST /payments/:paymentId/cancel:', err.message);
     res.status(err.statusCode || 500).json({ error: err.message || 'Error cancelando pago' });
+  }
+});
+
+// ─── Sprint 5.6: webhook MP nativo ──────────────────────────────────────
+
+// POST /api/payments/mp/webhook?payment_id=<local_id>&data.id=<mp_id>&type=payment
+//
+// Público (sin JWT). MP firma cada request con HMAC sobre
+// `id:<data.id>;request-id:<x-request-id>;ts:<ts>;`. Solo procesamos
+// notificaciones type=payment — los demás (merchant_order, plan, etc.) los
+// ignoramos respondiendo 200 (MP los reintentará si no responde 2xx, así
+// que mejor 200 a callarlos).
+//
+// El query `payment_id` lo agregamos nosotros en `notification_url` al crear
+// la preference — nos permite resolver el branch (y por ende el AT para
+// hacer fetch del MP payment) sin tener que mapear MP user_id → branch.
+router.post('/payments/mp/webhook', async (req, res) => {
+  try {
+    const type = req.query.type || (req.body && req.body.type);
+    if (type && type !== 'payment') {
+      // merchant_order / plan / subscription / etc. — no nos interesan.
+      return res.status(200).json({ ignored: type });
+    }
+
+    // El id MP del payment viene como query `data.id` (preferido) o en el body.
+    const dataId = req.query['data.id']
+      || (req.query.data && req.query.data.id)
+      || (req.body && req.body.data && req.body.data.id);
+
+    // Verificación HMAC. MP envía:
+    //   x-signature: "ts=1716000000000,v1=abcd..."
+    //   x-request-id: "uuid"
+    mercadoPago.verifyWebhookSignature({
+      xSignature: req.headers['x-signature'],
+      xRequestId: req.headers['x-request-id'],
+      dataId,
+      secret: process.env.MP_WEBHOOK_SECRET
+    });
+
+    const localPaymentId = parseInt(req.query.payment_id, 10);
+    if (!Number.isFinite(localPaymentId)) {
+      console.warn('⚠️  MP webhook sin payment_id local — ignorado', { dataId });
+      return res.status(200).json({ ignored: 'missing_payment_id' });
+    }
+    if (!dataId) {
+      console.warn('⚠️  MP webhook sin data.id — ignorado', { localPaymentId });
+      return res.status(200).json({ ignored: 'missing_data_id' });
+    }
+
+    // Resolvemos el branch a partir del Payment para usar el AT del venue
+    // al hacer fetch del MP payment.
+    const { Payment, TableSession, Table, Branch } = require('../models');
+    const localPayment = await Payment.findByPk(localPaymentId, {
+      include: [{
+        model: TableSession,
+        as: 'session',
+        include: [{
+          model: Table,
+          as: 'table',
+          include: [{ model: Branch, attributes: ['id', 'mpAccessToken'] }]
+        }]
+      }]
+    });
+    if (!localPayment) {
+      console.warn(`⚠️  MP webhook: Payment local ${localPaymentId} no existe`);
+      return res.status(200).json({ ignored: 'unknown_payment' });
+    }
+    const branch = localPayment.session && localPayment.session.table && localPayment.session.table.Branch;
+
+    const mpPayment = await mercadoPago.fetchMpPayment({ branch, mpPaymentId: dataId });
+
+    // Sanity check: external_reference debe matchear el id local (sino algo
+    // se ensució entre la preference y este webhook).
+    if (String(mpPayment.external_reference) !== String(localPaymentId)) {
+      console.warn(
+        `⚠️  MP webhook external_reference mismatch — query=${localPaymentId} ` +
+        `mp.external_reference=${mpPayment.external_reference}. Ignorando.`
+      );
+      return res.status(200).json({ ignored: 'external_reference_mismatch' });
+    }
+
+    const nextStatus = mercadoPago.mapMpStatus(mpPayment.status);
+    await paymentService.applyMpPayment({
+      paymentId: localPaymentId,
+      nextStatus,
+      mpPaymentId: mpPayment.id,
+      mpRawPayload: mpPayment
+    });
+
+    console.log(`💳 MP webhook OK — payment ${localPaymentId} → ${nextStatus || mpPayment.status}`);
+    res.status(200).json({ ok: true });
+  } catch (err) {
+    // 401 si fue firma inválida (MP reintenta menos sobre 4xx), 500 si fue
+    // un bug nuestro (MP reintenta).
+    const status = err.statusCode || 500;
+    console.error(`❌ MP webhook ${status}:`, err.message);
+    res.status(status).json({ error: err.message });
   }
 });
 
