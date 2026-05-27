@@ -97,10 +97,17 @@ async function createPreference({ payment, branch, table, companyId, baseUrl }) 
       failure: backBase,
       pending: backBase
     },
-    auto_return: 'approved',
     statement_descriptor: 'HEYMOZO',
     binary_mode: true
   };
+
+  // MP solo acepta `auto_return: 'approved'` cuando los back_urls son HTTPS.
+  // En dev local con APP_BASE_URL=http://localhost lo omitimos (el cliente
+  // ve la pantalla "tu pago fue aprobado, volvé al sitio" en MP y vuelve
+  // manualmente con el botón). En prod siempre HTTPS → auto_return activo.
+  if (baseUrl.startsWith('https://')) {
+    body.auto_return = 'approved';
+  }
 
   try {
     const res = await preference.create({ body });

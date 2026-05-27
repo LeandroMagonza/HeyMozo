@@ -20,11 +20,18 @@ const mercadoPago = require('../services/mercadoPago');
 
 const DEVICE_COOKIE = 'hm_device';
 
-// Cookie del device — HttpOnly + SameSite Strict. Source of truth de la sesión
+// Cookie del device — HttpOnly + SameSite Lax. Source of truth de la sesión
 // del cliente (no la URL del QR). Secure solo en producción (TLS).
+//
+// SameSite=Lax (no Strict) porque el flujo MP nativo (Sprint 5.6) hace que
+// el browser vuelva desde mercadopago.com.ar al back_url nuestro como una
+// top-level navigation cross-site — con Strict la cookie no viaja y el
+// endpoint /payments/:id/status devuelve 401 al cliente recién llegado.
+// Lax permite la cookie en top-level GETs cross-site (que es lo que necesita
+// el back_url) sin habilitarla para sub-requests cross-site (CSRF safe).
 const deviceCookieOptions = () => ({
   httpOnly: true,
-  sameSite: 'strict',
+  sameSite: 'lax',
   secure: process.env.NODE_ENV === 'production',
   maxAge: 365 * 24 * 60 * 60 * 1000, // 1 año
   path: '/'
@@ -466,12 +473,24 @@ router.post('/payments/mp/webhook', async (req, res) => {
     // Verificación HMAC. MP envía:
     //   x-signature: "ts=1716000000000,v1=abcd..."
     //   x-request-id: "uuid"
-    mercadoPago.verifyWebhookSignature({
-      xSignature: req.headers['x-signature'],
-      xRequestId: req.headers['x-request-id'],
-      dataId,
-      secret: process.env.MP_WEBHOOK_SECRET
-    });
+    //
+    // Escape hatch DEV-only: si `MP_SKIP_WEBHOOK_SIGNATURE=true` y no estamos
+    // en prod, saltamos la verificación (loguea WARN). Útil cuando el secret
+    // local todavía no está sincronizado con MP devs panel — desbloquea smoke
+    // sin abrir un agujero en prod (donde NODE_ENV=production hace que esta
+    // bandera se ignore).
+    const skipSig = process.env.MP_SKIP_WEBHOOK_SIGNATURE === 'true'
+      && process.env.NODE_ENV !== 'production';
+    if (skipSig) {
+      console.warn('⚠️  MP webhook: signature verification SKIPPED (DEV escape hatch).');
+    } else {
+      mercadoPago.verifyWebhookSignature({
+        xSignature: req.headers['x-signature'],
+        xRequestId: req.headers['x-request-id'],
+        dataId,
+        secret: process.env.MP_WEBHOOK_SECRET
+      });
+    }
 
     const localPaymentId = parseInt(req.query.payment_id, 10);
     if (!Number.isFinite(localPaymentId)) {

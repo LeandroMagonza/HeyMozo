@@ -177,6 +177,7 @@ const UserScreen = () => {
 
   const isOnlinePayment = pendingPayment
     && (pendingPayment.method === 'transfer' || pendingPayment.method === 'modo');
+  const isMpPayment = pendingPayment && pendingPayment.method === 'mp_native';
   const isAwaitingValidation = pendingPayment
     && pendingPayment.status === 'awaiting_validation';
 
@@ -185,14 +186,21 @@ const UserScreen = () => {
     card_terminal: 'tarjeta',
     transfer: 'transferencia',
     modo: 'MODO',
+    mp_native: 'Mercado Pago',
   };
   const payMethodLabel = pendingPayment ? METHOD_LABELS[pendingPayment.method] : null;
+  // mp_native: el cliente está en MP o volvió y todavía no llegó el webhook;
+  // mostramos "Procesando…" porque tocar el botón no le abre ningún sheet
+  // útil (lo dejamos navegando — el polling lo va a redirigir cuando llegue
+  // el webhook).
   const payCtaText = pendingPayment
-    ? (isAwaitingValidation
-        ? `Validando ${payMethodLabel}…`
-        : (isOnlinePayment
-            ? `Pagar por ${payMethodLabel}`
-            : `Esperando al mozo · ${payMethodLabel}`))
+    ? (isMpPayment
+        ? 'Procesando con Mercado Pago…'
+        : (isAwaitingValidation
+            ? `Validando ${payMethodLabel}…`
+            : (isOnlinePayment
+                ? `Pagar por ${payMethodLabel}`
+                : `Esperando al mozo · ${payMethodLabel}`)))
     : 'Pagar / Dejar Propina';
   const payIcon = pendingPayment ? 'hourglass_top' : 'credit_card';
 
