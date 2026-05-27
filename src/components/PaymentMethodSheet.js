@@ -1,22 +1,28 @@
 // src/components/PaymentMethodSheet.js
 //
 // Sheet de pagar/dejar propina.
-// Layout (post-5.5; MP queda disabled hasta 5.6):
+// Layout (post-5.6 — todos los métodos funcionales):
 //   • Header "PAGAR / DEJAR PROPINA"
 //   • Card de consumo: items agrupados de la sesión + SUBTOTAL CONSUMO
-//   • Card de propina: chips 10/15/Otro/Nada (oculta en transfer/MODO)
+//   • Card de propina: chips 10/15/Otro/Nada (la propina se aplica solo a
+//     cash/tarjeta; transfer/MODO/MP ignoran el tip — la propina post-pago
+//     digital se resuelve en PostPagoPage en Sprint 5.9)
 //   • Total grande verde (Consumo + Propina)
 //   • Link "Dividir cuenta" (función real en Sprint 5.7, solo visual ahora)
 //   • Métodos con jerarquía:
-//       - MP (primary CTA azul, fullwidth) — disabled hasta 5.6
-//       - Transferencia (secondary fullwidth) — funcional desde 5.5
-//       - Grid 2-col: Tarjeta + MODO + Efectivo — Tarjeta/Efectivo funcionales
-//         desde 5.4, MODO desde 5.5
+//       - MP nativo (primary CTA azul, fullwidth) — Sprint 5.6: redirect a
+//         Checkout Pro de MP; vuelve por back_url a /pago-confirmado
+//       - Transferencia (secondary fullwidth) — Sprint 5.5
+//       - Grid 2-col: Tarjeta + MODO + Efectivo — Sprint 5.4/5.5
 //
-// El sheet llama onPaymentCreated(payment) cuando el POST /payments responde
-// 200. El padre se encarga de mostrar el waiting sheet adecuado según
-// payment.method (WaiterOnTheWay para cash/card; Transfer/Modo waiting para
-// los online) y de arrancar el polling.
+// MP nativo: el handler del POST devuelve `mpInitPoint` además del Payment.
+// En ese caso NO llamamos onPaymentCreated (no se monta waiting sheet),
+// hacemos `window.location.href = mpInitPoint`. Si MP confirma antes de que
+// el cliente vuelva, el polling de usePendingPayment lo redirige; si vuelve
+// primero, PagoConfirmadoPage pollea hasta que el webhook llegue.
+//
+// Para cash/card/transfer/modo: como antes — onPaymentCreated(payment) y el
+// padre monta el waiting sheet correspondiente.
 //
 // Nota propina: la decisión cerrada de Fase 2 (PHASE2_PLAN §Sprint 5) excluye
 // propina en transfer/MODO. La sheet sigue mostrando el bloque para no romper
@@ -51,7 +57,7 @@ const TIP_OPTIONS = [
 // el chip aparece deshabilitado con "Próximamente". Los IDs (`mp`, `transfer`,
 // `card`, `modo`, `cash`) coinciden con `Branch.paymentMethodsEnabled`.
 const METHOD_DEFS = {
-  mp:       { id: 'mp',       apiMethod: null,            label: 'Mercado Pago',  Icon: null,            variant: 'primary' },
+  mp:       { id: 'mp',       apiMethod: 'mp_native',     label: 'Mercado Pago',  Icon: FaCreditCard,    variant: 'primary' },
   transfer: { id: 'transfer', apiMethod: 'transfer',      label: 'Transferencia', Icon: FaUniversity,    variant: 'secondary' },
   card:     { id: 'card',     apiMethod: 'card_terminal', label: 'Tarjeta',       Icon: FaCreditCard,    variant: 'chip' },
   modo:     { id: 'modo',     apiMethod: 'modo',          label: 'MODO',          Icon: FaMobileAlt,     variant: 'chip' },
@@ -132,6 +138,12 @@ const PaymentMethodSheet = ({
         method: method.apiMethod,
         tipCents,
       });
+      // MP nativo: el backend devuelve mpInitPoint → redirect al checkout
+      // hosteado de MP. No montamos waiting sheet (el cliente sale del SPA).
+      if (data.mpInitPoint) {
+        window.location.href = data.mpInitPoint;
+        return;
+      }
       onPaymentCreated?.(data);
     } catch (err) {
       console.error('Error solicitando pago:', err);

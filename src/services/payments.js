@@ -39,12 +39,17 @@ const EVENT_NAME_BY_METHOD = {
 
 // Métodos de cobro en persona (mozo cobra físicamente → flujo cash/card).
 const IN_PERSON_METHODS = Object.keys(EVENT_NAME_BY_METHOD);
-// Métodos online (cliente paga digitalmente → flujo transfer/modo).
+// Métodos online con declaración manual (cliente apretó "Ya transferí" →
+// cajero valida desde su app bancaria). Flujo: pending → awaiting_validation
+// → paid.
 const ONLINE_METHODS = ['transfer', 'modo'];
-// Compat: el código de 5.4 usa SUPPORTED_METHODS para todo el filtro de
-// "Payments activos del cliente". Lo extendemos a todos los métodos que
-// pasan por este service (cliente-iniciados). MP nativo viene en 5.6.
-const SUPPORTED_METHODS = [...IN_PERSON_METHODS, ...ONLINE_METHODS];
+// MP nativo: el cliente paga en el Checkout Pro hosteado por MP y volvemos
+// por back_url + webhook. Flujo: pending → paid (vía applyMpPayment) o
+// pending → failed. No pasa por awaiting_validation porque MP confirma solo.
+// La propina está excluida hasta que Marketplace MP esté aprobado
+// (PHASE2_PLAN §Sprint 5).
+const MP_METHODS = ['mp_native'];
+const SUPPORTED_METHODS = [...IN_PERSON_METHODS, ...ONLINE_METHODS, ...MP_METHODS];
 
 // Métodos en los que un Payment "está vivo" para el cliente (banner sticky
 // + redirect cuando se cierra). Para cash/card es solo pending. Para
@@ -86,7 +91,10 @@ async function requestPayment({ tableId, deviceId, tableSessionId, method, tipCe
     throw err;
   }
   const isOnline = ONLINE_METHODS.includes(method);
-  const tip = isOnline
+  const isMp = MP_METHODS.includes(method);
+  // Online (transfer/modo) y MP nativo: propina excluida hasta Marketplace
+  // (PHASE2_PLAN §Sprint 5). Cash/card sí aceptan tip.
+  const tip = (isOnline || isMp)
     ? 0
     : (Number.isFinite(tipCents) && tipCents > 0 ? Math.floor(tipCents) : 0);
 
@@ -100,10 +108,11 @@ async function requestPayment({ tableId, deviceId, tableSessionId, method, tipCe
   }
   const companyId = table.Branch.companyId;
 
-  // Solo cash/card necesitan EventType seedeado. Para transfer/modo no
-  // creamos Event y no hace falta resolverlo.
+  // Solo cash/card necesitan EventType seedeado. Para transfer/modo/MP no
+  // creamos Event y no hace falta resolverlo (la validación llega por cajero
+  // o por webhook MP, no por el mozo de piso).
   let eventTypeId = null;
-  if (!isOnline) {
+  if (!isOnline && !isMp) {
     const eventName = EVENT_NAME_BY_METHOD[method];
     const eventType = await EventType.findOne({
       where: { companyId, eventName, isActive: true }
@@ -414,6 +423,89 @@ async function rejectPayment({ paymentId, userId }) {
   return payment.reload();
 }
 
+// ─── Sprint 5.6 — MP nativo ──────────────────────────────────────────────
+
+// Aplica el resultado de un MP payment al Payment local. Llamada desde el
+// webhook handler después de verificar firma + fetchear MP payment.
+//
+// Idempotente: si el Payment ya está en estado final, no hace nada (MP
+// reenvía webhooks).
+//
+// Si MP confirmó (approved → paid), marca paidAt + collectedByUserId=null
+// (no hay user humano que cobre — fue MP) + auto-cierra la sesión si el
+// balance llegó a 0. Si MP rechazó/canceló → failed sin tocar la sesión.
+//
+// Args:
+//   paymentId    — id local
+//   nextStatus   — 'paid' | 'failed' (calculado por mapMpStatus del caller)
+//   mpPaymentId  — id de MP
+//   mpRawPayload — payload completo de MP (lo guardamos para debugging)
+async function applyMpPayment({ paymentId, nextStatus, mpPaymentId, mpRawPayload }) {
+  const payment = await Payment.findByPk(paymentId);
+  if (!payment) {
+    const err = new Error(`Payment ${paymentId} no encontrado (webhook MP)`);
+    err.statusCode = 404;
+    throw err;
+  }
+  if (payment.method !== 'mp_native') {
+    const err = new Error(`Payment ${paymentId} no es mp_native (${payment.method})`);
+    err.statusCode = 400;
+    throw err;
+  }
+  // Idempotencia: si ya está cerrado, registramos el mpPaymentId si todavía
+  // no estaba y volvemos. MP reenvía webhooks varias veces — esto es esperado.
+  const isTerminal = payment.status === 'paid' || payment.status === 'failed';
+  if (isTerminal) {
+    if (mpPaymentId && payment.mpPaymentId !== String(mpPaymentId)) {
+      await payment.update({
+        mpPaymentId: String(mpPaymentId),
+        mpRawPayload: mpRawPayload || payment.mpRawPayload
+      });
+    }
+    return payment;
+  }
+
+  // Sólo manejamos transiciones a paid o failed. Si nextStatus es null
+  // (pending/in_process), guardamos el payload pero no movemos el estado.
+  if (nextStatus !== 'paid' && nextStatus !== 'failed') {
+    await payment.update({
+      mpPaymentId: mpPaymentId ? String(mpPaymentId) : payment.mpPaymentId,
+      mpRawPayload: mpRawPayload || payment.mpRawPayload
+    });
+    return payment;
+  }
+
+  const t = await sequelize.transaction();
+  try {
+    const now = new Date();
+    const update = {
+      status: nextStatus,
+      mpPaymentId: mpPaymentId ? String(mpPaymentId) : payment.mpPaymentId,
+      mpRawPayload: mpRawPayload || payment.mpRawPayload
+    };
+    if (nextStatus === 'paid') {
+      update.paidAt = now;
+    }
+    await payment.update(update, { transaction: t });
+
+    if (nextStatus === 'paid') {
+      const remaining = await _outstandingBalanceCents(payment.tableSessionId, { transaction: t });
+      if (remaining === 0) {
+        const session = await TableSession.findByPk(payment.tableSessionId, { transaction: t });
+        if (session && session.status === 'active') {
+          await session.update({ status: 'closed', closedAt: now }, { transaction: t });
+        }
+      }
+    }
+
+    await t.commit();
+    return payment.reload();
+  } catch (err) {
+    await t.rollback();
+    throw err;
+  }
+}
+
 // Lista de Payments awaiting_validation para el branch (la usa Acciones tab
 // de CajaShell — Sprint 5.8 — y permite smoke-test en 5.5).
 async function listAwaitingValidationForBranch(branchId) {
@@ -439,6 +531,7 @@ module.exports = {
   SUPPORTED_METHODS,
   IN_PERSON_METHODS,
   ONLINE_METHODS,
+  MP_METHODS,
   ACTIVE_STATUSES,
   EVENT_NAME_BY_METHOD,
   requestPayment,
@@ -447,6 +540,7 @@ module.exports = {
   declarePaid,
   validatePayment,
   rejectPayment,
+  applyMpPayment,
   listAwaitingValidationForBranch,
   getPaymentForClient,
   findPendingForSession

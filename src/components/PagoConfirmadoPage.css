@@ -81,3 +81,20 @@
   font-size: 0.82rem;
   color: var(--rd-text-tertiary, #9ca3af);
 }
+
+/* Sprint 5.6 — estados pending (MP procesando) y error */
+.pc-card--pending .pc-card__icon {
+  color: var(--rd-text-secondary, #e4e2e4);
+}
+
+.pc-card--error .pc-card__icon {
+  color: var(--rd-danger, #ef4444);
+}
+
+.pc-card__spin {
+  animation: pc-spin 0.9s linear infinite;
+}
+
+@keyframes pc-spin {
+  to { transform: rotate(360deg); }
+}
