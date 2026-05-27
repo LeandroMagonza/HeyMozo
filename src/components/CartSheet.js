@@ -6,7 +6,9 @@
 //   • "Notas para el mozo" (opcional)
 //   • "Ya enviado a cocina": pedidos confirmados de la sesión (read-only)
 //   • Total acumulado (carrito + ya pedido)
-//   • CTAs: "Seguir eligiendo" (cierra) + "Confirmar Pedido ($X)" (carrito>0)
+//   • CTA: "Confirmar Pedido ($X)" — visible solo si carrito>0. El cliente
+//     cierra el sheet con la X del header o tocando el overlay (sin botón
+//     redundante "Seguir eligiendo").
 //
 // Se abre tanto desde el icono carrito del header como desde el bottom bar
 // sticky del MenuClient.
@@ -238,15 +240,8 @@ const CartSheet = ({
               <span className="cart-sheet__total-value">{formatPrice(grandTotal)}</span>
             </div>
 
-            <div className="cart-sheet__actions">
-              <button
-                type="button"
-                className="cart-sheet__secondary rd-tap-scale"
-                onClick={onClose}
-              >
-                Seguir eligiendo
-              </button>
-              {hasCart && (
+            {hasCart && (
+              <div className="cart-sheet__actions">
                 <button
                   type="button"
                   className="cart-sheet__primary rd-tap-scale"
@@ -255,8 +250,8 @@ const CartSheet = ({
                 >
                   {submitting ? 'Enviando…' : `Confirmar Pedido (${formatPrice(cartTotal)})`}
                 </button>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         )}
       </div>

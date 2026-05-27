@@ -284,20 +284,8 @@
   gap: 0.625rem;
 }
 
-.cart-sheet__secondary {
-  flex: 1;
-  background: transparent;
-  border: 1px solid var(--rd-border);
-  color: var(--rd-text);
-  border-radius: var(--rd-radius-full);
-  padding: 0.875rem 1rem;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-
 .cart-sheet__primary {
-  flex: 1.4;
+  flex: 1;
   background: var(--rd-brand-purple);
   border: none;
   color: var(--rd-text);
