@@ -2,7 +2,7 @@
 
 Tracker live de los sub-PRs de Fase 2. Una línea por sub-PR con commit, branch, PR# y estado.
 
-**Última actualización:** 2026-05-27 (5.6 mergeado; 5.7 abierto)
+**Última actualización:** 2026-05-28 (5.7 mergeado con fixes del smoke; próximo 5.8)
 
 > Cuando un PR se mergea, mover su sub-PR a "✅ Mergeado" abajo y actualizar el [PHASE2_PLAN.md](PHASE2_PLAN.md) si corresponde (cambiar 🚧 → ✅ para el sprint completo cuando todas las sub-PRs estén in).
 
@@ -10,17 +10,17 @@ Tracker live de los sub-PRs de Fase 2. Una línea por sub-PR con commit, branch,
 
 ## 🚧 En review / abiertos
 
-| Sub-PR | Branch | Commit | PR | Notas |
-|---|---|---|---|---|
-| 5.7 | `feature/phase2-payment-split-monto` | `ffb30e2` | [#35](https://github.com/LeandroMagonza/HeyMozo/pull/35) | feat(payments): split por monto cliente-iniciado. **Backend:** `requestPayment` acepta `splitAmountCents` opcional (entero positivo, validado ≤ outstanding dentro de la transacción para evitar carreras entre devices). Dedupe por `(sessionId, method, status activo)` ahora 409 si el monto declarado difiere del Payment activo — forzar cancelar antes de cambiar evita devolver silenciosamente un subtotal viejo. `POST /api/tables/:id/payments` propaga `splitAmountCents`. **Frontend:** nuevo `SplitAmountSheet` (bottom sheet sobre el `PaymentMethodSheet`) con dos opciones radio "El total completo" / "Solo mi parte" + input libre + chips 1/2, 1/3, 1/4 que pre-llenan el monto fraccionando el balance. `PaymentMethodSheet` activa el botón "Dividir cuenta" (antes placeholder disabled), guarda `splitAmountCents` en estado, muestra chip "Pagás $X de $Y · cambiar", manda el monto al POST. Propina sobre `payableCents` (no total). **Sin migrations** — la auto-liberación de mesa al llegar balance=0 ya existía de 5.4. |
+_(Ninguno abierto. 5.7 mergeado — ver abajo.)_
 
 ---
 
 ## 📝 Pendientes (próximos)
 
-_(Sprint 4 cerrado. Sprint 5.1–5.6 mergeados. Sprint 5 (Pagos digitales + Club VIP) en curso — diseño cerrado 2026-05-24, ver [PHASE2_PLAN.md](PHASE2_PLAN.md) §Sprint 5)._
+_(Sprint 4 cerrado. Sprint 5.1–5.7 mergeados. Sprint 5 (Pagos digitales + Club VIP) en curso — diseño cerrado 2026-05-24, ver [PHASE2_PLAN.md](PHASE2_PLAN.md) §Sprint 5)._
 
 Próximos sub-PRs Sprint 5: 5.8 (CajaShell Acciones + liberar mesa) → 5.9 (PostPagoPage) → 5.10 (Club CajaShell) → 5.11 (Vouchers).
+
+**Tarea operacional pendiente (MP nativo, pre-deploy):** el smoke 5.6 confirmó que los webhooks reales de MP dan `SignatureMismatch` cuando hay **múltiples webhooks configurados en el panel MP devs** (se acumularon al rotar ngrok en dev). Antes de prod: dejar UN solo webhook y sincronizar su Clave Secreta con `MP_WEBHOOK_SECRET`. El código de validación de firma está OK (validado crafteando un webhook firmado). Ver `SPRINT_5_6_PROD_CHECKLIST.md`.
 
 ---
 
@@ -54,6 +54,7 @@ Próximos sub-PRs Sprint 5: 5.8 (CajaShell Acciones + liberar mesa) → 5.9 (Pos
 | 5.4 | `feature/phase2-payment-cash-card` | `fcc28f7` | [#31](https://github.com/LeandroMagonza/HeyMozo/pull/31) | feat(payments): flow cash/tarjeta + UX redesign no bloqueante. Migration `Payment.eventId` + seed 2 EventTypes (`Cobrar efectivo`/`Cobrar tarjeta`, cardVariant=red). Endpoints `POST /tables/:id/payments`, `GET /payments/:id/status`, `POST /payments/:id/cancel`, `POST /payments/:id/collect`, `GET /tables/:id/pending-payment`. `PaymentMethodSheet` (items + propina 10/15/Otro/Nada + jerarquía MP/Transferencia/Tarjeta+Efectivo). UX no bloqueante: botón "Pagar" en UserScreen muta a "Esperando al mozo · efectivo/tarjeta"; re-tap abre `WaiterOnTheWaySheet`. Hook `usePendingPayment` con polling 4s + auto-redirect a `/pago-confirmado`. OpShell: AlertCard "Cobré $X". Auto-cierre TableSession si balance=0. |
 | 5.5 | `feature/phase2-payment-transfer-modo` | `7927771` | [#33](https://github.com/LeandroMagonza/HeyMozo/pull/33) | feat(payments): flow transferencia + MODO cliente + endpoints cajero. `payments.js` agrega `ONLINE_METHODS=['transfer','modo']` con flujo `pending → awaiting_validation → paid/failed` (cliente declara → cajero valida). `declarePaid`, `validatePayment`, `rejectPayment` services. `listAwaitingValidationForBranch` para el tab Acciones (en 5.8). Frontend: `TransferWaitingSheet` (alias copiable + comprobante opcional + "Ya transferí"), `ModoWaitingSheet` (deeplink `modo://` con fallback web), polling cliente cada 4s. Propina forzada a 0 en transfer/MODO (decisión PHASE2_PLAN — evita ruido fiscal). |
 | 5.6 | `feature/phase2-payment-mp-native` | `287c28b` | [#34](https://github.com/LeandroMagonza/HeyMozo/pull/34) | feat(payments): MP nativo (Checkout Pro) + webhook HMAC. **Backend:** nuevo service `src/services/mercadoPago.js` (SDK oficial v3) con `createPreference` (Checkout Pro, items/external_reference/back_urls/auto_return/binary_mode), `fetchMpPayment`, `verifyWebhookSignature` (vía `WebhookSignatureValidator` de la SDK, tolerancia 10min), `mapMpStatus`. Helper `_resolveAccessToken` usa `Branch.mpAccessToken` (OAuth de 5.3) con fallback dev-only a `MP_ACCESS_TOKEN` global. `payments.js`: agrega `MP_METHODS=['mp_native']` a `SUPPORTED_METHODS`, `requestPayment` para mp_native fuerza tipCents=0 y no crea Event, y nuevo `applyMpPayment` idempotente que marca paid/failed + auto-cierra sesión si balance=0. `customerSessions.js`: POST `/tables/:id/payments` extendido — si method='mp_native' crea preference y devuelve `mpInitPoint`. Nuevo endpoint público `POST /api/payments/mp/webhook?payment_id=<local>` que verifica firma → resuelve branch desde Payment local → fetch MP con AT del branch → `applyMpPayment`. **Frontend:** `PaymentMethodSheet` activa chip MP, redirect `window.location.href = mpInitPoint`. `PagoConfirmadoPage` polling 2s/timeout 30s. **Env:** nueva `MP_WEBHOOK_SECRET`, nota sobre ngrok para `APP_BASE_URL` dev. Sin migrations (ENUM `mp_native` existía de 5.2). Smoke MP real hecho con ngrok + bugs descubiertos fixeados (commit `b70daf6`). Checklist de pasaje a prod: `SPRINT_5_6_PROD_CHECKLIST.md`. |
+| 5.7 | `feature/phase2-payment-split-monto` | `1dbafb2` | [#35](https://github.com/LeandroMagonza/HeyMozo/pull/35) | feat(payments): split por monto + 4 fixes del smoke. **Split:** `requestPayment` acepta `splitAmountCents` opcional (validado ≤ outstanding en transacción; 409 si difiere de un pending activo). `SplitAmountSheet` (radio Total/Solo-mi-parte + input libre + chips 1/2,1/3,1/4). `PaymentMethodSheet` activa "Dividir cuenta" + chip "Pagás $X de $Y". Propina sobre la parte que paga. Sin migrations (auto-liberación balance=0 ya existía de 5.4). **Fixes pre-existentes hallados en el smoke:** (1) `GET /orders` devolvía 401 sin cookie → axios interceptor redirigía a "/" → rompía clientes nuevos; ahora 200 `{orders:[]}`. (2) `UserScreen` no bootstrap-eaba la sesión en mount → pagos fallaban; ahora sí. (3) MP nativo pending mostraba el sheet de cash/card ("mozo con tarjeta"); ahora `MpPendingSheet` propio. (4) MP pending colgado sin salida si se abandona Checkout Pro; ahora expira a failed tras 15min (lazy en `findPendingForSession`) + cancel manual. **Smoke MP 5.6 validado E2E** (pago aprobado→webhook firmado→paid→sesión cerrada); `SignatureMismatch` con webhooks reales = config panel (múltiples webhooks), no código. |
 
 ---
 
