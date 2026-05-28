@@ -1,0 +1,290 @@
+/* src/components/SplitAmountSheet.css — Sprint 5.7 "Dividir cuenta" */
+
+.split-sheet__overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.78);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: calc(var(--rd-z-modal, 1000) + 1);
+  animation: rd-fade-in 0.2s ease-out;
+  font-family: var(--rd-font-sans);
+}
+
+.split-sheet {
+  background: var(--rd-bg-sheet, #1c1c1e);
+  color: var(--rd-text, #ffffff);
+  border-radius: var(--rd-radius-sheet-top, 16px 16px 0 0);
+  width: 100%;
+  max-width: 32rem;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  animation: rd-slide-up 0.3s var(--rd-ease-out, ease-out) forwards;
+  box-shadow: var(--rd-shadow-modal);
+}
+
+.split-sheet__handle {
+  width: 2.5rem;
+  height: 0.25rem;
+  border-radius: var(--rd-radius-full, 9999px);
+  background: var(--rd-border, #3a3a3c);
+  margin: 0.625rem auto 0;
+  flex-shrink: 0;
+}
+
+.split-sheet__header {
+  padding: 0.75rem 1.25rem 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-shrink: 0;
+}
+
+.split-sheet__title {
+  margin: 0;
+  flex: 1;
+  text-align: center;
+  font-size: 0.85rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--rd-text, #ffffff);
+}
+
+.split-sheet__close {
+  background: var(--rd-bg-card-strong, #3a3a3c);
+  color: var(--rd-text, #ffffff);
+  border: none;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: var(--rd-radius-full, 9999px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.split-sheet__body {
+  padding: 0.5rem 1.25rem 1.5rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.split-sheet__outstanding {
+  text-align: center;
+  color: var(--rd-text-secondary, #e4e2e4);
+  font-size: 0.9rem;
+  padding: 0.25rem 0 0.5rem;
+}
+
+.split-sheet__outstanding strong {
+  color: var(--rd-brand-green-soft, #4ade80);
+  font-weight: 800;
+  margin-left: 0.35rem;
+}
+
+/* ── Opciones (radio cards) ─────────────────────── */
+
+.split-sheet__option {
+  background: var(--rd-bg-card, #2c2c2e);
+  border: 1px solid var(--rd-border, #3a3a3c);
+  border-radius: var(--rd-radius-md, 12px);
+  padding: 0.85rem 1rem;
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+button.split-sheet__option {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.split-sheet__option--active {
+  border-color: var(--rd-brand-green, #16a34a);
+  background: rgba(22, 163, 74, 0.08);
+}
+
+.split-sheet__option-row {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  background: transparent;
+  border: none;
+  color: inherit;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+
+.split-sheet__option-radio {
+  width: 1.15rem;
+  height: 1.15rem;
+  border-radius: var(--rd-radius-full, 9999px);
+  border: 2px solid var(--rd-border, #3a3a3c);
+  flex-shrink: 0;
+  position: relative;
+  transition: border-color 0.15s ease;
+}
+
+.split-sheet__option--active .split-sheet__option-radio {
+  border-color: var(--rd-brand-green, #16a34a);
+}
+
+.split-sheet__option--active .split-sheet__option-radio::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 0.6rem;
+  height: 0.6rem;
+  background: var(--rd-brand-green, #16a34a);
+  border-radius: var(--rd-radius-full, 9999px);
+}
+
+.split-sheet__option-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  flex: 1;
+}
+
+.split-sheet__option-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--rd-text, #ffffff);
+}
+
+.split-sheet__option-meta {
+  font-size: 0.85rem;
+  color: var(--rd-text-tertiary, #9ca3af);
+  font-weight: 500;
+}
+
+/* ── Input + chips ─────────────────────────────── */
+
+.split-sheet__input-row {
+  display: flex;
+  align-items: center;
+  background: var(--rd-bg, #1c1c1e);
+  border: 1px solid var(--rd-border, #3a3a3c);
+  border-radius: var(--rd-radius-md, 10px);
+  padding: 0 0.85rem;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.split-sheet__option--active .split-sheet__input-row:focus-within {
+  border-color: var(--rd-brand-green, #16a34a);
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.18);
+}
+
+.split-sheet__input-prefix {
+  color: var(--rd-text-tertiary, #9ca3af);
+  font-size: 1.1rem;
+  font-weight: 700;
+  padding-right: 0.4rem;
+}
+
+.split-sheet__input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--rd-text, #ffffff);
+  font-size: 1.25rem;
+  font-weight: 700;
+  font-family: inherit;
+  padding: 0.7rem 0;
+  width: 100%;
+  /* hide spinner arrows */
+  -moz-appearance: textfield;
+}
+
+.split-sheet__input::-webkit-outer-spin-button,
+.split-sheet__input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.split-sheet__fractions {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+}
+
+.split-sheet__fraction {
+  background: var(--rd-bg-card-strong, #3a3a3c);
+  border: 1px solid transparent;
+  border-radius: var(--rd-radius-md, 10px);
+  padding: 0.55rem 0.4rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+  cursor: pointer;
+  color: var(--rd-text, #ffffff);
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.split-sheet__fraction:hover {
+  background: var(--rd-bg-card, #2c2c2e);
+  border-color: var(--rd-border, #3a3a3c);
+}
+
+.split-sheet__fraction-label {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--rd-brand-green-soft, #4ade80);
+}
+
+.split-sheet__fraction-amount {
+  font-size: 0.78rem;
+  color: var(--rd-text-tertiary, #9ca3af);
+  font-weight: 600;
+}
+
+.split-sheet__error {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--rd-brand-error, #ef4444);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  padding: 0.55rem 0.75rem;
+  border-radius: var(--rd-radius-md, 10px);
+  font-size: 0.85rem;
+}
+
+/* ── Confirm ───────────────────────────────────── */
+
+.split-sheet__confirm {
+  margin-top: 0.4rem;
+  background: var(--rd-brand-green, #16a34a);
+  color: #ffffff;
+  border: none;
+  border-radius: var(--rd-radius-md, 10px);
+  padding: 0.9rem 1rem;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: filter 0.15s ease, opacity 0.15s ease;
+}
+
+.split-sheet__confirm:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+.split-sheet__confirm:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

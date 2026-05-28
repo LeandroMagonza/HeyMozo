@@ -17,12 +17,14 @@
 
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { bootstrapCustomerSession } from '../services/device';
 import Phone from './Phone';
 import DecorativeGlow from './DecorativeGlow';
 import CallWaiterSheet from './CallWaiterSheet';
 import PaymentMethodSheet from './PaymentMethodSheet';
 import WaiterOnTheWaySheet from './WaiterOnTheWaySheet';
 import OnlinePaymentSheet from './OnlinePaymentSheet';
+import MpPendingSheet from './MpPendingSheet';
 import usePendingPayment from '../hooks/usePendingPayment';
 import {
   getCompany,
@@ -70,6 +72,17 @@ const UserScreen = () => {
   useEffect(() => {
     const loadData = async () => {
       try {
+        // Bootstrap del device + attach a la sesión activa de la mesa. Setea
+        // la cookie HttpOnly `hm_device` y registra al cliente como
+        // participante. Sin esto, todas las llamadas customer-facing que
+        // necesitan cookie (orders, pending-payment, payments) responden
+        // "no atachado" y bloquean el flow de pago.
+        try {
+          await bootstrapCustomerSession(tableId);
+        } catch (err) {
+          console.warn('bootstrapCustomerSession failed (continuamos igual):', err.message);
+        }
+
         const [companyData, branchData, tableData, menuData] = await Promise.all([
           getCompany(companyId),
           getBranch(branchId),
@@ -100,13 +113,18 @@ const UserScreen = () => {
             console.error('Error sending scan event:', err);
           }
         }
+
+        // refreshPastOrders va DESPUÉS del bootstrap (que está al principio
+        // de loadData). Si lo disparáramos en paralelo, podría hitear
+        // /tables/:id/orders antes de que la cookie hm_device esté seteada,
+        // devolviendo lista vacía aunque el cliente ya tenga pedidos.
+        refreshPastOrders();
       } catch (err) {
         console.error('Error loading data:', err);
       }
     };
 
     loadData();
-    refreshPastOrders();
   }, [companyId, branchId, tableId, refreshPastOrders]);
 
   const showToast = (label, color) => {
@@ -135,6 +153,9 @@ const UserScreen = () => {
   };
 
   // Click del botón Pagar — bifurca según si hay payment activo o no.
+  // Para cualquier pending (cash/card → WaiterOnTheWaySheet, transfer/modo →
+  // OnlinePaymentSheet, mp_native → MpPendingSheet) abrimos el activeSheet; el
+  // método del pendingPayment decide cuál se rendera (ver el JSX abajo).
   const handlePayClick = async () => {
     if (pendingPayment) {
       setActiveSheetOpen(true);
@@ -304,7 +325,7 @@ const UserScreen = () => {
       />
 
       <WaiterOnTheWaySheet
-        open={activeSheetOpen && Boolean(pendingPayment) && !isOnlinePayment}
+        open={activeSheetOpen && Boolean(pendingPayment) && !isOnlinePayment && !isMpPayment}
         payment={pendingPayment}
         onClose={() => setActiveSheetOpen(false)}
         onCancel={handleCancelPending}
@@ -317,6 +338,14 @@ const UserScreen = () => {
         branch={branch}
         onClose={() => setActiveSheetOpen(false)}
         onDeclared={handlePaymentDeclared}
+        onCancel={handleCancelPending}
+        cancelling={cancelInProgress}
+      />
+
+      <MpPendingSheet
+        open={activeSheetOpen && Boolean(pendingPayment) && isMpPayment}
+        payment={pendingPayment}
+        onClose={() => setActiveSheetOpen(false)}
         onCancel={handleCancelPending}
         cancelling={cancelInProgress}
       />

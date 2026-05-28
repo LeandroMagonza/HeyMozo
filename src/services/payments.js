@@ -57,6 +57,15 @@ const SUPPORTED_METHODS = [...IN_PERSON_METHODS, ...ONLINE_METHODS, ...MP_METHOD
 // está esperando que el cajero valide).
 const ACTIVE_STATUSES = ['pending', 'awaiting_validation'];
 
+// Timeout de MP nativo pending. El cliente puede abrir Checkout Pro y
+// abandonarlo (cierra pestaña, error pre-pago como "una de las partes es de
+// prueba", etc.). En ese caso MP NO manda webhook, así que el Payment quedaría
+// `pending` indefinidamente y el botón "Pagar" se queda en "Procesando con
+// Mercado Pago…" para siempre. Lo expiramos a `failed` pasados estos minutos
+// (lazy: se chequea en cada poll de findPendingForSession). 15 min cubre de
+// sobra un checkout real (que dura 1-3 min).
+const MP_PENDING_TIMEOUT_MS = 15 * 60 * 1000;
+
 // Devuelve el balance pendiente de la sesión en cents:
 // sum(Order.totalCents) - sum(Payment.paid.subtotalCents).
 // Las propinas NO entran en el balance (decisión Sprint 5).
@@ -79,12 +88,15 @@ async function _outstandingBalanceCents(tableSessionId, { transaction } = {}) {
 // fuerza tipCents=0 (PHASE2_PLAN §Sprint 5: "Propina excluida").
 //
 // Params:
-//   tableId       — mesa
-//   deviceId      — device del cliente (cookie)
-//   tableSessionId — sesión activa validada por el caller
-//   method        — 'cash' | 'card_terminal' | 'transfer' | 'modo'
-//   tipCents      — propina en cents (>= 0); ignorado para transfer/modo
-async function requestPayment({ tableId, deviceId, tableSessionId, method, tipCents }) {
+//   tableId         — mesa
+//   deviceId        — device del cliente (cookie)
+//   tableSessionId  — sesión activa validada por el caller
+//   method          — 'cash' | 'card_terminal' | 'transfer' | 'modo' | 'mp_native'
+//   tipCents        — propina en cents (>= 0); ignorado para transfer/modo/MP
+//   splitAmountCents — opcional (Sprint 5.7): si llega, el cliente paga una
+//                      fracción del balance ("Dividir cuenta"). Debe ser > 0 y
+//                      <= outstanding. Si null/undefined, paga el balance entero.
+async function requestPayment({ tableId, deviceId, tableSessionId, method, tipCents, splitAmountCents }) {
   if (!SUPPORTED_METHODS.includes(method)) {
     const err = new Error(`method debe ser uno de: ${SUPPORTED_METHODS.join(', ')}`);
     err.statusCode = 400;
@@ -97,6 +109,20 @@ async function requestPayment({ tableId, deviceId, tableSessionId, method, tipCe
   const tip = (isOnline || isMp)
     ? 0
     : (Number.isFinite(tipCents) && tipCents > 0 ? Math.floor(tipCents) : 0);
+
+  // Sprint 5.7 — validación del monto parcial. Aceptamos null/undefined/0 como
+  // "pagar todo el balance". Si vino un número >0, lo usamos como subtotal
+  // después de comparar contra el outstanding (dentro de la transacción).
+  let requestedSplitCents = null;
+  if (splitAmountCents != null && splitAmountCents !== 0) {
+    const n = Number(splitAmountCents);
+    if (!Number.isFinite(n) || n <= 0 || !Number.isInteger(n)) {
+      const err = new Error('splitAmountCents debe ser un entero positivo');
+      err.statusCode = 400;
+      throw err;
+    }
+    requestedSplitCents = n;
+  }
 
   const table = await Table.findByPk(tableId, {
     include: [{ model: Branch, attributes: ['id', 'companyId'] }]
@@ -131,6 +157,9 @@ async function requestPayment({ tableId, deviceId, tableSessionId, method, tipCe
   // Si ya hay un Payment del MISMO método en estado activo para esta sesión,
   // devolvemos ese — el cliente apretó dos veces o volvió de otra pantalla.
   // Cash/card: solo "pending"; transfer/modo: pending o awaiting_validation.
+  // Sprint 5.7: si el cliente está cambiando el monto del split (existing
+  // subtotal != requestedSplitCents) no podemos silenciosamente devolver el
+  // viejo — sería confuso. Forzamos cancelar primero con 409.
   const existingActive = await Payment.findOne({
     where: {
       tableSessionId,
@@ -140,16 +169,38 @@ async function requestPayment({ tableId, deviceId, tableSessionId, method, tipCe
     order: [['createdAt', 'DESC']]
   });
   if (existingActive) {
+    if (requestedSplitCents != null && existingActive.subtotalCents !== requestedSplitCents) {
+      const err = new Error(
+        `Ya tenés un cobro pendiente por $${existingActive.subtotalCents / 100}. Cancelalo antes de cambiar el monto.`
+      );
+      err.statusCode = 409;
+      throw err;
+    }
     return existingActive;
   }
 
   const t = await sequelize.transaction();
   try {
-    const subtotalCents = await _outstandingBalanceCents(tableSessionId, { transaction: t });
-    if (subtotalCents <= 0) {
+    const outstandingCents = await _outstandingBalanceCents(tableSessionId, { transaction: t });
+    if (outstandingCents <= 0) {
       const err = new Error('No hay saldo pendiente para cobrar en esta sesión');
       err.statusCode = 400;
       throw err;
+    }
+    // Si vino splitAmountCents (Sprint 5.7), no puede exceder lo que queda
+    // por cobrar. La sesión puede tener pagos parciales en paralelo de otros
+    // devices, así que comparamos contra el outstanding actual (no contra el
+    // total original de orders). Si excede → 400 con mensaje accionable.
+    let subtotalCents = outstandingCents;
+    if (requestedSplitCents != null) {
+      if (requestedSplitCents > outstandingCents) {
+        const err = new Error(
+          `El monto solicitado ($${requestedSplitCents / 100}) excede el saldo pendiente ($${outstandingCents / 100}).`
+        );
+        err.statusCode = 400;
+        throw err;
+      }
+      subtotalCents = requestedSplitCents;
     }
 
     let eventId = null;
@@ -187,7 +238,7 @@ async function requestPayment({ tableId, deviceId, tableSessionId, method, tipCe
 // banner sticky del cliente pollea cada N segundos y mientras haya uno
 // activo muestra "Esperando…"; al transitar a paid/failed redirige.
 async function findPendingForSession(tableSessionId) {
-  return Payment.findOne({
+  const payment = await Payment.findOne({
     where: {
       tableSessionId,
       status: { [Op.in]: ACTIVE_STATUSES },
@@ -195,6 +246,22 @@ async function findPendingForSession(tableSessionId) {
     },
     order: [['createdAt', 'DESC']]
   });
+  if (!payment) return null;
+
+  // Expiración lazy de MP nativo pending abandonado (ver MP_PENDING_TIMEOUT_MS).
+  // Solo aplica a mp_native pending: cash/card los cierra el mozo, transfer/modo
+  // el cajero, y MP confirmado/rechazado llega por webhook. El único que puede
+  // quedar colgado sin actor que lo resuelva es mp_native pending.
+  if (
+    payment.method === 'mp_native' &&
+    payment.status === 'pending' &&
+    Date.now() - new Date(payment.createdAt).getTime() > MP_PENDING_TIMEOUT_MS
+  ) {
+    await payment.update({ status: 'failed' });
+    // Reintentamos por si había otro Payment activo más viejo en la sesión.
+    return findPendingForSession(tableSessionId);
+  }
+  return payment;
 }
 
 // Devuelve { id, status, subtotalCents, tipCents, totalCents, method, paidAt,

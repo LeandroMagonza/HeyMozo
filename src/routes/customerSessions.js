@@ -174,11 +174,17 @@ router.post('/tables/:tableId/orders', async (req, res) => {
 // GET /api/tables/:tableId/orders — historial de pedidos de la sesión activa
 // para el device de la cookie. Prerequisito de Pagos digitales (Sprint 7).
 // Devuelve [] si el device no tiene sesión activa en esta mesa.
+//
+// IMPORTANTE: cuando no hay cookie `hm_device` devolvemos `{ orders: [] }`
+// con 200, NO 401. El cliente recién llega al QR sin bootstrap previo
+// (UserScreen no bootstrap-ea hasta que abre el menú/carrito), y un 401
+// dispararía el axios interceptor del front (wipe localStorage + redirect
+// a "/"). Mismo patrón que `GET /pending-payment` más abajo.
 router.get('/tables/:tableId/orders', async (req, res) => {
   try {
     const deviceId = readDeviceIdFromCookie(req);
     if (!deviceId) {
-      return res.status(401).json({ error: 'Device no identificado' });
+      return res.json({ orders: [] });
     }
     const tableId = parseInt(req.params.tableId, 10);
     if (!Number.isFinite(tableId)) {
@@ -230,9 +236,11 @@ router.get('/orders/:orderId', async (req, res) => {
 // ─── Sprint 5.4: pagos cash / tarjeta (cliente) ─────────────────────────────
 
 // POST /api/tables/:tableId/payments — cliente solicita cobro cash/tarjeta.
-// Body: { method: 'cash' | 'card_terminal', tipCents }
-// Backend calcula subtotalCents = balance pendiente. Crea Event (alerta OpShell)
-// + Payment(pending). Devuelve el Payment para redirect a /waiting-payment/:id.
+// Body: { method, tipCents, splitAmountCents? }
+// Backend calcula subtotalCents = balance pendiente (o splitAmountCents si
+// vino, Sprint 5.7 "Dividir cuenta"). Crea Event (alerta OpShell, solo
+// cash/card) + Payment(pending). Devuelve el Payment para redirect a
+// /waiting-payment/:id (o mpInitPoint si method='mp_native').
 router.post('/tables/:tableId/payments', async (req, res) => {
   try {
     const deviceId = readDeviceIdFromCookie(req);
@@ -251,13 +259,14 @@ router.post('/tables/:tableId/payments', async (req, res) => {
       });
     }
 
-    const { method, tipCents } = req.body || {};
+    const { method, tipCents, splitAmountCents } = req.body || {};
     const payment = await paymentService.requestPayment({
       tableId,
       deviceId,
       tableSessionId: session.id,
       method,
-      tipCents: Number(tipCents) || 0
+      tipCents: Number(tipCents) || 0,
+      splitAmountCents: splitAmountCents != null ? Number(splitAmountCents) : null
     });
 
     const response = {
