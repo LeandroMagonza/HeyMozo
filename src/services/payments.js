@@ -57,6 +57,15 @@ const SUPPORTED_METHODS = [...IN_PERSON_METHODS, ...ONLINE_METHODS, ...MP_METHOD
 // está esperando que el cajero valide).
 const ACTIVE_STATUSES = ['pending', 'awaiting_validation'];
 
+// Timeout de MP nativo pending. El cliente puede abrir Checkout Pro y
+// abandonarlo (cierra pestaña, error pre-pago como "una de las partes es de
+// prueba", etc.). En ese caso MP NO manda webhook, así que el Payment quedaría
+// `pending` indefinidamente y el botón "Pagar" se queda en "Procesando con
+// Mercado Pago…" para siempre. Lo expiramos a `failed` pasados estos minutos
+// (lazy: se chequea en cada poll de findPendingForSession). 15 min cubre de
+// sobra un checkout real (que dura 1-3 min).
+const MP_PENDING_TIMEOUT_MS = 15 * 60 * 1000;
+
 // Devuelve el balance pendiente de la sesión en cents:
 // sum(Order.totalCents) - sum(Payment.paid.subtotalCents).
 // Las propinas NO entran en el balance (decisión Sprint 5).
@@ -229,7 +238,7 @@ async function requestPayment({ tableId, deviceId, tableSessionId, method, tipCe
 // banner sticky del cliente pollea cada N segundos y mientras haya uno
 // activo muestra "Esperando…"; al transitar a paid/failed redirige.
 async function findPendingForSession(tableSessionId) {
-  return Payment.findOne({
+  const payment = await Payment.findOne({
     where: {
       tableSessionId,
       status: { [Op.in]: ACTIVE_STATUSES },
@@ -237,6 +246,22 @@ async function findPendingForSession(tableSessionId) {
     },
     order: [['createdAt', 'DESC']]
   });
+  if (!payment) return null;
+
+  // Expiración lazy de MP nativo pending abandonado (ver MP_PENDING_TIMEOUT_MS).
+  // Solo aplica a mp_native pending: cash/card los cierra el mozo, transfer/modo
+  // el cajero, y MP confirmado/rechazado llega por webhook. El único que puede
+  // quedar colgado sin actor que lo resuelva es mp_native pending.
+  if (
+    payment.method === 'mp_native' &&
+    payment.status === 'pending' &&
+    Date.now() - new Date(payment.createdAt).getTime() > MP_PENDING_TIMEOUT_MS
+  ) {
+    await payment.update({ status: 'failed' });
+    // Reintentamos por si había otro Payment activo más viejo en la sesión.
+    return findPendingForSession(tableSessionId);
+  }
+  return payment;
 }
 
 // Devuelve { id, status, subtotalCents, tipCents, totalCents, method, paidAt,
