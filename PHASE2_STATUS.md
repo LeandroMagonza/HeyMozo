@@ -2,7 +2,7 @@
 
 Tracker live de los sub-PRs de Fase 2. Una línea por sub-PR con commit, branch, PR# y estado.
 
-**Última actualización:** 2026-05-28 (5.7 mergeado con fixes del smoke; próximo 5.8)
+**Última actualización:** 2026-05-30 (smoke MP nativo E2E + PR #36 con 2 fixes de webhook; próximo 5.8)
 
 > Cuando un PR se mergea, mover su sub-PR a "✅ Mergeado" abajo y actualizar el [PHASE2_PLAN.md](PHASE2_PLAN.md) si corresponde (cambiar 🚧 → ✅ para el sprint completo cuando todas las sub-PRs estén in).
 
@@ -10,7 +10,9 @@ Tracker live de los sub-PRs de Fase 2. Una línea por sub-PR con commit, branch,
 
 ## 🚧 En review / abiertos
 
-_(Ninguno abierto. 5.7 mergeado — ver abajo.)_
+| Fix | Branch | Commit | PR | Notas |
+|---|---|---|---|---|
+| FIX-2 | `fix/mp-webhook-verification` | `d63fbb6` | [#36](https://github.com/LeandroMagonza/HeyMozo/pull/36) | fix(payments): webhook MP robusto. Smoke E2E (2026-05-30) destapó **2 bugs reales** (la nota previa decía "código OK" — incorrecto): (1) el `WebhookSignatureValidator` de la SDK lee `ts` como ms pero MP lo manda en **segundos** → `TimestampOutOfTolerance` rechazaba firmas VÁLIDAS (se quita `toleranceSeconds`); (2) MP firma el canal del `notification_url` de la preference con un secret que **no expone en el panel** → la firma nunca valida. La verificación pasa a defense-in-depth **no bloqueante** y el gate de seguridad real es el **fetch autenticado + external_reference + idempotencia** (un Payment va a `paid` SII existe en MP un pago approved atado a ese Payment). Se elimina el bloque DEBUG y el escape hatch `MP_SKIP_WEBHOOK_SIGNATURE`. Incluye fix `REACT_APP_API_URL=/api` (build single-origin). Security-review del diff: limpio. Pendiente: merge de Leandro. |
 
 ---
 
@@ -20,7 +22,7 @@ _(Sprint 4 cerrado. Sprint 5.1–5.7 mergeados. Sprint 5 (Pagos digitales + Club
 
 Próximos sub-PRs Sprint 5: 5.8 (CajaShell Acciones + liberar mesa) → 5.9 (PostPagoPage) → 5.10 (Club CajaShell) → 5.11 (Vouchers).
 
-**Tarea operacional pendiente (MP nativo, pre-deploy):** el smoke 5.6 confirmó que los webhooks reales de MP dan `SignatureMismatch` cuando hay **múltiples webhooks configurados en el panel MP devs** (se acumularon al rotar ngrok en dev). Antes de prod: dejar UN solo webhook y sincronizar su Clave Secreta con `MP_WEBHOOK_SECRET`. El código de validación de firma está OK (validado crafteando un webhook firmado). Ver `SPRINT_5_6_PROD_CHECKLIST.md`.
+**Tarea operacional MP nativo (pre-deploy) — RESUELTA en [PR #36](https://github.com/LeandroMagonza/HeyMozo/pull/36) (smoke E2E 2026-05-30):** la nota previa decía que el `SignatureMismatch` era solo por múltiples webhooks en el panel y que "el código estaba OK" — **incorrecto**. El smoke con un pago real destapó 2 bugs de código (ver fila FIX-2 arriba): `ts` en segundos vs SDK que lo lee en ms, y el canal del `notification_url` firmado con un secret no-expuesto en el panel. Se adoptó verificación **fetch-authoritative** (firma no bloqueante; gate real = fetch autenticado + external_reference + idempotencia). Pago real E2E validado (approved→webhook→paid→sesión cerrada). **Nota deploy:** hoy NO hay prod (Render abandonado, se migra a AWS Lightsail) → el pasaje a prod + secretos van con ese setup. Ver `SPRINT_5_6_PROD_CHECKLIST.md`.
 
 ---
 

@@ -479,26 +479,42 @@ router.post('/payments/mp/webhook', async (req, res) => {
       || (req.query.data && req.query.data.id)
       || (req.body && req.body.data && req.body.data.id);
 
-    // Verificación HMAC. MP envía:
-    //   x-signature: "ts=1716000000000,v1=abcd..."
-    //   x-request-id: "uuid"
+    // Verificación de firma HMAC — DEFENSE IN DEPTH, NO bloqueante.
     //
-    // Escape hatch DEV-only: si `MP_SKIP_WEBHOOK_SIGNATURE=true` y no estamos
-    // en prod, saltamos la verificación (loguea WARN). Útil cuando el secret
-    // local todavía no está sincronizado con MP devs panel — desbloquea smoke
-    // sin abrir un agujero en prod (donde NODE_ENV=production hace que esta
-    // bandera se ignore).
-    const skipSig = process.env.MP_SKIP_WEBHOOK_SIGNATURE === 'true'
-      && process.env.NODE_ENV !== 'production';
-    if (skipSig) {
-      console.warn('⚠️  MP webhook: signature verification SKIPPED (DEV escape hatch).');
-    } else {
+    // Por qué no bloquea: MP firma el canal del `notification_url` de la
+    // preference (por donde llegan los webhooks de pago, con `?payment_id=`)
+    // con un secret que NO expone en el panel de developers. Verificado en el
+    // smoke 2026-05-29: el secret del panel (`MP_WEBHOOK_SECRET`) valida el
+    // "Simular notificación" pero NUNCA matchea la firma del webhook del pago
+    // real. Por eso la firma no puede ser el gate de seguridad.
+    //
+    // El gate REAL es el fetch autenticado del pago + el chequeo de
+    // external_reference más abajo:
+    //   1. `fetchMpPayment` trae el estado del pago desde MP con NUESTRO/branch
+    //      access token → nadie puede forjar un pago "approved".
+    //   2. `mpPayment.external_reference === localPaymentId` → cada pago MP solo
+    //      puede confirmar el Payment local para el que fue creado (lo seteamos
+    //      en `createPreference`); no se puede cruzar contra otro Payment.
+    //   3. `applyMpPayment` es idempotente → reenvíos/replays son no-ops.
+    // Con eso, un atacante no puede marcar un Payment como pagado sin un pago
+    // real y aprobado en MP atado a ese mismo Payment.
+    //
+    // Igual intentamos validar la firma (capa extra + observabilidad). Cuando
+    // MP firme con un secret que tengamos, esto pasa a `true`.
+    let signatureOk = false;
+    try {
       mercadoPago.verifyWebhookSignature({
         xSignature: req.headers['x-signature'],
         xRequestId: req.headers['x-request-id'],
         dataId,
         secret: process.env.MP_WEBHOOK_SECRET
       });
+      signatureOk = true;
+    } catch (sigErr) {
+      console.warn(
+        `⚠️  MP webhook: firma no validada (${sigErr.message}). Continúo: ` +
+        'el gate de seguridad es el fetch autenticado + external_reference.'
+      );
     }
 
     const localPaymentId = parseInt(req.query.payment_id, 10);
@@ -551,7 +567,10 @@ router.post('/payments/mp/webhook', async (req, res) => {
       mpRawPayload: mpPayment
     });
 
-    console.log(`💳 MP webhook OK — payment ${localPaymentId} → ${nextStatus || mpPayment.status}`);
+    console.log(
+      `💳 MP webhook OK — payment ${localPaymentId} → ${nextStatus || mpPayment.status} ` +
+      `(firma ${signatureOk ? 'válida' : 'no validada — gateado por fetch+external_reference'})`
+    );
     res.status(200).json({ ok: true });
   } catch (err) {
     // 401 si fue firma inválida (MP reintenta menos sobre 4xx), 500 si fue
