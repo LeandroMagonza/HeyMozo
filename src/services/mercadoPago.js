@@ -156,8 +156,14 @@ function verifyWebhookSignature({ xSignature, xRequestId, dataId, secret }) {
       xSignature,
       xRequestId,
       dataId,
-      secret,
-      toleranceSeconds: 600 // 10 min — tolerancia para clock drift
+      secret
+      // NOTA (smoke 2026-05-29): NO pasamos `toleranceSeconds`. El validador del
+      // SDK trata el `ts` del header como MILISEGUNDOS (`Math.abs(Date.now() - Number(ts))`),
+      // pero MP lo envía en SEGUNDOS (ej. `ts=1780028353`). Con tolerancia activa,
+      // el drift calculado da ~56 años y rechaza firmas VÁLIDAS con
+      // TimestampOutOfTolerance. Sin `toleranceSeconds` el SDK saltea ese chequeo
+      // y valida solo el HMAC (que es la seguridad real). Anti-replay con
+      // normalización seg/ms queda como TODO si se necesita.
     });
   } catch (err) {
     if (err instanceof InvalidWebhookSignatureError) {
