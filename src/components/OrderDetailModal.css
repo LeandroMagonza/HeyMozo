@@ -153,3 +153,27 @@
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+.order-modal__release-btn {
+  width: 100%;
+  margin-top: 0.625rem;
+  padding: 0.625rem;
+  background: transparent;
+  color: #f3776d;
+  border: 1px solid rgba(232, 54, 42, 0.45);
+  border-radius: 12px;
+  font-family: var(--rd-font-sans);
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.order-modal__release-btn:hover:not(:disabled) {
+  background: rgba(232, 54, 42, 0.12);
+}
+
+.order-modal__release-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
