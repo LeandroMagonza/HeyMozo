@@ -2,7 +2,7 @@
 
 Tracker live de los sub-PRs de Fase 2. Una línea por sub-PR con commit, branch, PR# y estado.
 
-**Última actualización:** 2026-05-28 (5.7 mergeado con fixes del smoke; próximo 5.8)
+**Última actualización:** 2026-06-01 (5.9 PostPagoPage en review PR #38; 5.8 en review PR #37)
 
 > Cuando un PR se mergea, mover su sub-PR a "✅ Mergeado" abajo y actualizar el [PHASE2_PLAN.md](PHASE2_PLAN.md) si corresponde (cambiar 🚧 → ✅ para el sprint completo cuando todas las sub-PRs estén in).
 
@@ -10,15 +10,23 @@ Tracker live de los sub-PRs de Fase 2. Una línea por sub-PR con commit, branch,
 
 ## 🚧 En review / abiertos
 
-_(Ninguno abierto. 5.7 mergeado — ver abajo.)_
+**5.8 — `feature/phase2-cajashell-acciones`** → **[PR #37](https://github.com/LeandroMagonza/HeyMozo/pull/37) (en review)**. Desde `master` @ 62dc205.
+- **Backend**: migration `20260530_add_payment_ack_and_session_release` (Payments.acknowledgedAt + TableSessions.releaseReason/closedByUserId). `payments.listActionsForBranch` (transfers a validar + acuses MP/cash/tarjeta paid sin ack, ventana 12h) + `payments.acknowledgePayment`. `sessions.listActiveSessionsForBranch` (con balance) + `sessions.releaseTable` (cierra sesión + motivo + closedBy + VACATE). Rutas: `GET /branches/:id/payments/actions`, `POST /payments/:id/acknowledge` (cashier/owner), `GET /branches/:id/sessions/active`, `POST /tables/:id/release` (waiter/cashier/owner).
+- **Frontend**: CajaShell con tabs **Acciones** (cards transfer Validar/Rechazar borde amarillo + acuse "Entendido" borde verde) y **Mesas activas** (lista con balance + Liberar). **OpShell ahora con tabs Alertas/Mesas**. Componentes: `PaymentActionCard`, `ReleaseTableModal`, `ActiveTablesList`. `api.js`: getPaymentActions / acknowledgePayment / getActiveSessions / releaseTable.
+- **Verificado**: `npm run migrate` OK, `npm run build` OK, smoke 22/22 a nivel servicio, prueba visual en navegador OK (Caja Acciones+Mesas, Piso Alertas+Mesas, validar/entendido/liberar desde ambos shells).
+
+**5.9 — `feature/phase2-postpago-review`** → **[PR #38](https://github.com/LeandroMagonza/HeyMozo/pull/38) (en review)**. Desde `master` @ 62dc205.
+- **Backend**: `src/services/reviews.js` (getPostpagoContext, submitReview, markReviewDerivedToGoogle) + `src/services/club.js` (joinClub con loyalty acceleration, getClubStatusForSession). Rutas públicas en `customerSessions.js`: `GET /payments/:id/postpago-context`, `POST /payments/:id/review`, `POST /reviews/:id/google-click`, `POST /payments/:id/club-join`.
+- **Frontend**: `PagoConfirmadoPage` reescrito. Stars 1-5 → tags negativos condicionales (≤3) → submit → "¡Gracias!" + link Google Maps siempre. Card Club VIP con WhatsApp + contador "X de Y visitas". Botón **"← Volver al inicio"** como único punto de salida. Sticky redirect: `UserScreen` devuelve al cliente a PostPago mientras no cierre (flag `hm_postpago_<c>_<b>_<t>` localStorage); el botón limpia el flag.
+- **Verificado**: build OK, smoke 22/22 a nivel servicio, visual E2E (review baja+tags+submit, Google Maps, Club join+contador, sticky redirect, salida limpia sin loop, reload hidrata estado).
 
 ---
 
 ## 📝 Pendientes (próximos)
 
-_(Sprint 4 cerrado. Sprint 5.1–5.7 mergeados. Sprint 5 (Pagos digitales + Club VIP) en curso — diseño cerrado 2026-05-24, ver [PHASE2_PLAN.md](PHASE2_PLAN.md) §Sprint 5)._
+_(Sprint 4 cerrado. Sprint 5.1–5.7 mergeados. 5.8 y 5.9 en review. Sprint 5 en curso — diseño cerrado 2026-05-24, ver [PHASE2_PLAN.md](PHASE2_PLAN.md) §Sprint 5)._
 
-Próximos sub-PRs Sprint 5: 5.8 (CajaShell Acciones + liberar mesa) → 5.9 (PostPagoPage) → 5.10 (Club CajaShell) → 5.11 (Vouchers).
+Próximos sub-PRs Sprint 5: ~~5.8~~ ~~5.9~~ → 5.10 (Club CajaShell) → 5.11 (Vouchers).
 
 **Tarea operacional pendiente (MP nativo, pre-deploy):** el smoke 5.6 confirmó que los webhooks reales de MP dan `SignatureMismatch` cuando hay **múltiples webhooks configurados en el panel MP devs** (se acumularon al rotar ngrok en dev). Antes de prod: dejar UN solo webhook y sincronizar su Clave Secreta con `MP_WEBHOOK_SECRET`. El código de validación de firma está OK (validado crafteando un webhook firmado). Ver `SPRINT_5_6_PROD_CHECKLIST.md`.
 
