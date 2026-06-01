@@ -1216,6 +1216,7 @@ router.post('/orders/:orderId/mark-ready', async (req, res) => {
 
 const paymentService = require('../services/payments');
 const sessionsService = require('../services/sessions');
+const clubService = require('../services/club');
 
 // POST /api/payments/:paymentId/collect — mozo confirma que cobró cash/tarjeta.
 // Payment.status → 'paid' + paidAt + collectedByUserId. Event asociado se
@@ -1519,6 +1520,32 @@ router.post(
     } catch (err) {
       console.error('❌ POST /tables/:tableId/release:', err.message);
       res.status(err.statusCode || 500).json({ error: err.message || 'Error liberando mesa' });
+    }
+  }
+);
+
+// ============================================================
+// Sprint 5.10 — CajaShell tab "Club" (socios del Club VIP)
+// ============================================================
+
+// GET /api/branches/:branchId/club/members — lista de socios del Club VIP del
+// branch para el tab Club de CajaShell. Devuelve goal/reward + nombre del
+// branch + members (visitas, última visita, reachedGoal). El frontend filtra
+// (búsqueda, días sin volver, voucher alcanzado) y arma los links wa.me.
+router.get(
+  '/branches/:branchId/club/members',
+  authMiddleware.checkBranchPermission,
+  async (req, res) => {
+    try {
+      const branchId = parseInt(req.params.branchId, 10);
+      if (!Number.isFinite(branchId)) {
+        return res.status(400).json({ error: 'branchId inválido' });
+      }
+      const result = await clubService.listMembersForBranch(branchId);
+      res.json(result);
+    } catch (err) {
+      console.error('❌ GET /branches/:branchId/club/members:', err.message);
+      res.status(err.statusCode || 500).json({ error: err.message || 'Error listando socios del Club' });
     }
   }
 );

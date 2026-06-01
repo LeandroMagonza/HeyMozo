@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
-import { FaCashRegister, FaSignOutAlt, FaUser, FaReceipt, FaChair } from 'react-icons/fa';
+import { FaCashRegister, FaSignOutAlt, FaUser, FaReceipt, FaChair, FaCrown } from 'react-icons/fa';
 import authService from '../services/authService';
 import {
   getPaymentActions,
@@ -13,6 +13,7 @@ import {
 import PaymentActionCard from './PaymentActionCard';
 import ActiveTablesList from './ActiveTablesList';
 import ReleaseTableModal from './ReleaseTableModal';
+import ClubMembersTab from './ClubMembersTab';
 import notificationSound from '../sounds/notification.mp3';
 import './CajaShell.css';
 
@@ -120,7 +121,11 @@ const CajaShell = () => {
     }
   };
 
-  const tabTitle = activeTab === 'acciones' ? 'Acciones' : 'Mesas activas';
+  const tabTitle = activeTab === 'acciones'
+    ? 'Acciones'
+    : activeTab === 'mesas'
+      ? 'Mesas activas'
+      : 'Club VIP';
 
   return (
     <div className="caja-shell">
@@ -153,6 +158,14 @@ const CajaShell = () => {
               <span className="caja-shell__nav-badge caja-shell__nav-badge--muted">{sessions.length}</span>
             )}
           </button>
+          <button
+            type="button"
+            className={`caja-shell__nav-item${activeTab === 'club' ? ' caja-shell__nav-item--active' : ''}`}
+            onClick={() => setActiveTab('club')}
+          >
+            <FaCrown className="caja-shell__nav-icon" />
+            <span>Club VIP</span>
+          </button>
         </nav>
 
         <div className="caja-shell__footer">
@@ -174,11 +187,15 @@ const CajaShell = () => {
       <main className="caja-shell__main">
         <header className="caja-shell__topnav">
           <h1 className="caja-shell__topnav-title">{tabTitle}</h1>
-          <span className="caja-shell__countdown">Actualiza en {countdown}s</span>
+          {activeTab !== 'club' && (
+            <span className="caja-shell__countdown">Actualiza en {countdown}s</span>
+          )}
         </header>
 
         <div className="caja-shell__content">
-          {loading ? (
+          {activeTab === 'club' ? (
+            <ClubMembersTab branchId={branchId} />
+          ) : loading ? (
             <div className="caja-shell__empty">
               <p className="caja-shell__empty-text">Cargando…</p>
             </div>

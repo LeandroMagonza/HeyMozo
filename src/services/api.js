@@ -236,6 +236,10 @@ export const getActiveSessions = (branchId) =>
 export const releaseTable = (tableId, payload = {}) =>
   api.post(`/tables/${tableId}/release`, payload);
 
+// CajaShell — tab Club VIP (Sprint 5.10)
+export const getClubMembers = (branchId) =>
+  api.get(`/branches/${branchId}/club/members`);
+
 // PostPago: review + Club VIP (Sprint 5.9)
 export const getPostpagoContext = (paymentId) =>
   api.get(`/payments/${paymentId}/postpago-context`);

@@ -52,6 +52,46 @@ async function _loadPaymentSession(paymentId) {
   return payment;
 }
 
+// Listado de socios del Club VIP de un branch para el tab Club de la CajaShell
+// (Sprint 5.10). Devuelve la config del programa (goal/reward + nombre del
+// branch para el mensaje) y todos los members con sus visitas y última visita.
+// El frontend filtra (búsqueda por teléfono, días sin volver, voucher
+// alcanzado) y arma los links `wa.me/...` client-side — no paginamos ni
+// filtramos en el server: el dataset por branch es chico en el MVP y filtrar
+// en cliente hace el envío masivo instantáneo sobre el set visible.
+async function listMembersForBranch(branchId) {
+  const branch = await Branch.findByPk(branchId, {
+    attributes: ['id', 'name', 'clubGoal', 'clubReward']
+  });
+  if (!branch) {
+    const err = new Error('Branch no encontrado');
+    err.statusCode = 404;
+    throw err;
+  }
+
+  const members = await ClubMember.findAll({
+    where: { branchId },
+    attributes: ['id', 'phone', 'visits', 'lastVisitAt', 'createdAt'],
+    // Más recientes primero; los sin visita (lastVisitAt null) al final.
+    order: [[sequelize.literal('"lastVisitAt" DESC NULLS LAST')]]
+  });
+
+  const goal = branch.clubGoal;
+  return {
+    branchName: branch.name,
+    goal,
+    reward: branch.clubReward,
+    members: members.map((m) => ({
+      id: m.id,
+      phone: m.phone,
+      visits: m.visits,
+      lastVisitAt: m.lastVisitAt,
+      joinedAt: m.createdAt,
+      reachedGoal: goal != null && m.visits >= goal
+    }))
+  };
+}
+
 // Estado del Club para una sesión: si ya se registró visita devuelve el
 // contador; si no, null. Usado por el contexto PostPago para mostrar el
 // estado "ya sos parte, X de Y" sin volver a contar.
@@ -146,6 +186,7 @@ async function joinClub({ paymentId, phone }) {
 }
 
 module.exports = {
+  listMembersForBranch,
   getClubStatusForSession,
   joinClub
 };

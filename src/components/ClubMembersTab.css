@@ -1,0 +1,363 @@
+/* ClubMembersTab.css — tab Club VIP de la CajaShell (Sprint 5.10).
+   Tema oscuro alineado con CajaShell.css (verde cajero #13eca7). */
+
+.club-tab {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-width: 860px;
+}
+
+/* ===== Toolbar: búsqueda + chips ===== */
+
+.club-tab__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.club-tab__search {
+  position: relative;
+  flex: 1 1 220px;
+  min-width: 180px;
+}
+
+.club-tab__search-icon {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--rd-text-quaternary, #94a3b8);
+  font-size: 0.8125rem;
+}
+
+.club-tab__search input {
+  width: 100%;
+  padding: 0.5rem 0.75rem 0.5rem 2.125rem;
+  background: var(--rd-bg-cajero-panel, #1a1c29);
+  border: 1px solid var(--rd-border-cajero, #1e293b);
+  border-radius: var(--rd-radius-md, 8px);
+  color: var(--rd-text, #ffffff);
+  font-family: inherit;
+  font-size: 0.875rem;
+}
+
+.club-tab__search input::placeholder {
+  color: var(--rd-text-quaternary, #94a3b8);
+}
+
+.club-tab__search input:focus {
+  outline: none;
+  border-color: var(--rd-brand-green-cajero, #13eca7);
+}
+
+.club-tab__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.club-tab__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.4375rem 0.75rem;
+  background: transparent;
+  border: 1px solid var(--rd-border-cajero, #1e293b);
+  border-radius: 999px;
+  color: var(--rd-text-quaternary, #94a3b8);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.club-tab__chip:hover {
+  color: var(--rd-text-secondary, #e4e2e4);
+  border-color: rgba(148, 163, 184, 0.4);
+}
+
+.club-tab__chip--active {
+  background: rgba(19, 236, 167, 0.12);
+  border-color: var(--rd-brand-green-cajero, #13eca7);
+  color: var(--rd-brand-green-cajero, #13eca7);
+}
+
+/* ===== Mensaje editable ===== */
+
+.club-tab__message {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.club-tab__message-label {
+  display: flex;
+  align-items: baseline;
+  gap: 0.625rem;
+  flex-wrap: wrap;
+  color: var(--rd-text-quaternary, #94a3b8);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.club-tab__message-hint {
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  opacity: 0.8;
+}
+
+.club-tab__message-input {
+  width: 100%;
+  padding: 0.625rem 0.75rem;
+  background: var(--rd-bg-cajero-panel, #1a1c29);
+  border: 1px solid var(--rd-border-cajero, #1e293b);
+  border-radius: var(--rd-radius-md, 8px);
+  color: var(--rd-text, #ffffff);
+  font-family: inherit;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  resize: vertical;
+}
+
+.club-tab__message-input:focus {
+  outline: none;
+  border-color: var(--rd-brand-green-cajero, #13eca7);
+}
+
+/* ===== Header del listado + acción masiva ===== */
+
+.club-tab__list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.club-tab__count {
+  color: var(--rd-text-secondary, #e4e2e4);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.club-tab__bulk,
+.club-tab__wa {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.875rem;
+  background: #25d366;
+  border: none;
+  border-radius: var(--rd-radius-md, 8px);
+  color: #04241a;
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  transition: filter 0.15s ease, opacity 0.15s ease;
+}
+
+.club-tab__bulk:hover,
+.club-tab__wa:hover {
+  filter: brightness(1.08);
+}
+
+.club-tab__bulk:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ===== Barra de cola de envío masivo ===== */
+
+.club-tab__bulk-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: rgba(37, 211, 102, 0.1);
+  border: 1px solid rgba(37, 211, 102, 0.4);
+  border-radius: var(--rd-radius-md, 8px);
+}
+
+.club-tab__bulk-progress {
+  color: var(--rd-text-secondary, #e4e2e4);
+  font-size: 0.8125rem;
+}
+
+.club-tab__bulk-progress strong {
+  color: var(--rd-text, #ffffff);
+}
+
+.club-tab__bulk-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+.club-tab__bulk-next {
+  padding: 0.4375rem 0.875rem;
+  background: #25d366;
+  border: none;
+  border-radius: var(--rd-radius-md, 8px);
+  color: #04241a;
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.club-tab__bulk-next:hover {
+  filter: brightness(1.08);
+}
+
+.club-tab__bulk-finished {
+  color: var(--rd-brand-green-cajero, #13eca7);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.club-tab__bulk-close {
+  padding: 0.4375rem 0.75rem;
+  background: transparent;
+  border: 1px solid var(--rd-border-cajero, #1e293b);
+  border-radius: var(--rd-radius-md, 8px);
+  color: var(--rd-text-quaternary, #94a3b8);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.club-tab__bulk-close:hover {
+  color: var(--rd-text-secondary, #e4e2e4);
+  border-color: rgba(148, 163, 184, 0.4);
+}
+
+/* ===== Listado ===== */
+
+.club-tab__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.club-tab__no-match {
+  color: var(--rd-text-quaternary, #94a3b8);
+  font-size: 0.875rem;
+  text-align: center;
+  padding: 1.5rem 0;
+}
+
+.club-tab__row {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr auto;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  background: var(--rd-bg-cajero-panel, #1a1c29);
+  border: 1px solid var(--rd-border-cajero, #1e293b);
+  border-radius: var(--rd-radius-md, 8px);
+}
+
+.club-tab__row-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.club-tab__phone {
+  color: var(--rd-text, #ffffff);
+  font-size: 0.9375rem;
+  font-weight: 700;
+}
+
+.club-tab__last {
+  color: var(--rd-text-quaternary, #94a3b8);
+  font-size: 0.75rem;
+}
+
+.club-tab__progress {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+.club-tab__progress-track {
+  flex: 1;
+  height: 6px;
+  background: rgba(148, 163, 184, 0.2);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.club-tab__progress-fill {
+  height: 100%;
+  background: var(--rd-text-quaternary, #94a3b8);
+  border-radius: 999px;
+  transition: width 0.2s ease;
+}
+
+.club-tab__progress-fill--done {
+  background: var(--rd-brand-green-cajero, #13eca7);
+}
+
+.club-tab__visits {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--rd-text-secondary, #e4e2e4);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.club-tab__visits--done {
+  color: var(--rd-brand-green-cajero, #13eca7);
+}
+
+.club-tab__visits-crown {
+  font-size: 0.75rem;
+}
+
+.club-tab__retry {
+  margin-top: 1rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: transparent;
+  border: 1px solid var(--rd-border-cajero, #1e293b);
+  border-radius: var(--rd-radius-md, 8px);
+  color: var(--rd-text-secondary, #e4e2e4);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.club-tab__retry:hover {
+  border-color: var(--rd-brand-green-cajero, #13eca7);
+  color: var(--rd-brand-green-cajero, #13eca7);
+}
+
+/* ===== Responsive ===== */
+
+@media (max-width: 640px) {
+  .club-tab__row {
+    grid-template-columns: 1fr;
+    gap: 0.625rem;
+  }
+
+  .club-tab__wa {
+    justify-content: center;
+  }
+}
