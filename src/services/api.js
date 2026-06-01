@@ -236,6 +236,19 @@ export const getActiveSessions = (branchId) =>
 export const releaseTable = (tableId, payload = {}) =>
   api.post(`/tables/${tableId}/release`, payload);
 
+// PostPago: review + Club VIP (Sprint 5.9)
+export const getPostpagoContext = (paymentId) =>
+  api.get(`/payments/${paymentId}/postpago-context`);
+
+export const submitReview = (paymentId, payload) =>
+  api.post(`/payments/${paymentId}/review`, payload);
+
+export const markReviewGoogleClick = (reviewId) =>
+  api.post(`/reviews/${reviewId}/google-click`);
+
+export const joinClub = (paymentId, payload) =>
+  api.post(`/payments/${paymentId}/club-join`, payload);
+
 // User self-profile (Sprint 5.3)
 export const getMyProfile = () =>
   api.get('/users/me');

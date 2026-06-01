@@ -2,7 +2,7 @@
 
 Tracker live de los sub-PRs de Fase 2. Una línea por sub-PR con commit, branch, PR# y estado.
 
-**Última actualización:** 2026-05-30 (5.8 implementado en local — CajaShell Acciones + liberar mesa; pendiente smoke E2E + PR)
+**Última actualización:** 2026-06-01 (5.8 #37 y 5.9 #38 mergeados a master)
 
 > Cuando un PR se mergea, mover su sub-PR a "✅ Mergeado" abajo y actualizar el [PHASE2_PLAN.md](PHASE2_PLAN.md) si corresponde (cambiar 🚧 → ✅ para el sprint completo cuando todas las sub-PRs estén in).
 
@@ -17,13 +17,18 @@ Tracker live de los sub-PRs de Fase 2. Una línea por sub-PR con commit, branch,
 - **Verificado**: `npm run migrate` OK, `npm run build` OK. **Smoke automatizado a nivel servicio OK (22/22)** (validar/rechazar/acuse/scan-only/liberar). **Prueba visual en navegador OK** (Caja Acciones+Mesas, Piso Alertas+Mesas, validar/entendido/liberar desde ambos shells). Commits: `dec48c0` (feature) + `67e6392` (fix detectado en la visual: OpShell no pasaba `balanceCents` al ReleaseTableModal → el aviso de saldo no aparecía en el Piso).
 - **Edge de pago-adelantado → Sprint 6 (NO es bug — comportamiento correcto)**: si se paga ANTES de que la comida se entregue (MP adelantado / autoservicio), la sesión se auto-cierra por balance 0 pero el pedido sigue `pending` → su card "Nuevo Pedido" queda en el Piso. **Es lo correcto**: el cliente pagó esa comida y el mozo debe entregarla (marca LISTO). El auto-cierre por pago **NO emite VACATE** (no libera la mesa para re-sentar; solo cierra la cuenta y la saca de "Mesas activas") — la mesa se recicla al escanear el próximo QR. En servicio tradicional (pago al final, ya entregado) no ocurre. El único path que cancela pedidos pending es la liberación manual (`releaseTable`, walkout/problema), que es correcto. La sutileza occupancy-vs-billing en pago-adelantado se afina en **Sprint 6** (lifecycle de mesa).
 
+**5.9 — `feature/phase2-postpago-review`** → **[PR #38](https://github.com/LeandroMagonza/HeyMozo/pull/38) (mergeado)**. Desde `master` @ 62dc205.
+- **Backend**: `src/services/reviews.js` (getPostpagoContext, submitReview, markReviewDerivedToGoogle) + `src/services/club.js` (joinClub con loyalty acceleration, getClubStatusForSession). Rutas públicas en `customerSessions.js`: `GET /payments/:id/postpago-context`, `POST /payments/:id/review`, `POST /reviews/:id/google-click`, `POST /payments/:id/club-join`.
+- **Frontend**: `PagoConfirmadoPage` reescrito. Stars 1-5 → tags negativos condicionales (≤3) → submit → "¡Gracias!" + link Google Maps siempre. Card Club VIP con WhatsApp + contador "X de Y visitas". Botón **"← Volver al inicio"** como único punto de salida. Sticky redirect: `UserScreen` devuelve al cliente a PostPago mientras no cierre (flag `hm_postpago_<c>_<b>_<t>` localStorage); el botón limpia el flag.
+- **Verificado**: build OK, smoke 22/22 a nivel servicio, visual E2E (review baja+tags+submit, Google Maps, Club join+contador, sticky redirect, salida limpia sin loop, reload hidrata estado).
+
 ---
 
 ## 📝 Pendientes (próximos)
 
-_(Sprint 4 cerrado. Sprint 5.1–5.7 mergeados. Sprint 5 (Pagos digitales + Club VIP) en curso — diseño cerrado 2026-05-24, ver [PHASE2_PLAN.md](PHASE2_PLAN.md) §Sprint 5)._
+_(Sprint 4 cerrado. Sprint 5.1–5.7 mergeados. 5.8 y 5.9 en review. Sprint 5 en curso — diseño cerrado 2026-05-24, ver [PHASE2_PLAN.md](PHASE2_PLAN.md) §Sprint 5)._
 
-Próximos sub-PRs Sprint 5: 5.8 (CajaShell Acciones + liberar mesa) → 5.9 (PostPagoPage) → 5.10 (Club CajaShell) → 5.11 (Vouchers).
+Próximos sub-PRs Sprint 5: ~~5.8~~ ~~5.9~~ → 5.10 (Club CajaShell) → 5.11 (Vouchers).
 
 **Tarea operacional pendiente (MP nativo, pre-deploy):** el smoke 5.6 confirmó que los webhooks reales de MP dan `SignatureMismatch` cuando hay **múltiples webhooks configurados en el panel MP devs** (se acumularon al rotar ngrok en dev). Antes de prod: dejar UN solo webhook y sincronizar su Clave Secreta con `MP_WEBHOOK_SECRET`. El código de validación de firma está OK (validado crafteando un webhook firmado). Ver `SPRINT_5_6_PROD_CHECKLIST.md`.
 
