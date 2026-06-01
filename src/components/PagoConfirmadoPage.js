@@ -421,11 +421,18 @@ const PagoConfirmadoPage = () => {
                   <span className="pp-club__count">{clubResult.visits}</span>
                   <span className="pp-club__of"> de {clubResult.goal} visitas</span>
                 </div>
-                <p className="pp-club__copy">
-                  {clubReached
-                    ? `Pedíle tu ${clubResult.reward} al mozo en tu próxima visita.`
-                    : `Seguí sumando para tu ${clubResult.reward}.`}
-                </p>
+                {clubResult.cooldownActive ? (
+                  <p className="pp-club__copy">
+                    Ya contamos tu visita hace un rato, así que esta no suma de nuevo.
+                    ¡Te esperamos pronto para tu {clubResult.reward}!
+                  </p>
+                ) : (
+                  <p className="pp-club__copy">
+                    {clubReached
+                      ? `Pedíle tu ${clubResult.reward} al mozo en tu próxima visita.`
+                      : `Seguí sumando para tu ${clubResult.reward}.`}
+                  </p>
+                )}
               </>
             )}
           </div>

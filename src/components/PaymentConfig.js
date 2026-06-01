@@ -67,6 +67,7 @@ const PaymentConfig = () => {
         clubGoal: b.clubGoal ?? 5,
         clubAccelerationAtVisit: b.clubAccelerationAtVisit ?? '',
         clubAccelerationMultiplier: b.clubAccelerationMultiplier ?? 2,
+        clubVisitCooldownHours: b.clubVisitCooldownHours ?? 12,
       });
       setLoading(false);
     } catch (err) {
@@ -122,6 +123,7 @@ const PaymentConfig = () => {
         clubGoal: parseInt(form.clubGoal) || 5,
         clubAccelerationAtVisit: form.clubAccelerationAtVisit !== '' ? parseInt(form.clubAccelerationAtVisit) : null,
         clubAccelerationMultiplier: parseInt(form.clubAccelerationMultiplier) || 2,
+        clubVisitCooldownHours: form.clubVisitCooldownHours !== '' ? parseInt(form.clubVisitCooldownHours) : 12,
       };
       await updateBranch(branchId, payload);
       alert('Configuración guardada correctamente');
@@ -400,6 +402,22 @@ const PaymentConfig = () => {
                   value={form.clubAccelerationMultiplier}
                   onChange={(e) => handleField('clubAccelerationMultiplier', e.target.value)}
                 />
+              </div>
+            </div>
+            <div className="pc-grid-2 pc-mt">
+              <div className="pc-field">
+                <label>Cooldown entre visitas (horas)</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={form.clubVisitCooldownHours}
+                  onChange={(e) => handleField('clubVisitCooldownHours', e.target.value)}
+                  placeholder="12"
+                />
+                <p className="pc-hint">
+                  No vuelve a contar una visita del mismo cliente dentro de este lapso.
+                  12 = 1 por día aprox. · 4-6 = cuenta almuerzo y cena · 24 = 1 por día estricto.
+                </p>
               </div>
             </div>
           </section>
