@@ -27,6 +27,10 @@ const VoucherBanner = ({ voucher, onDismiss }) => {
         <p className="voucher-banner__reward">{voucher.reward}</p>
       )}
       <p className="voucher-banner__hint">Mostrale este código al mozo:</p>
+      {/* Seam QR (futuro): el código ES el token. Para sumar un QR escaneable
+          va acá un <QRCodeSVG value={voucher.code} /> (qrcode.react ya está en
+          deps) junto al código. Hoy solo mostramos el código — el escáner del
+          mozo (RedeemVoucherModal.redeemCode) es la otra mitad diferida. */}
       <div className="voucher-banner__code">{voucher.code}</div>
     </div>
   );

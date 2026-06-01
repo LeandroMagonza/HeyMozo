@@ -15,9 +15,15 @@ const RedeemVoucherModal = ({ branchId, onClose, onRedeemed }) => {
   const [error, setError] = useState(null);
   const [result, setResult] = useState(null);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const clean = code.trim().toUpperCase();
+  // Canje a partir de un código, AGNÓSTICO de su origen. Hoy el código llega
+  // por el input manual (handleSubmit). El seam para el futuro escáner QR es
+  // este mismo método: un modo "scan" que lea el QR del cliente solo tiene que
+  // llamar redeemCode(valorLeído) — misma ruta de canje, sin tocar esta lógica
+  // ni el backend. El QR del cliente codificaría el `code` verbatim (no hace
+  // falta formato nuevo). Por ahora NO renderizamos QR (decisión de producto:
+  // arquitectura lista, feature diferida — ver [[project-future-features]]).
+  const redeemCode = async (rawCode) => {
+    const clean = (rawCode || '').trim().toUpperCase();
     if (!clean || loading) return;
     setLoading(true);
     setError(null);
@@ -33,6 +39,11 @@ const RedeemVoucherModal = ({ branchId, onClose, onRedeemed }) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    redeemCode(code);
   };
 
   return (

@@ -1558,6 +1558,10 @@ router.get(
 // un socio. Body: { code }. Valida el código, que pertenezca a este branch y
 // que no esté ya canjeado → marca redeemed + resetea member.visits = 0.
 // Permisos: rol waiter/cashier/owner + acceso al branch.
+//
+// QR-ready: el canje es por `code` y es agnóstico del medio de entrada. Un QR
+// a futuro codificaría el mismo `code` verbatim → este endpoint no cambia (el
+// escáner solo alimenta el code). Ver RedeemVoucherModal.redeemCode.
 router.post(
   '/branches/:branchId/vouchers/redeem',
   authMiddleware.requireRole('waiter', 'cashier', 'owner'),
