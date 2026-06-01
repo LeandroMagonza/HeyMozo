@@ -448,6 +448,7 @@ const OpShell = () => {
       {releaseTarget && (
         <ReleaseTableModal
           tableName={releaseTarget.tableName}
+          balanceCents={releaseTarget.balanceCents}
           onClose={() => setReleaseTarget(null)}
           onConfirm={handleConfirmRelease}
           loading={releaseLoading}
