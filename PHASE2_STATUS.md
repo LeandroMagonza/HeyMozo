@@ -2,7 +2,7 @@
 
 Tracker live de los sub-PRs de Fase 2. Una línea por sub-PR con commit, branch, PR# y estado.
 
-**Última actualización:** 2026-06-01 (5.8 #37 y 5.9 #38 mergeados a master; 5.10 en review PR #39)
+**Última actualización:** 2026-06-01 (5.10 #39 + hardening conteo Club #40 mergeados a master; nada en review; próximo 5.11)
 
 > Cuando un PR se mergea, mover su sub-PR a "✅ Mergeado" abajo y actualizar el [PHASE2_PLAN.md](PHASE2_PLAN.md) si corresponde (cambiar 🚧 → ✅ para el sprint completo cuando todas las sub-PRs estén in).
 
@@ -10,18 +10,17 @@ Tracker live de los sub-PRs de Fase 2. Una línea por sub-PR con commit, branch,
 
 ## 🚧 En review / abiertos
 
-**5.10 — `feature/phase2-club-cajashell`** → **[PR #39](https://github.com/LeandroMagonza/HeyMozo/pull/39) (en review)**. Desde `master` @ b81c144 (con 5.8 + 5.9 ya mergeados).
-- **Backend**: `club.listMembersForBranch(branchId)` → `{ branchName, goal, reward, members[] }` (cada member: `phone, visits, lastVisitAt, joinedAt, reachedGoal`), orden `lastVisitAt DESC NULLS LAST`. Sin paginación ni filtros server-side a propósito (dataset chico en MVP; filtrado client-side hace el envío masivo instantáneo sobre el set visible). Ruta `GET /branches/:id/club/members` (`checkBranchPermission`). `api.js`: getClubMembers.
-- **Frontend**: tercer tab **Club VIP** en CajaShell. `ClubMembersTab` con búsqueda por teléfono, chips de inactividad (Todos/+7/+14/+30 días) + toggle "Voucher alcanzado" (visits ≥ goal), barra de progreso por socio. Mensaje WhatsApp editable con variables `{sucursal}`/`{visitas}`/`{meta}`/`{premio}`. Envío **individual** (`wa.me`) + **masivo como cola** (abre 1 chat por vez con "Abrir siguiente" — única forma client-side que respeta el bloqueo de popups; server-side WhatsApp Business API queda post-MVP). Tab independiente del poll 6s de Acciones/Mesas.
-- **Verificado**: `npm run build` OK (sin warnings nuevos), smoke a nivel servicio 12/12 (goal/reward/branchName, `reachedGoal` por umbral, orden DESC, no filtra `branchId` interno, 404 branch inexistente). **Prueba visual en navegador OK**: 6 socios sembrados, orden lastVisitAt DESC, links wa.me bien armados (sucursal/visitas/meta/premio), filtro "Voucher alcanzado" (3), combinado con "+30 días" (1), búsqueda por teléfono (1), cola de envío masivo (abre 1º + "Abrir siguiente" avanza 1→2, botón disabled mientras activa), sin errores de consola. Fix de copy detectado: "Enviar a 1 socio" en singular.
+_Nada en review. Próximo: **5.11 (Vouchers)** — último de Sprint 5._
+
+> Aparte de Fase 2: **#36** (`fix/mp-webhook-verification`) sigue abierta — fix de robustez del webhook MP, ortogonal al Club. Requiere smoke MP propio antes de mergear (ver [SPRINT_5_6_PROD_CHECKLIST.md]).
 
 ---
 
 ## 📝 Pendientes (próximos)
 
-_(Sprint 4 cerrado. Sprint 5.1–5.9 mergeados. 5.10 en review (#39). Sprint 5 en curso — diseño cerrado 2026-05-24, ver [PHASE2_PLAN.md](PHASE2_PLAN.md) §Sprint 5)._
+_(Sprint 4 cerrado. Sprint 5.1–5.10 mergeados + hardening conteo Club (#40). Sprint 5 en curso — diseño cerrado 2026-05-24, ver [PHASE2_PLAN.md](PHASE2_PLAN.md) §Sprint 5)._
 
-Próximos sub-PRs Sprint 5: ~~5.8~~ ~~5.9~~ ~~5.10~~ → 5.11 (Vouchers) — último de Sprint 5.
+Próximos sub-PRs Sprint 5: ~~5.8~~ ~~5.9~~ ~~5.10~~ → **5.11 (Vouchers)** — último de Sprint 5. Al mergear, marcar Sprint 5 ✅ en PHASE2_PLAN. **5.11**: generación automática de Voucher al alcanzar goal + entrega "próxima visita" (detección al escanear QR + UI UserScreen) + entrega WhatsApp manual desde tab Club + botón "Canjear voucher" en OpShell mozo (valida código → marca redeemed + reset visits a 0). Se apoya en el conteo ya endurecido por #40.
 
 **Tarea operacional pendiente (MP nativo, pre-deploy):** el smoke 5.6 confirmó que los webhooks reales de MP dan `SignatureMismatch` cuando hay **múltiples webhooks configurados en el panel MP devs** (se acumularon al rotar ngrok en dev). Antes de prod: dejar UN solo webhook y sincronizar su Clave Secreta con `MP_WEBHOOK_SECRET`. El código de validación de firma está OK (validado crafteando un webhook firmado). Ver `SPRINT_5_6_PROD_CHECKLIST.md`.
 
@@ -60,6 +59,8 @@ Próximos sub-PRs Sprint 5: ~~5.8~~ ~~5.9~~ ~~5.10~~ → 5.11 (Vouchers) — úl
 | 5.7 | `feature/phase2-payment-split-monto` | `1dbafb2` | [#35](https://github.com/LeandroMagonza/HeyMozo/pull/35) | feat(payments): split por monto + 4 fixes del smoke. **Split:** `requestPayment` acepta `splitAmountCents` opcional (validado ≤ outstanding en transacción; 409 si difiere de un pending activo). `SplitAmountSheet` (radio Total/Solo-mi-parte + input libre + chips 1/2,1/3,1/4). `PaymentMethodSheet` activa "Dividir cuenta" + chip "Pagás $X de $Y". Propina sobre la parte que paga. Sin migrations (auto-liberación balance=0 ya existía de 5.4). **Fixes pre-existentes hallados en el smoke:** (1) `GET /orders` devolvía 401 sin cookie → axios interceptor redirigía a "/" → rompía clientes nuevos; ahora 200 `{orders:[]}`. (2) `UserScreen` no bootstrap-eaba la sesión en mount → pagos fallaban; ahora sí. (3) MP nativo pending mostraba el sheet de cash/card ("mozo con tarjeta"); ahora `MpPendingSheet` propio. (4) MP pending colgado sin salida si se abandona Checkout Pro; ahora expira a failed tras 15min (lazy en `findPendingForSession`) + cancel manual. **Smoke MP 5.6 validado E2E** (pago aprobado→webhook firmado→paid→sesión cerrada); `SignatureMismatch` con webhooks reales = config panel (múltiples webhooks), no código. |
 | 5.8 | `feature/phase2-cajashell-acciones` | `aac1717` | [#37](https://github.com/LeandroMagonza/HeyMozo/pull/37) | feat(payments): CajaShell tab **Acciones** (cards transfer Validar/Rechazar + acuse "Entendido") + **Mesas activas** (balance + Liberar). OpShell con tabs Alertas/Mesas. Migration `20260530_add_payment_ack_and_session_release`. `payments.listActionsForBranch`/`acknowledgePayment`, `sessions.listActiveSessionsForBranch`/`releaseTable` (VACATE + cancela pending). Componentes `PaymentActionCard`/`ReleaseTableModal`/`ActiveTablesList`. Edge pago-adelantado documentado → Sprint 6. |
 | 5.9 | `feature/phase2-postpago-review` | `b81c144` | [#38](https://github.com/LeandroMagonza/HeyMozo/pull/38) | feat(payments): PostPagoPage reescrito (stars → tags negativos ≤3 → submit + Google Maps siempre + card Club VIP). `reviews.js` (getPostpagoContext/submitReview/markReviewDerivedToGoogle) + `club.js` (joinClub con loyalty acceleration + getClubStatusForSession). Rutas públicas en `customerSessions.js`. Sticky redirect a PostPago vía flag localStorage `hm_postpago_<c>_<b>_<t>`; botón "← Volver al inicio" como único exit. Mergeado tras resolver conflictos con 5.8 (`api.js` + `PHASE2_STATUS.md`, ambos aditivos). |
+| 5.10 | `feature/phase2-club-cajashell` | `5660429` | [#39](https://github.com/LeandroMagonza/HeyMozo/pull/39) | feat(club): tab **Club VIP** en CajaShell. `club.listMembersForBranch` + `GET /branches/:id/club/members` (`checkBranchPermission`). `ClubMembersTab`: búsqueda por teléfono, chips inactividad (+7/+14/+30d) + toggle "Voucher alcanzado", barra progreso, mensaje WhatsApp editable (vars sucursal/visitas/meta/premio), envío individual + masivo como cola (`wa.me`, "Abrir siguiente" respeta popup-blocker). Smoke servicio 12/12 + prueba visual OK. |
+| 5.10-hard | `feature/phase2-club-visit-integrity` | `6c230eb` | [#40](https://github.com/LeandroMagonza/HeyMozo/pull/40) | feat(club): integridad del conteo de visitas. `joinClub` ahora: (2) gate **pago paid** (409 si no), (3) **cooldown por member** `Branch.clubVisitCooldownHours` (default 12h) — no suma dentro de la ventana, registra `ClubVisit` visitsAdded=0 sin mover visits/lastVisitAt, devuelve `cooldownActive`. Migration `20260601_add_club_visit_cooldown` (idempotente). Copy cooldown en PagoConfirmadoPage + input en config Club. Captura sigue solo-teléfono (extensible a email post-MVP). Smoke servicio 9/9. |
 
 ---
 
