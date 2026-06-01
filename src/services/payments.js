@@ -594,6 +594,87 @@ async function listAwaitingValidationForBranch(branchId) {
   });
 }
 
+// ─── Sprint 5.8 — feed del tab "Acciones" + acuse ────────────────────────
+
+// Métodos que generan un "acuse informativo" en CajaShell: el pago ya se cerró
+// SIN acción del cajero (MP confirmó por webhook, el mozo cobró cash/tarjeta).
+// El cajero solo lo acusa con "Entendido". Las transferencias (ONLINE_METHODS)
+// NO son acuses: pasan por validar/rechazar.
+const ACUSE_METHODS = [...MP_METHODS, ...IN_PERSON_METHODS];
+
+// Ventana de los acuses. Un Payment paid sin acknowledge aparece como acuse
+// solo si se cobró dentro de esta ventana. Evita que en el primer deploy (o si
+// el cajero nunca acusó) reaparezca TODO el histórico de pagos como acuses.
+const ACUSE_WINDOW_MS = 12 * 60 * 60 * 1000;
+
+// Feed completo del tab "Acciones" (Sprint 5.8). Dos grupos en un solo array:
+//   1. Transferencias/MODO awaiting_validation → card amarilla "Validar/Rechazar".
+//   2. MP/cash/tarjeta paid, sin acknowledge, cobrados en las últimas 12h →
+//      card verde "Entendido" (acuse informativo).
+// Orden: primero las transferencias a validar (más viejas arriba), después los
+// acuses (cobro más reciente arriba).
+async function listActionsForBranch(branchId) {
+  const tableInclude = {
+    model: TableSession,
+    as: 'session',
+    required: true,
+    include: [{
+      model: Table,
+      as: 'table',
+      where: { branchId },
+      attributes: ['id', 'tableName', 'branchId'],
+      required: true
+    }]
+  };
+
+  const [awaiting, acuses] = await Promise.all([
+    Payment.findAll({
+      where: { status: 'awaiting_validation', method: { [Op.in]: ONLINE_METHODS } },
+      include: [tableInclude],
+      order: [['createdAt', 'ASC']]
+    }),
+    Payment.findAll({
+      where: {
+        status: 'paid',
+        method: { [Op.in]: ACUSE_METHODS },
+        acknowledgedAt: null,
+        paidAt: { [Op.gte]: new Date(Date.now() - ACUSE_WINDOW_MS) }
+      },
+      include: [tableInclude],
+      order: [['paidAt', 'DESC']]
+    })
+  ]);
+
+  return [...awaiting, ...acuses];
+}
+
+// Cajero/owner acusa recibo de un pago informativo (MP/cash/tarjeta paid).
+// Setea acknowledgedAt para que la card "Entendido" no reaparezca en el poll.
+// Idempotente: si ya estaba acusado, devuelve tal cual.
+async function acknowledgePayment({ paymentId, userId }) {
+  const payment = await Payment.findByPk(paymentId);
+  if (!payment) {
+    const err = new Error('Payment no encontrado');
+    err.statusCode = 404;
+    throw err;
+  }
+  if (!ACUSE_METHODS.includes(payment.method)) {
+    const err = new Error(`Solo se acusan pagos MP/cash/tarjeta (recibido: ${payment.method})`);
+    err.statusCode = 400;
+    throw err;
+  }
+  if (payment.status !== 'paid') {
+    const err = new Error(`Solo se acusan pagos en estado "paid" (recibido: ${payment.status})`);
+    err.statusCode = 409;
+    throw err;
+  }
+  if (payment.acknowledgedAt) {
+    return payment;
+  }
+  await payment.update({ acknowledgedAt: new Date() });
+  return payment.reload();
+}
+
 module.exports = {
   SUPPORTED_METHODS,
   IN_PERSON_METHODS,
@@ -609,6 +690,8 @@ module.exports = {
   rejectPayment,
   applyMpPayment,
   listAwaitingValidationForBranch,
+  listActionsForBranch,
+  acknowledgePayment,
   getPaymentForClient,
   findPendingForSession
 };

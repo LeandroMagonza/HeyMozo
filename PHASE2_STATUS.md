@@ -2,7 +2,7 @@
 
 Tracker live de los sub-PRs de Fase 2. Una línea por sub-PR con commit, branch, PR# y estado.
 
-**Última actualización:** 2026-05-28 (5.7 mergeado con fixes del smoke; próximo 5.8)
+**Última actualización:** 2026-05-30 (5.8 implementado en local — CajaShell Acciones + liberar mesa; pendiente smoke E2E + PR)
 
 > Cuando un PR se mergea, mover su sub-PR a "✅ Mergeado" abajo y actualizar el [PHASE2_PLAN.md](PHASE2_PLAN.md) si corresponde (cambiar 🚧 → ✅ para el sprint completo cuando todas las sub-PRs estén in).
 
@@ -10,7 +10,12 @@ Tracker live de los sub-PRs de Fase 2. Una línea por sub-PR con commit, branch,
 
 ## 🚧 En review / abiertos
 
-_(Ninguno abierto. 5.7 mergeado — ver abajo.)_
+**5.8 — `feature/phase2-cajashell-acciones`** → **[PR #37](https://github.com/LeandroMagonza/HeyMozo/pull/37) (en review)**. Desde `master` @ 62dc205.
+- **Backend**: migration `20260530_add_payment_ack_and_session_release` (Payments.acknowledgedAt + TableSessions.releaseReason/closedByUserId). `payments.listActionsForBranch` (transfers a validar + acuses MP/cash/tarjeta paid sin ack, ventana 12h) + `payments.acknowledgePayment`. `sessions.listActiveSessionsForBranch` (con balance) + `sessions.releaseTable` (cierra sesión + motivo + closedBy + VACATE). Rutas: `GET /branches/:id/payments/actions`, `POST /payments/:id/acknowledge` (cashier/owner), `GET /branches/:id/sessions/active`, `POST /tables/:id/release` (waiter/cashier/owner).
+- **Frontend**: CajaShell con tabs **Acciones** (cards transfer Validar/Rechazar borde amarillo + acuse "Entendido" borde verde) y **Mesas activas** (lista con balance + Liberar). **OpShell ahora con tabs Alertas/Mesas** — el mozo también ve la lista de mesas activas y libera (cubre el walkout post-LISTO, donde la mesa ya no tiene card de pedido). Componentes nuevos: `PaymentActionCard`, `ReleaseTableModal` y `ActiveTablesList` (lista compartida Caja/Piso). También "Liberar mesa" como shortcut en `OrderDetailModal`. `api.js`: getPaymentActions / acknowledgePayment / getActiveSessions / releaseTable.
+- **Decisiones tomadas durante el smoke-prep** (preguntas del user): (a) **liberar en el Piso = tab fija "Mesas"** en OpShell (no solo cajero); (b) **scan-only filtrado**: `listActiveSessionsForBranch` lista solo sesiones con consumo (≥1 pedido) — las mesas que solo escanearon el QR crean sesión+OCCUPY pero no son accionables, así que no ensucian la lista; (c) **fix**: `releaseTable` cancela los pedidos `pending` de la sesión (si no, sus AlertCards purple quedaban colgadas en el piso porque `listActiveOrders` filtra por status, no por sesión).
+- **Verificado**: `npm run migrate` OK, `npm run build` OK. **Smoke automatizado a nivel servicio OK (22/22)** (validar/rechazar/acuse/scan-only/liberar). **Prueba visual en navegador OK** (Caja Acciones+Mesas, Piso Alertas+Mesas, validar/entendido/liberar desde ambos shells). Commits: `dec48c0` (feature) + `67e6392` (fix detectado en la visual: OpShell no pasaba `balanceCents` al ReleaseTableModal → el aviso de saldo no aparecía en el Piso).
+- **Edge de pago-adelantado → Sprint 6 (NO es bug — comportamiento correcto)**: si se paga ANTES de que la comida se entregue (MP adelantado / autoservicio), la sesión se auto-cierra por balance 0 pero el pedido sigue `pending` → su card "Nuevo Pedido" queda en el Piso. **Es lo correcto**: el cliente pagó esa comida y el mozo debe entregarla (marca LISTO). El auto-cierre por pago **NO emite VACATE** (no libera la mesa para re-sentar; solo cierra la cuenta y la saca de "Mesas activas") — la mesa se recicla al escanear el próximo QR. En servicio tradicional (pago al final, ya entregado) no ocurre. El único path que cancela pedidos pending es la liberación manual (`releaseTable`, walkout/problema), que es correcto. La sutileza occupancy-vs-billing en pago-adelantado se afina en **Sprint 6** (lifecycle de mesa).
 
 ---
 

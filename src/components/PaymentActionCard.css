@@ -1,0 +1,134 @@
+/* PaymentActionCard.css — cards del feed "Acciones" de CajaShell (Sprint 5.8) */
+
+.payment-action-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem;
+  background: var(--rd-bg-cajero-panel, #1a1c29);
+  border: 1px solid var(--rd-border-cajero, #1e293b);
+  border-left-width: 4px;
+  border-radius: var(--rd-radius-lg, 12px);
+}
+
+/* Borde amarillo = transferencia a validar (tarea). */
+.payment-action-card--transfer {
+  border-left-color: #f5c518;
+}
+
+/* Borde verde = acuse informativo (ya pagado). */
+.payment-action-card--acuse {
+  border-left-color: #30d158;
+}
+
+.payment-action-card__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.payment-action-card__table {
+  color: var(--rd-text, #ffffff);
+  font-size: 0.9375rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.payment-action-card__time {
+  color: var(--rd-text-quaternary, #94a3b8);
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.payment-action-card__amount {
+  color: var(--rd-text, #ffffff);
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.payment-action-card__meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+}
+
+.payment-action-card__method {
+  color: var(--rd-text-secondary, #e4e2e4);
+  font-weight: 600;
+}
+
+.payment-action-card__status {
+  color: var(--rd-text-quaternary, #94a3b8);
+}
+
+.payment-action-card__status::before {
+  content: '· ';
+}
+
+.payment-action-card__proof {
+  align-self: flex-start;
+  color: var(--rd-brand-green-cajero, #13eca7);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.payment-action-card__proof:hover {
+  text-decoration: underline;
+}
+
+.payment-action-card__actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.payment-action-card__btn {
+  flex: 1;
+  padding: 0.5625rem 0.75rem;
+  border-radius: var(--rd-radius-md, 8px);
+  border: 1px solid transparent;
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+}
+
+.payment-action-card__btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.payment-action-card__btn--validate {
+  background: #30d158;
+  color: #0b3d1c;
+}
+
+.payment-action-card__btn--validate:hover:not(:disabled) {
+  background: #2bbd4e;
+}
+
+.payment-action-card__btn--reject {
+  background: transparent;
+  border-color: rgba(232, 54, 42, 0.5);
+  color: #f3776d;
+}
+
+.payment-action-card__btn--reject:hover:not(:disabled) {
+  background: rgba(232, 54, 42, 0.12);
+}
+
+.payment-action-card__btn--ack {
+  background: transparent;
+  border-color: var(--rd-border-cajero, #334155);
+  color: var(--rd-text-secondary, #e4e2e4);
+}
+
+.payment-action-card__btn--ack:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.05);
+}

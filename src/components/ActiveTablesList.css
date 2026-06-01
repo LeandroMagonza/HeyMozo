@@ -1,0 +1,72 @@
+/* ActiveTablesList.css — lista compartida de mesas activas (Sprint 5.8).
+   Estilo neutro (rgba sobre fondo oscuro) para servir igual en CajaShell y
+   OpShell, que tienen acentos de color distintos. */
+
+.active-tables {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  max-width: 720px;
+}
+
+.active-tables__row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.875rem 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 12px;
+}
+
+.active-tables__info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.active-tables__table {
+  color: #ffffff;
+  font-size: 0.9375rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.active-tables__opened {
+  color: #94a3b8;
+  font-size: 0.75rem;
+}
+
+.active-tables__balance {
+  margin-left: auto;
+  font-size: 0.875rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.active-tables__due {
+  color: #f5d76e;
+}
+
+.active-tables__paid {
+  color: #30d158;
+}
+
+.active-tables__release {
+  flex-shrink: 0;
+  padding: 0.5rem 0.875rem;
+  background: transparent;
+  border: 1px solid rgba(232, 54, 42, 0.5);
+  border-radius: 8px;
+  color: #f3776d;
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.active-tables__release:hover {
+  background: rgba(232, 54, 42, 0.12);
+}

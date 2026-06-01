@@ -79,6 +79,15 @@ module.exports = (sequelize) => {
       type: DataTypes.DATE,
       allowNull: true
     },
+    // Sprint 5.8 — "acuse" del cajero. Los pagos que se cierran SIN su acción
+    // (MP por webhook, cash/tarjeta cobrados por el mozo) aparecen como card
+    // informativa en el tab "Acciones". El botón "Entendido" setea esto para
+    // que el acuse no reaparezca en cada poll. Las transferencias NO lo usan
+    // (desaparecen solas al pasar a paid/failed).
+    acknowledgedAt: {
+      type: DataTypes.DATE,
+      allowNull: true
+    },
     // Alerta que dispara el cobro en OpShell (cash/card pending). Permite a
     // /branches/:id/active-alerts surface el Payment con el Event y al hacer
     // POST /payments/:id/collect marcar el Event seenAt en una transacción.

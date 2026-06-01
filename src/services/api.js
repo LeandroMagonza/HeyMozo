@@ -223,6 +223,19 @@ export const rejectPayment = (paymentId) =>
 export const getAwaitingValidationPayments = (branchId) =>
   api.get(`/branches/${branchId}/payments/awaiting-validation`);
 
+// CajaShell — tab Acciones + liberar mesa (Sprint 5.8)
+export const getPaymentActions = (branchId) =>
+  api.get(`/branches/${branchId}/payments/actions`);
+
+export const acknowledgePayment = (paymentId) =>
+  api.post(`/payments/${paymentId}/acknowledge`);
+
+export const getActiveSessions = (branchId) =>
+  api.get(`/branches/${branchId}/sessions/active`);
+
+export const releaseTable = (tableId, payload = {}) =>
+  api.post(`/tables/${tableId}/release`, payload);
+
 // User self-profile (Sprint 5.3)
 export const getMyProfile = () =>
   api.get('/users/me');
