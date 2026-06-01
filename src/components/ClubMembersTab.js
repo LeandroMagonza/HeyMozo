@@ -224,7 +224,7 @@ const ClubMembersTab = ({ branchId }) => {
           onClick={startBulk}
           disabled={filtered.length === 0 || bulkActive}
         >
-          <FaWhatsapp /> Enviar a los {filtered.length}
+          <FaWhatsapp /> {filtered.length === 1 ? 'Enviar a 1 socio' : `Enviar a los ${filtered.length}`}
         </button>
       </div>
 
