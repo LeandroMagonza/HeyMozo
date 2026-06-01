@@ -2,7 +2,7 @@
 
 Tracker live de los sub-PRs de Fase 2. Una línea por sub-PR con commit, branch, PR# y estado.
 
-**Última actualización:** 2026-06-01 (5.11 Vouchers implementado en `feature/phase2-club-voucher`, smoke servicio 21/21 + build OK; pendiente push/PR. Cierra Sprint 5.)
+**Última actualización:** 2026-06-01 (5.11 Vouchers en review — PR #42, commit `beedffc`. Smoke servicio 21/21 + smoke visual + build OK. Cierra Sprint 5 al mergear.)
 
 > Cuando un PR se mergea, mover su sub-PR a "✅ Mergeado" abajo y actualizar el [PHASE2_PLAN.md](PHASE2_PLAN.md) si corresponde (cambiar 🚧 → ✅ para el sprint completo cuando todas las sub-PRs estén in).
 
@@ -10,7 +10,7 @@ Tracker live de los sub-PRs de Fase 2. Una línea por sub-PR con commit, branch,
 
 ## 🚧 En review / abiertos
 
-**5.11 (Vouchers)** — código completo en `feature/phase2-club-voucher`, **pendiente de push + abrir PR**. Último sub-PR de Sprint 5: al mergear, marcar Sprint 5 ✅ en PHASE2_PLAN.
+**5.11 (Vouchers)** — [PR #42](https://github.com/LeandroMagonza/HeyMozo/pull/42), commit `beedffc`, branch `feature/phase2-club-voucher`. Último sub-PR de Sprint 5: al mergear, marcar Sprint 5 ✅ en PHASE2_PLAN.
 - Modelo `ClubMemberDevice` (link device↔member) + migración `20260602_add_club_member_device.js`.
 - `club.js`: generación automática de Voucher al alcanzar `clubGoal` (guard "1 voucher pendiente por member", no resetea visits hasta el canje), `getPendingVoucherForDevice`, `redeemVoucher` (valida branch + ya-canjeado → reset visits a 0), voucher pendiente en `listMembersForBranch` y `getClubStatusForSession`.
 - Rutas: `club-join` ahora pasa `deviceId`; `GET /tables/:id/club-voucher` (público, best-effort, 200 `{voucher:null}` sin cookie); `POST /branches/:id/vouchers/redeem` (requireRole waiter/cashier/owner + checkBranchPermission).
