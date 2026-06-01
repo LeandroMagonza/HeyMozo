@@ -79,6 +79,14 @@ const Branch = sequelize.define('Branch', {
     type: DataTypes.INTEGER,
     allowNull: false,
     defaultValue: 2
+  },
+  // Ventana anti-abuso (horas): no se vuelve a contar una visita del Club para
+  // el mismo member dentro de este lapso. Default 12h (evita doble conteo el
+  // mismo día). El venue lo baja a 4-6h (almuerzo+cena) o lo sube a 24h.
+  clubVisitCooldownHours: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    defaultValue: 12
   }
 }, {
   paranoid: true,

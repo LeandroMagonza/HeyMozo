@@ -5,6 +5,16 @@
 // registra UNA ClubVisit por TableSession (idempotente) y se incrementan
 // las visitas — aplicando loyalty acceleration si corresponde.
 //
+// Integridad del conteo (anti-abuso, Sprint 5.10-hardening) — 3 capas:
+//   1. Sesión: 1 ClubVisit por TableSession (recargar PostPago no farmea).
+//   2. Pago paid: solo cuenta si el Payment está 'paid' (no en pending/failed).
+//   3. Cooldown por member: si lastVisitAt está dentro de
+//      branch.clubVisitCooldownHours (default 12h), NO suma — registra una
+//      ClubVisit con visitsAdded=0 (idempotencia/auditoría) sin mover el
+//      contador ni lastVisitAt, y devuelve cooldownActive=true.
+//   El teléfono ES la identidad: meter otro teléfono arranca un contador en 0,
+//   así que el fraude se castiga solo.
+//
 // Loyalty acceleration (endowed progress, PHASE2_PLAN §Club VIP): en la
 // visita N == branch.clubAccelerationAtVisit se suma clubAccelerationMultiplier
 // en lugar de 1.
@@ -85,6 +95,15 @@ async function joinClub({ paymentId, phone }) {
   const session = payment.session;
   const branchId = session.table.branchId;
 
+  // Capa 2: la visita solo cuenta contra un pago confirmado. Evita farmear
+  // sobre pagos pending/failed/cancelados. (En el flujo normal PostPago se
+  // alcanza recién con el pago paid, pero lo blindamos acá igual.)
+  if (payment.status !== 'paid') {
+    const err = new Error('El pago todavía no está confirmado');
+    err.statusCode = 409;
+    throw err;
+  }
+
   const branch = await Branch.findByPk(branchId);
   if (!branch) {
     const err = new Error('Branch no encontrado');
@@ -104,6 +123,7 @@ async function joinClub({ paymentId, phone }) {
     if (existingVisit && existingVisit.member) {
       return {
         alreadyJoined: true,
+        counted: true,
         visits: existingVisit.member.visits,
         goal: branch.clubGoal,
         reward: branch.clubReward
@@ -116,6 +136,32 @@ async function joinClub({ paymentId, phone }) {
       defaults: { branchId, phone: cleanPhone, visits: 0, lastVisitAt: null },
       transaction
     });
+
+    // Capa 3: cooldown por member. Si la última visita contada cae dentro de
+    // la ventana del branch, NO sumamos: registramos una ClubVisit con
+    // visitsAdded=0 (mantiene la idempotencia por sesión + deja rastro) sin
+    // mover visits ni lastVisitAt (si moviéramos lastVisitAt, la ventana se
+    // deslizaría sola y nunca cerraría). Un member recién creado tiene
+    // lastVisitAt=null → no aplica cooldown → cuenta.
+    const cooldownHours = branch.clubVisitCooldownHours ?? 12;
+    if (member.lastVisitAt && cooldownHours > 0) {
+      const elapsedMs = Date.now() - new Date(member.lastVisitAt).getTime();
+      if (elapsedMs < cooldownHours * 3600 * 1000) {
+        await ClubVisit.create({
+          clubMemberId: member.id,
+          tableSessionId: session.id,
+          visitsAdded: 0
+        }, { transaction });
+        return {
+          alreadyJoined: false,
+          counted: false,
+          cooldownActive: true,
+          visits: member.visits,
+          goal: branch.clubGoal,
+          reward: branch.clubReward
+        };
+      }
+    }
 
     // Loyalty acceleration: la visita que estamos por registrar es la
     // (visits + 1)-ésima. Si coincide con accelerationAtVisit, suma multiplier.
@@ -138,6 +184,7 @@ async function joinClub({ paymentId, phone }) {
 
     return {
       alreadyJoined: false,
+      counted: true,
       visits: member.visits,
       goal: branch.clubGoal,
       reward: branch.clubReward
