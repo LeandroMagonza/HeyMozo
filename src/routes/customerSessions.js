@@ -17,6 +17,8 @@ const sessionService = require('../services/sessions');
 const orderService = require('../services/orders');
 const paymentService = require('../services/payments');
 const mercadoPago = require('../services/mercadoPago');
+const reviewService = require('../services/reviews');
+const clubService = require('../services/club');
 
 const DEVICE_COOKIE = 'hm_device';
 
@@ -559,6 +561,138 @@ router.post('/payments/mp/webhook', async (req, res) => {
     const status = err.statusCode || 500;
     console.error(`❌ MP webhook ${status}:`, err.message);
     res.status(status).json({ error: err.message });
+  }
+});
+
+// ─── Sprint 5.9: PostPagoPage (review + Club VIP) ───────────────────────
+
+// Autoriza al device de la cookie sobre un Payment: debe ser el creador del
+// Payment o un participante de su TableSession. Devuelve el Payment (acotado)
+// o lanza un error con statusCode. Mismo criterio que GET /payments/:id/status.
+async function _authorizeDeviceForPayment(paymentId, deviceId) {
+  const payment = await paymentService.getPaymentForClient(paymentId);
+  if (!payment) {
+    const err = new Error('Payment no encontrado');
+    err.statusCode = 404;
+    throw err;
+  }
+  if (payment.deviceId && payment.deviceId === deviceId) {
+    return payment; // creador del Payment
+  }
+  const { TableSessionDevice } = require('../models');
+  const participation = await TableSessionDevice.findOne({
+    where: { tableSessionId: payment.tableSessionId, deviceId }
+  });
+  if (!participation) {
+    const err = new Error('Device sin acceso a este Payment');
+    err.statusCode = 403;
+    throw err;
+  }
+  return payment;
+}
+
+// GET /api/payments/:paymentId/postpago-context — todo lo que la pantalla
+// PostPago necesita: config del branch (Google Maps + Club), tags negativos,
+// staff de la mesa + mozo sugerido, review existente y estado del Club.
+router.get('/payments/:paymentId/postpago-context', async (req, res) => {
+  try {
+    const deviceId = readDeviceIdFromCookie(req);
+    if (!deviceId) {
+      return res.status(401).json({ error: 'Device no identificado' });
+    }
+    const paymentId = parseInt(req.params.paymentId, 10);
+    if (!Number.isFinite(paymentId)) {
+      return res.status(400).json({ error: 'paymentId inválido' });
+    }
+
+    const payment = await _authorizeDeviceForPayment(paymentId, deviceId);
+
+    const context = await reviewService.getPostpagoContext(paymentId);
+    // El estado del Club se resuelve aparte (no acoplamos reviews ↔ club).
+    const clubStatus = await clubService.getClubStatusForSession(payment.tableSessionId);
+    res.json({ ...context, clubStatus });
+  } catch (err) {
+    console.error('❌ GET /payments/:paymentId/postpago-context:', err.message);
+    res.status(err.statusCode || 500).json({ error: err.message || 'Error cargando PostPago' });
+  }
+});
+
+// POST /api/payments/:paymentId/review — crea la Review de la sesión.
+router.post('/payments/:paymentId/review', async (req, res) => {
+  try {
+    const deviceId = readDeviceIdFromCookie(req);
+    if (!deviceId) {
+      return res.status(401).json({ error: 'Device no identificado' });
+    }
+    const paymentId = parseInt(req.params.paymentId, 10);
+    if (!Number.isFinite(paymentId)) {
+      return res.status(400).json({ error: 'paymentId inválido' });
+    }
+
+    await _authorizeDeviceForPayment(paymentId, deviceId);
+
+    const { stars, comment, tagIds, waiterId } = req.body || {};
+    const review = await reviewService.submitReview({
+      paymentId, stars, comment, tagIds, waiterId
+    });
+    res.status(201).json(review);
+  } catch (err) {
+    console.error('❌ POST /payments/:paymentId/review:', err.message);
+    res.status(err.statusCode || 500).json({ error: err.message || 'Error guardando la valoración' });
+  }
+});
+
+// POST /api/reviews/:reviewId/google-click — marca derivedToGoogle (tracking).
+router.post('/reviews/:reviewId/google-click', async (req, res) => {
+  try {
+    const deviceId = readDeviceIdFromCookie(req);
+    if (!deviceId) {
+      return res.status(401).json({ error: 'Device no identificado' });
+    }
+    const reviewId = parseInt(req.params.reviewId, 10);
+    if (!Number.isFinite(reviewId)) {
+      return res.status(400).json({ error: 'reviewId inválido' });
+    }
+
+    const result = await reviewService.markReviewDerivedToGoogle(reviewId);
+
+    // Autorización: el device debe participar de la sesión de la review.
+    const { TableSessionDevice } = require('../models');
+    const participation = await TableSessionDevice.findOne({
+      where: { tableSessionId: result.tableSessionId, deviceId }
+    });
+    if (!participation) {
+      return res.status(403).json({ error: 'Device sin acceso a esta review' });
+    }
+
+    res.json({ id: result.id, derivedToGoogle: result.derivedToGoogle });
+  } catch (err) {
+    console.error('❌ POST /reviews/:reviewId/google-click:', err.message);
+    res.status(err.statusCode || 500).json({ error: err.message || 'Error registrando el click' });
+  }
+});
+
+// POST /api/payments/:paymentId/club-join — el cliente deja su WhatsApp y
+// registra la visita del Club.
+router.post('/payments/:paymentId/club-join', async (req, res) => {
+  try {
+    const deviceId = readDeviceIdFromCookie(req);
+    if (!deviceId) {
+      return res.status(401).json({ error: 'Device no identificado' });
+    }
+    const paymentId = parseInt(req.params.paymentId, 10);
+    if (!Number.isFinite(paymentId)) {
+      return res.status(400).json({ error: 'paymentId inválido' });
+    }
+
+    await _authorizeDeviceForPayment(paymentId, deviceId);
+
+    const { phone } = req.body || {};
+    const result = await clubService.joinClub({ paymentId, phone });
+    res.status(201).json(result);
+  } catch (err) {
+    console.error('❌ POST /payments/:paymentId/club-join:', err.message);
+    res.status(err.statusCode || 500).json({ error: err.message || 'Error registrando el Club' });
   }
 });
 

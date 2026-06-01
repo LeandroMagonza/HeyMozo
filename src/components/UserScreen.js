@@ -60,6 +60,18 @@ const UserScreen = () => {
   const { payment: pendingPayment, cancel: cancelPendingPayment, cancelling: cancelInProgress, refresh: refreshPayment } =
     usePendingPayment();
 
+  // Sprint 5.9 — PostPago sticky: si el cliente pagó y todavía no cerró la
+  // pantalla de pago-confirmado ("Volver al inicio"), lo devolvemos ahí al
+  // volver a la mesa, así puede dejar su reseña / sumarse al Club cuando
+  // quiera. La flag la setea PagoConfirmadoPage; el formato debe coincidir.
+  useEffect(() => {
+    let pid = null;
+    try { pid = localStorage.getItem(`hm_postpago_${companyId}_${branchId}_${tableId}`); } catch (_) { /* noop */ }
+    if (pid) {
+      navigate(`/m/${companyId}/${branchId}/${tableId}/pago-confirmado/${pid}`, { replace: true });
+    }
+  }, [companyId, branchId, tableId, navigate]);
+
   const refreshPastOrders = useCallback(async () => {
     try {
       const { data } = await getTableOrders(tableId);
