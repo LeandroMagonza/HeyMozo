@@ -231,6 +231,32 @@
   transform: scale(0.97);
 }
 
+/* Canjear voucher (Sprint 5.11) — dorado para diferenciarlo del "Nuevo pedido". */
+.op-shell__redeem-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.875rem;
+  background: #f59e0b;
+  color: #1a1205;
+  border: none;
+  border-radius: 10px;
+  font-family: var(--rd-font-sans);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: filter 0.15s ease, transform 0.1s ease;
+  white-space: nowrap;
+}
+
+.op-shell__redeem-btn:hover {
+  filter: brightness(1.08);
+}
+
+.op-shell__redeem-btn:active {
+  transform: scale(0.97);
+}
+
 .op-shell__topnav-refresh {
   display: flex;
   align-items: center;

@@ -688,11 +688,45 @@ router.post('/payments/:paymentId/club-join', async (req, res) => {
     await _authorizeDeviceForPayment(paymentId, deviceId);
 
     const { phone } = req.body || {};
-    const result = await clubService.joinClub({ paymentId, phone });
+    // deviceId queda vinculado al member (ClubMemberDevice) para la detección
+    // "próxima visita" del Sprint 5.11.
+    const result = await clubService.joinClub({ paymentId, phone, deviceId });
     res.status(201).json(result);
   } catch (err) {
     console.error('❌ POST /payments/:paymentId/club-join:', err.message);
     res.status(err.statusCode || 500).json({ error: err.message || 'Error registrando el Club' });
+  }
+});
+
+// GET /api/tables/:tableId/club-voucher — detección "próxima visita" (Sprint
+// 5.11). Dado el device de la cookie y el branch de la mesa, devuelve el voucher
+// pendiente del member vinculado a ese device (o null). Best-effort: si no hay
+// cookie devolvemos { voucher: null } con 200 (NO 401) para no disparar el
+// interceptor de axios que limpia localStorage y redirige — mismo patrón que
+// GET /tables/:id/orders y /pending-payment.
+router.get('/tables/:tableId/club-voucher', async (req, res) => {
+  try {
+    const deviceId = readDeviceIdFromCookie(req);
+    if (!deviceId) {
+      return res.json({ voucher: null });
+    }
+    const tableId = parseInt(req.params.tableId, 10);
+    if (!Number.isFinite(tableId)) {
+      return res.status(400).json({ error: 'tableId inválido' });
+    }
+
+    const { Table } = require('../models');
+    const table = await Table.findByPk(tableId, { attributes: ['id', 'branchId'] });
+    if (!table) {
+      return res.json({ voucher: null });
+    }
+
+    const voucher = await clubService.getPendingVoucherForDevice(deviceId, table.branchId);
+    res.json({ voucher });
+  } catch (err) {
+    console.error('❌ GET /tables/:tableId/club-voucher:', err.message);
+    // No rompemos la pantalla del cliente por esto.
+    res.json({ voucher: null });
   }
 });
 

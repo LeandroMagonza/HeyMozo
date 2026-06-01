@@ -154,6 +154,7 @@ const PagoConfirmadoPage = () => {
             visits: data.clubStatus.visits,
             goal: data.clubStatus.goal,
             reward: data.clubStatus.reward,
+            voucher: data.clubStatus.voucher,
             alreadyJoined: true
           });
         }
@@ -268,6 +269,8 @@ const PagoConfirmadoPage = () => {
 
   const club = context && context.club;
   const clubReached = clubResult && clubResult.goal && clubResult.visits >= clubResult.goal;
+  // Sprint 5.11 — voucher generado/pendiente del socio (código a mostrar al mozo).
+  const clubVoucher = clubResult && clubResult.voucher;
 
   return (
     <Phone>
@@ -415,7 +418,9 @@ const PagoConfirmadoPage = () => {
             ) : (
               <>
                 <h2 className="pp-section__title">
-                  {clubReached ? '¡Alcanzaste el premio! 🎉' : '¡Ya sos parte! 🎉'}
+                  {clubVoucher
+                    ? '¡Ganaste tu premio! 🎁'
+                    : (clubReached ? '¡Alcanzaste el premio! 🎉' : '¡Ya sos parte! 🎉')}
                 </h2>
                 <div className="pp-club__progress">
                   <span className="pp-club__count">{clubResult.visits}</span>
@@ -428,10 +433,23 @@ const PagoConfirmadoPage = () => {
                   </p>
                 ) : (
                   <p className="pp-club__copy">
-                    {clubReached
-                      ? `Pedíle tu ${clubResult.reward} al mozo en tu próxima visita.`
-                      : `Seguí sumando para tu ${clubResult.reward}.`}
+                    {clubVoucher
+                      ? `Tu ${clubVoucher.reward} ya está listo.`
+                      : (clubReached
+                          ? `Pedíle tu ${clubResult.reward} al mozo en tu próxima visita.`
+                          : `Seguí sumando para tu ${clubResult.reward}.`)}
                   </p>
+                )}
+
+                {clubVoucher && (
+                  <div className="pp-club__voucher">
+                    <p className="pp-club__voucher-label">Tu código de premio</p>
+                    <div className="pp-club__voucher-code">{clubVoucher.code}</div>
+                    <p className="pp-club__voucher-hint">
+                      Mostralo al mozo. Si no, te lo detectamos solo cuando vuelvas
+                      a escanear en tu próxima visita.
+                    </p>
+                  </div>
                 )}
               </>
             )}

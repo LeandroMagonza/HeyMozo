@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
-import { FaStore, FaSignOutAlt, FaUser, FaPlus, FaChair } from 'react-icons/fa';
+import { FaStore, FaSignOutAlt, FaUser, FaPlus, FaChair, FaGift } from 'react-icons/fa';
 import authService from '../services/authService';
 import AlertCard from './AlertCard';
 import TableStack from './TableStack';
 import OrderDetailModal from './OrderDetailModal';
 import AddOrderModal from './AddOrderModal';
 import ReleaseTableModal from './ReleaseTableModal';
+import RedeemVoucherModal from './RedeemVoucherModal';
 import ActiveTablesList from './ActiveTablesList';
 import {
   getActiveOrders,
@@ -47,6 +48,7 @@ const OpShell = () => {
   const [markingTableId, setMarkingTableId] = useState(null);
   const [collectingPaymentId, setCollectingPaymentId] = useState(null);
   const [showAddOrder, setShowAddOrder] = useState(false);
+  const [showRedeemVoucher, setShowRedeemVoucher] = useState(false);
   const [expandedTableIds, setExpandedTableIds] = useState(new Set());
   const [releaseTarget, setReleaseTarget] = useState(null);
   const [releaseLoading, setReleaseLoading] = useState(false);
@@ -354,14 +356,24 @@ const OpShell = () => {
           </h1>
           <div className="op-shell__topnav-actions">
             {activeTab === 'alertas' && (
-              <button
-                className="op-shell__add-order-btn"
-                onClick={() => setShowAddOrder(true)}
-                title="Cargar pedido del mozo"
-              >
-                <FaPlus />
-                <span>Nuevo pedido</span>
-              </button>
+              <>
+                <button
+                  className="op-shell__redeem-btn"
+                  onClick={() => setShowRedeemVoucher(true)}
+                  title="Canjear el voucher del Club de un cliente"
+                >
+                  <FaGift />
+                  <span>Canjear voucher</span>
+                </button>
+                <button
+                  className="op-shell__add-order-btn"
+                  onClick={() => setShowAddOrder(true)}
+                  title="Cargar pedido del mozo"
+                >
+                  <FaPlus />
+                  <span>Nuevo pedido</span>
+                </button>
+              </>
             )}
             <div className="op-shell__topnav-refresh">
               {activeTab === 'alertas' && (orders.length + alerts.length) > 0 && (
@@ -463,6 +475,13 @@ const OpShell = () => {
             setShowAddOrder(false);
             fetchData();
           }}
+        />
+      )}
+
+      {showRedeemVoucher && (
+        <RedeemVoucherModal
+          branchId={branchId}
+          onClose={() => setShowRedeemVoucher(false)}
         />
       )}
     </div>

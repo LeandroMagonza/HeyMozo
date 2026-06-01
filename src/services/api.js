@@ -240,6 +240,16 @@ export const releaseTable = (tableId, payload = {}) =>
 export const getClubMembers = (branchId) =>
   api.get(`/branches/${branchId}/club/members`);
 
+// Vouchers (Sprint 5.11)
+// Detección "próxima visita": el cliente escanea y el backend resuelve, por
+// device, si tiene un voucher pendiente en esta sucursal. Devuelve { voucher }.
+export const getTableClubVoucher = (tableId) =>
+  api.get(`/tables/${tableId}/club-voucher`);
+
+// Canje del voucher por el mozo desde OpShell.
+export const redeemVoucher = (branchId, code) =>
+  api.post(`/branches/${branchId}/vouchers/redeem`, { code });
+
 // PostPago: review + Club VIP (Sprint 5.9)
 export const getPostpagoContext = (paymentId) =>
   api.get(`/payments/${paymentId}/postpago-context`);

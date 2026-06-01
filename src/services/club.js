@@ -1,4 +1,5 @@
-// Service del Club VIP del cliente (Sprint 5.9 — captura + conteo de visitas).
+// Service del Club VIP del cliente (Sprint 5.9 — captura + conteo de visitas;
+// Sprint 5.11 — vouchers).
 //
 // El cliente deja su WhatsApp en la card del Club (siempre visible en
 // PostPago). Al unirse: upsert del ClubMember por (branchId, phone), se
@@ -19,8 +20,15 @@
 // visita N == branch.clubAccelerationAtVisit se suma clubAccelerationMultiplier
 // en lugar de 1.
 //
-// La GENERACIÓN del Voucher al alcanzar el goal queda para Sprint 5.11 — acá
-// solo capturamos y contamos.
+// Vouchers (Sprint 5.11):
+//   - Generación automática: al contar una visita que deja visits >= clubGoal,
+//     si el member no tiene ya un Voucher sin canjear, generamos uno (snapshot
+//     del clubReward). visits NO se resetea acá — el reset es al canjear.
+//   - Detección "próxima visita": el device que tipeó el teléfono queda
+//     vinculado (ClubMemberDevice). Al escanear el QR resolvemos su voucher
+//     pendiente por device (getPendingVoucherForDevice) y se lo mostramos.
+//   - Canje: el mozo valida el código desde OpShell (redeemVoucher) → marca
+//     redeemedAt/redeemedByUserId + resetea member.visits = 0.
 
 const sequelize = require('../config/database');
 const {
@@ -29,8 +37,34 @@ const {
   Table,
   Branch,
   ClubMember,
-  ClubVisit
+  ClubVisit,
+  Voucher,
+  ClubMemberDevice
 } = require('../models');
+
+// Alfabeto sin caracteres ambiguos (sin 0/O/1/I/L) — el mozo tipea el código
+// a mano desde OpShell, así que minimizamos confusiones de lectura.
+const VOUCHER_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+
+function _randomCode(len) {
+  let s = '';
+  for (let i = 0; i < len; i += 1) {
+    s += VOUCHER_ALPHABET[Math.floor(Math.random() * VOUCHER_ALPHABET.length)];
+  }
+  return s;
+}
+
+// Genera un código único (chequea colisión contra Voucher.code, que tiene
+// índice unique). 6 chars dan ~887M combinaciones — colisión casi imposible,
+// pero reintentamos por las dudas y caemos a 8 chars como red final.
+async function _uniqueVoucherCode(transaction) {
+  for (let attempt = 0; attempt < 10; attempt += 1) {
+    const code = _randomCode(6);
+    const clash = await Voucher.findOne({ where: { code }, transaction });
+    if (!clash) return code;
+  }
+  return _randomCode(8);
+}
 
 // Normaliza el teléfono a solo dígitos (con prefijo país si vino). Sirve como
 // clave estable del member dentro del branch y como destino `wa.me/<digits>`.
@@ -62,13 +96,56 @@ async function _loadPaymentSession(paymentId) {
   return payment;
 }
 
+// Vincula el device (cookie hm_device) al member. Idempotente. Solo el device
+// que efectivamente tipeó el teléfono queda vinculado → al escanear, ese device
+// ve su voucher (un comensal de la misma mesa no ve el premio ajeno).
+async function _linkDevice(clubMemberId, deviceId, transaction) {
+  if (!deviceId) return;
+  await ClubMemberDevice.findOrCreate({
+    where: { clubMemberId, deviceId },
+    defaults: { clubMemberId, deviceId },
+    transaction
+  });
+}
+
+// Resuelve el voucher pendiente del member: si ya tiene uno sin canjear lo
+// devuelve (no duplica); si alcanzó el goal y no tiene ninguno, lo genera.
+// Devuelve { voucher, justGenerated }. No toca member.visits (el reset es al
+// canjear).
+async function _resolveVoucherAtGoal(member, branch, transaction) {
+  const existing = await Voucher.findOne({
+    where: { clubMemberId: member.id, redeemedAt: null },
+    order: [['generatedAt', 'DESC']],
+    transaction
+  });
+  if (existing) return { voucher: existing, justGenerated: false };
+
+  const goal = branch.clubGoal;
+  if (goal == null || member.visits < goal) {
+    return { voucher: null, justGenerated: false };
+  }
+
+  const code = await _uniqueVoucherCode(transaction);
+  const voucher = await Voucher.create({
+    clubMemberId: member.id,
+    code,
+    reward: branch.clubReward || 'Premio',
+    generatedAt: new Date()
+  }, { transaction });
+  return { voucher, justGenerated: true };
+}
+
+function _voucherPayload(voucher) {
+  if (!voucher) return null;
+  return { code: voucher.code, reward: voucher.reward };
+}
+
 // Listado de socios del Club VIP de un branch para el tab Club de la CajaShell
 // (Sprint 5.10). Devuelve la config del programa (goal/reward + nombre del
-// branch para el mensaje) y todos los members con sus visitas y última visita.
-// El frontend filtra (búsqueda por teléfono, días sin volver, voucher
-// alcanzado) y arma los links `wa.me/...` client-side — no paginamos ni
-// filtramos en el server: el dataset por branch es chico en el MVP y filtrar
-// en cliente hace el envío masivo instantáneo sobre el set visible.
+// branch para el mensaje) y todos los members con sus visitas, última visita y
+// — Sprint 5.11 — su voucher pendiente (código + premio) si lo tienen, para que
+// el mensaje de WhatsApp pueda incluir el código de canje. El frontend filtra
+// (búsqueda, días sin volver, voucher) y arma los links `wa.me/...` client-side.
 async function listMembersForBranch(branchId) {
   const branch = await Branch.findByPk(branchId, {
     attributes: ['id', 'name', 'clubGoal', 'clubReward']
@@ -86,25 +163,47 @@ async function listMembersForBranch(branchId) {
     order: [[sequelize.literal('"lastVisitAt" DESC NULLS LAST')]]
   });
 
+  // Vouchers pendientes (sin canjear) de estos members, el más reciente por
+  // member (en el MVP hay a lo sumo uno activo, pero ordenamos por las dudas).
+  const memberIds = members.map((m) => m.id);
+  const vouchers = memberIds.length
+    ? await Voucher.findAll({
+      where: { clubMemberId: memberIds, redeemedAt: null },
+      attributes: ['clubMemberId', 'code', 'reward', 'generatedAt'],
+      order: [['generatedAt', 'DESC']]
+    })
+    : [];
+  const voucherByMember = new Map();
+  for (const v of vouchers) {
+    if (!voucherByMember.has(v.clubMemberId)) voucherByMember.set(v.clubMemberId, v);
+  }
+
   const goal = branch.clubGoal;
   return {
     branchName: branch.name,
     goal,
     reward: branch.clubReward,
-    members: members.map((m) => ({
-      id: m.id,
-      phone: m.phone,
-      visits: m.visits,
-      lastVisitAt: m.lastVisitAt,
-      joinedAt: m.createdAt,
-      reachedGoal: goal != null && m.visits >= goal
-    }))
+    members: members.map((m) => {
+      const v = voucherByMember.get(m.id) || null;
+      return {
+        id: m.id,
+        phone: m.phone,
+        visits: m.visits,
+        lastVisitAt: m.lastVisitAt,
+        joinedAt: m.createdAt,
+        reachedGoal: goal != null && m.visits >= goal,
+        hasPendingVoucher: !!v,
+        voucherCode: v ? v.code : null,
+        voucherReward: v ? v.reward : null
+      };
+    })
   };
 }
 
 // Estado del Club para una sesión: si ya se registró visita devuelve el
 // contador; si no, null. Usado por el contexto PostPago para mostrar el
-// estado "ya sos parte, X de Y" sin volver a contar.
+// estado "ya sos parte, X de Y" sin volver a contar. Incluye el voucher
+// pendiente del member (si lo tiene) para recordárselo en PostPago.
 async function getClubStatusForSession(tableSessionId) {
   const visit = await ClubVisit.findOne({
     where: { tableSessionId },
@@ -114,16 +213,21 @@ async function getClubStatusForSession(tableSessionId) {
   const branch = await Branch.findByPk(visit.member.branchId, {
     attributes: ['clubGoal', 'clubReward']
   });
+  const voucher = await Voucher.findOne({
+    where: { clubMemberId: visit.member.id, redeemedAt: null },
+    order: [['generatedAt', 'DESC']]
+  });
   return {
     joined: true,
     visits: visit.member.visits,
     goal: branch ? branch.clubGoal : null,
-    reward: branch ? branch.clubReward : null
+    reward: branch ? branch.clubReward : null,
+    voucher: _voucherPayload(voucher)
   };
 }
 
 // El cliente se une al Club / registra su visita.
-async function joinClub({ paymentId, phone }) {
+async function joinClub({ paymentId, phone, deviceId = null }) {
   const cleanPhone = _normalizePhone(phone);
   if (!cleanPhone) {
     const err = new Error('Teléfono inválido');
@@ -161,12 +265,16 @@ async function joinClub({ paymentId, phone }) {
       transaction
     });
     if (existingVisit && existingVisit.member) {
+      await _linkDevice(existingVisit.member.id, deviceId, transaction);
+      const { voucher } = await _resolveVoucherAtGoal(existingVisit.member, branch, transaction);
       return {
         alreadyJoined: true,
         counted: true,
         visits: existingVisit.member.visits,
         goal: branch.clubGoal,
-        reward: branch.clubReward
+        reward: branch.clubReward,
+        voucher: _voucherPayload(voucher),
+        voucherJustGenerated: false
       };
     }
 
@@ -176,6 +284,8 @@ async function joinClub({ paymentId, phone }) {
       defaults: { branchId, phone: cleanPhone, visits: 0, lastVisitAt: null },
       transaction
     });
+
+    await _linkDevice(member.id, deviceId, transaction);
 
     // Capa 3: cooldown por member. Si la última visita contada cae dentro de
     // la ventana del branch, NO sumamos: registramos una ClubVisit con
@@ -192,13 +302,16 @@ async function joinClub({ paymentId, phone }) {
           tableSessionId: session.id,
           visitsAdded: 0
         }, { transaction });
+        const { voucher } = await _resolveVoucherAtGoal(member, branch, transaction);
         return {
           alreadyJoined: false,
           counted: false,
           cooldownActive: true,
           visits: member.visits,
           goal: branch.clubGoal,
-          reward: branch.clubReward
+          reward: branch.clubReward,
+          voucher: _voucherPayload(voucher),
+          voucherJustGenerated: false
         };
       }
     }
@@ -222,12 +335,100 @@ async function joinClub({ paymentId, phone }) {
       lastVisitAt: new Date()
     }, { transaction });
 
+    // Sprint 5.11: si esta visita alcanzó el goal, generamos el voucher.
+    const { voucher, justGenerated } = await _resolveVoucherAtGoal(member, branch, transaction);
+
     return {
       alreadyJoined: false,
       counted: true,
       visits: member.visits,
       goal: branch.clubGoal,
-      reward: branch.clubReward
+      reward: branch.clubReward,
+      voucher: _voucherPayload(voucher),
+      voucherJustGenerated: justGenerated
+    };
+  });
+}
+
+// Sprint 5.11 — detección "próxima visita". Dado el device de la cookie y el
+// branch de la mesa escaneada, devuelve el voucher pendiente del member
+// vinculado a ese device (si lo hay). Se llama al cargar UserScreen. Devuelve
+// null silenciosamente si no hay device, no hay member vinculado, o no hay
+// voucher pendiente — es un endpoint best-effort, no bloquea el flujo.
+async function getPendingVoucherForDevice(deviceId, branchId) {
+  if (!deviceId || !branchId) return null;
+
+  // Members de este device en este branch (el link se crea al hacer club-join).
+  const links = await ClubMemberDevice.findAll({
+    where: { deviceId },
+    include: [{
+      model: ClubMember,
+      as: 'member',
+      where: { branchId },
+      attributes: ['id']
+    }]
+  });
+  if (links.length === 0) return null;
+
+  const memberIds = links.map((l) => l.member.id);
+  const voucher = await Voucher.findOne({
+    where: { clubMemberId: memberIds, redeemedAt: null },
+    order: [['generatedAt', 'DESC']]
+  });
+  if (!voucher) return null;
+
+  return {
+    code: voucher.code,
+    reward: voucher.reward,
+    generatedAt: voucher.generatedAt
+  };
+}
+
+// Sprint 5.11 — canje del voucher por el mozo desde OpShell. Valida el código,
+// que pertenezca al branch del staff, y que no esté ya canjeado. Marca
+// redeemedAt + redeemedByUserId y resetea member.visits = 0 (el multiplicador
+// de aceleración se vuelve a aplicar en el nuevo ciclo).
+async function redeemVoucher({ code, branchId, userId }) {
+  const clean = typeof code === 'string' ? code.trim().toUpperCase() : '';
+  if (!clean) {
+    const err = new Error('Ingresá un código de voucher');
+    err.statusCode = 400;
+    throw err;
+  }
+
+  return sequelize.transaction(async (transaction) => {
+    const voucher = await Voucher.findOne({
+      where: { code: clean },
+      include: [{ model: ClubMember, as: 'member' }],
+      transaction
+    });
+    if (!voucher || !voucher.member) {
+      const err = new Error('Código inválido');
+      err.statusCode = 404;
+      throw err;
+    }
+    // Scoping: el voucher solo se canjea en la sucursal que lo emitió.
+    if (voucher.member.branchId !== branchId) {
+      const err = new Error('Este voucher es de otra sucursal');
+      err.statusCode = 403;
+      throw err;
+    }
+    if (voucher.redeemedAt) {
+      const err = new Error('Este voucher ya fue canjeado');
+      err.statusCode = 409;
+      throw err;
+    }
+
+    const redeemedAt = new Date();
+    await voucher.update({ redeemedAt, redeemedByUserId: userId }, { transaction });
+    await voucher.member.update({ visits: 0 }, { transaction });
+
+    return {
+      code: voucher.code,
+      reward: voucher.reward,
+      phone: voucher.member.phone,
+      redeemedAt,
+      memberVisits: 0
     };
   });
 }
@@ -235,5 +436,7 @@ async function joinClub({ paymentId, phone }) {
 module.exports = {
   listMembersForBranch,
   getClubStatusForSession,
-  joinClub
+  joinClub,
+  getPendingVoucherForDevice,
+  redeemVoucher
 };
