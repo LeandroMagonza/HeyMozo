@@ -223,6 +223,19 @@ export const rejectPayment = (paymentId) =>
 export const getAwaitingValidationPayments = (branchId) =>
   api.get(`/branches/${branchId}/payments/awaiting-validation`);
 
+// CajaShell — tab Acciones + liberar mesa (Sprint 5.8)
+export const getPaymentActions = (branchId) =>
+  api.get(`/branches/${branchId}/payments/actions`);
+
+export const acknowledgePayment = (paymentId) =>
+  api.post(`/payments/${paymentId}/acknowledge`);
+
+export const getActiveSessions = (branchId) =>
+  api.get(`/branches/${branchId}/sessions/active`);
+
+export const releaseTable = (tableId, payload = {}) =>
+  api.post(`/tables/${tableId}/release`, payload);
+
 // PostPago: review + Club VIP (Sprint 5.9)
 export const getPostpagoContext = (paymentId) =>
   api.get(`/payments/${paymentId}/postpago-context`);

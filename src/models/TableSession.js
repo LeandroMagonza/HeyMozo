@@ -29,6 +29,19 @@ module.exports = (sequelize) => {
       type: DataTypes.DATE,
       allowNull: true
     },
+    // Sprint 5.8 — liberación manual individual. Cuando un cajero/owner (o un
+    // mozo desde el Piso) libera una mesa con balance > 0 (walkout, cobro
+    // off-system, comp del dueño), guardamos el motivo opcional y quién la
+    // cerró. Null cuando la sesión se cerró por auto-liberación (balance=0).
+    releaseReason: {
+      type: DataTypes.TEXT,
+      allowNull: true
+    },
+    closedByUserId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: { model: 'Users', key: 'id' }
+    },
     // The device that created (and leads) this session.
     // Null briefly between session creation and first device attachment.
     leaderDeviceId: {
@@ -52,6 +65,10 @@ module.exports = (sequelize) => {
     TableSession.belongsTo(models.Device, {
       foreignKey: 'leaderDeviceId',
       as: 'leader'
+    });
+    TableSession.belongsTo(models.User, {
+      foreignKey: 'closedByUserId',
+      as: 'closedBy'
     });
     TableSession.hasMany(models.TableSessionDevice, {
       foreignKey: 'tableSessionId',

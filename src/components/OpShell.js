@@ -1,17 +1,21 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { NavLink, useParams } from 'react-router-dom';
-import { FaStore, FaSignOutAlt, FaUser, FaPlus } from 'react-icons/fa';
+import { useParams } from 'react-router-dom';
+import { FaStore, FaSignOutAlt, FaUser, FaPlus, FaChair } from 'react-icons/fa';
 import authService from '../services/authService';
 import AlertCard from './AlertCard';
 import TableStack from './TableStack';
 import OrderDetailModal from './OrderDetailModal';
 import AddOrderModal from './AddOrderModal';
+import ReleaseTableModal from './ReleaseTableModal';
+import ActiveTablesList from './ActiveTablesList';
 import {
   getActiveOrders,
   getActiveAlerts,
+  getActiveSessions,
   markOrderReady,
   markTableEventsSeen,
   collectPayment,
+  releaseTable,
 } from '../services/api';
 import notificationSound from '../sounds/notification.mp3';
 import './OpShell.css';
@@ -32,8 +36,10 @@ const OpShell = () => {
   const { branchId } = useParams();
   const currentUser = authService.getCurrentUser();
 
+  const [activeTab, setActiveTab] = useState('alertas');
   const [orders, setOrders] = useState([]);
   const [alerts, setAlerts] = useState([]);
+  const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [countdown, setCountdown] = useState(REFRESH_INTERVAL / 1000);
   const [selectedOrder, setSelectedOrder] = useState(null);
@@ -42,6 +48,8 @@ const OpShell = () => {
   const [collectingPaymentId, setCollectingPaymentId] = useState(null);
   const [showAddOrder, setShowAddOrder] = useState(false);
   const [expandedTableIds, setExpandedTableIds] = useState(new Set());
+  const [releaseTarget, setReleaseTarget] = useState(null);
+  const [releaseLoading, setReleaseLoading] = useState(false);
 
   // Pila mixta por mesa: Orders + Events de la misma tableId se agrupan en
   // un solo TableStack. Mesas con un único item se rendean como AlertCard
@@ -102,12 +110,14 @@ const OpShell = () => {
 
   const fetchData = useCallback(async () => {
     try {
-      const [ordersRes, alertsRes] = await Promise.all([
+      const [ordersRes, alertsRes, sessionsRes] = await Promise.all([
         getActiveOrders(branchId),
         getActiveAlerts(branchId),
+        getActiveSessions(branchId),
       ]);
       setOrders(ordersRes.data);
       setAlerts(alertsRes.data);
+      setSessions(sessionsRes.data);
     } catch (err) {
       console.error('🍽️ OpShell — error fetching active data:', err);
     } finally {
@@ -187,6 +197,28 @@ const OpShell = () => {
       setCollectingPaymentId(null);
     }
   }, [fetchData]);
+
+  // Liberar mesa desde el Piso (Sprint 5.8). El mozo abre el detalle de un
+  // pedido y puede liberar la mesa (cierra la sesión + VACATE). Cubre el caso
+  // de mesa que se va sin que el sistema cierre el balance solo. El cajero
+  // tiene la lista completa de mesas activas en CajaShell.
+  const handleConfirmRelease = useCallback(async (reason) => {
+    if (!releaseTarget) return;
+    setReleaseLoading(true);
+    try {
+      await releaseTable(releaseTarget.tableId, { releaseReason: reason });
+      setReleaseTarget(null);
+      await fetchData();
+    } catch (err) {
+      console.error('🍽️ OpShell — error liberando mesa:', err);
+      alert(
+        (err && err.response && err.response.data && err.response.data.error)
+          || 'No se pudo liberar la mesa. Reintentá.'
+      );
+    } finally {
+      setReleaseLoading(false);
+    }
+  }, [releaseTarget, fetchData]);
 
   // Render genérico de un item del stack como AlertCard. `asShadow` apaga
   // wait/badge/actions (se usa para las cards-shadow del collapsed stack).
@@ -275,16 +307,28 @@ const OpShell = () => {
         </div>
 
         <nav className="op-shell__nav">
-          <NavLink
-            to={`/piso/${branchId}`}
-            end
-            className={({ isActive }) =>
-              `op-shell__nav-item${isActive ? ' op-shell__nav-item--active' : ''}`
-            }
+          <button
+            type="button"
+            className={`op-shell__nav-item${activeTab === 'alertas' ? ' op-shell__nav-item--active' : ''}`}
+            onClick={() => setActiveTab('alertas')}
           >
             <FaStore className="op-shell__nav-icon" />
-            <span>Panel del piso</span>
-          </NavLink>
+            <span>Alertas</span>
+            {(orders.length + alerts.length) > 0 && (
+              <span className="op-shell__nav-badge">{orders.length + alerts.length}</span>
+            )}
+          </button>
+          <button
+            type="button"
+            className={`op-shell__nav-item${activeTab === 'mesas' ? ' op-shell__nav-item--active' : ''}`}
+            onClick={() => setActiveTab('mesas')}
+          >
+            <FaChair className="op-shell__nav-icon" />
+            <span>Mesas</span>
+            {sessions.length > 0 && (
+              <span className="op-shell__nav-badge op-shell__nav-badge--muted">{sessions.length}</span>
+            )}
+          </button>
         </nav>
 
         <div className="op-shell__footer">
@@ -305,18 +349,22 @@ const OpShell = () => {
 
       <main className="op-shell__main">
         <header className="op-shell__topnav">
-          <h1 className="op-shell__topnav-title">Panel del Piso</h1>
+          <h1 className="op-shell__topnav-title">
+            {activeTab === 'alertas' ? 'Panel del Piso' : 'Mesas activas'}
+          </h1>
           <div className="op-shell__topnav-actions">
-            <button
-              className="op-shell__add-order-btn"
-              onClick={() => setShowAddOrder(true)}
-              title="Cargar pedido del mozo"
-            >
-              <FaPlus />
-              <span>Nuevo pedido</span>
-            </button>
+            {activeTab === 'alertas' && (
+              <button
+                className="op-shell__add-order-btn"
+                onClick={() => setShowAddOrder(true)}
+                title="Cargar pedido del mozo"
+              >
+                <FaPlus />
+                <span>Nuevo pedido</span>
+              </button>
+            )}
             <div className="op-shell__topnav-refresh">
-              {(orders.length + alerts.length) > 0 && (
+              {activeTab === 'alertas' && (orders.length + alerts.length) > 0 && (
                 <span className="op-shell__badge-total">{orders.length + alerts.length}</span>
               )}
               <span className="op-shell__countdown">Actualiza en {countdown}s</span>
@@ -327,37 +375,56 @@ const OpShell = () => {
         <div className="op-shell__content">
           {loading ? (
             <div className="op-shell__empty">
-              <p className="op-shell__empty-text">Cargando pedidos…</p>
+              <p className="op-shell__empty-text">Cargando…</p>
             </div>
-          ) : tableGroups.length === 0 ? (
-            <div className="op-shell__empty">
-              <span className="material-icons op-shell__empty-icon">check_circle</span>
-              <p className="op-shell__empty-title">Sin alertas pendientes</p>
-              <p className="op-shell__empty-desc">Los nuevos pedidos y llamados aparecerán aquí automáticamente.</p>
-            </div>
-          ) : (
-            <div className="op-shell__grid">
-              {tableGroups.map((group) => {
-                if (group.items.length === 1) {
+          ) : activeTab === 'alertas' ? (
+            tableGroups.length === 0 ? (
+              <div className="op-shell__empty">
+                <span className="material-icons op-shell__empty-icon">check_circle</span>
+                <p className="op-shell__empty-title">Sin alertas pendientes</p>
+                <p className="op-shell__empty-desc">Los nuevos pedidos y llamados aparecerán aquí automáticamente.</p>
+              </div>
+            ) : (
+              <div className="op-shell__grid">
+                {tableGroups.map((group) => {
+                  if (group.items.length === 1) {
+                    return (
+                      <React.Fragment key={`table-${group.tableId}`}>
+                        {renderItem(group.items[0])}
+                      </React.Fragment>
+                    );
+                  }
                   return (
-                    <React.Fragment key={`table-${group.tableId}`}>
-                      {renderItem(group.items[0])}
-                    </React.Fragment>
+                    <TableStack
+                      key={`table-${group.tableId}`}
+                      items={group.items}
+                      tableId={group.tableId}
+                      tableName={group.tableName}
+                      expanded={expandedTableIds.has(group.tableId)}
+                      onToggle={() => toggleStack(group.tableId)}
+                      renderItem={renderItem}
+                    />
                   );
-                }
-                return (
-                  <TableStack
-                    key={`table-${group.tableId}`}
-                    items={group.items}
-                    tableId={group.tableId}
-                    tableName={group.tableName}
-                    expanded={expandedTableIds.has(group.tableId)}
-                    onToggle={() => toggleStack(group.tableId)}
-                    renderItem={renderItem}
-                  />
-                );
-              })}
-            </div>
+                })}
+              </div>
+            )
+          ) : (
+            sessions.length === 0 ? (
+              <div className="op-shell__empty">
+                <span className="material-icons op-shell__empty-icon">table_restaurant</span>
+                <p className="op-shell__empty-title">No hay mesas con consumo</p>
+                <p className="op-shell__empty-desc">Las mesas con pedidos aparecerán acá para liberarlas si hace falta.</p>
+              </div>
+            ) : (
+              <ActiveTablesList
+                sessions={sessions}
+                onRelease={(s) => setReleaseTarget({
+                  tableId: s.tableId,
+                  tableName: s.tableName ?? `Mesa ${s.tableId}`,
+                  balanceCents: s.balanceCents,
+                })}
+              />
+            )
           )}
         </div>
       </main>
@@ -367,7 +434,24 @@ const OpShell = () => {
           order={selectedOrder}
           onClose={() => setSelectedOrder(null)}
           onReady={() => handleMarkReady(selectedOrder.id)}
+          onRelease={() => {
+            setReleaseTarget({
+              tableId: selectedOrder.tableId,
+              tableName: selectedOrder.table?.tableName ?? `Mesa ${selectedOrder.tableId}`,
+            });
+            setSelectedOrder(null);
+          }}
           loading={markingId === selectedOrder.id}
+        />
+      )}
+
+      {releaseTarget && (
+        <ReleaseTableModal
+          tableName={releaseTarget.tableName}
+          balanceCents={releaseTarget.balanceCents}
+          onClose={() => setReleaseTarget(null)}
+          onConfirm={handleConfirmRelease}
+          loading={releaseLoading}
         />
       )}
 

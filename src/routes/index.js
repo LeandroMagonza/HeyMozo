@@ -1215,6 +1215,7 @@ router.post('/orders/:orderId/mark-ready', async (req, res) => {
 // ============================================================
 
 const paymentService = require('../services/payments');
+const sessionsService = require('../services/sessions');
 
 // POST /api/payments/:paymentId/collect — mozo confirma que cobró cash/tarjeta.
 // Payment.status → 'paid' + paidAt + collectedByUserId. Event asociado se
@@ -1403,6 +1404,121 @@ router.get(
     } catch (err) {
       console.error('❌ GET /branches/:branchId/payments/awaiting-validation:', err.message);
       res.status(500).json({ error: 'Error listando pagos a validar' });
+    }
+  }
+);
+
+// ============================================================
+// Sprint 5.8 — CajaShell tab "Acciones" + liberación de mesa
+// ============================================================
+
+// GET /api/branches/:branchId/payments/actions — feed del tab "Acciones":
+// transferencias a validar (awaiting_validation) + acuses de pagos ya cerrados
+// (MP/cash/tarjeta paid sin acknowledge, últimas 12h). El frontend distingue
+// por status/method qué botones mostrar.
+router.get(
+  '/branches/:branchId/payments/actions',
+  authMiddleware.checkBranchPermission,
+  async (req, res) => {
+    try {
+      const branchId = parseInt(req.params.branchId, 10);
+      if (!Number.isFinite(branchId)) {
+        return res.status(400).json({ error: 'branchId inválido' });
+      }
+      const list = await paymentService.listActionsForBranch(branchId);
+      res.json(list.map(p => ({
+        ..._serializePaymentForStaff(p),
+        acknowledgedAt: p.acknowledgedAt,
+        table: p.session && p.session.table
+          ? { id: p.session.table.id, tableName: p.session.table.tableName }
+          : null
+      })));
+    } catch (err) {
+      console.error('❌ GET /branches/:branchId/payments/actions:', err.message);
+      res.status(500).json({ error: 'Error listando acciones de caja' });
+    }
+  }
+);
+
+// POST /api/payments/:paymentId/acknowledge — cajero/owner acusa recibo de un
+// pago informativo (MP/cash/tarjeta paid). Setea acknowledgedAt para que la
+// card "Entendido" no reaparezca en el próximo poll.
+router.post(
+  '/payments/:paymentId/acknowledge',
+  authMiddleware.requireRole('cashier', 'owner'),
+  async (req, res) => {
+    try {
+      const ctx = await _resolvePaymentBranchAccess(req, res);
+      if (!ctx) return;
+      const updated = await paymentService.acknowledgePayment({
+        paymentId: ctx.payment.id,
+        userId: req.user.id
+      });
+      res.json({ ..._serializePaymentForStaff(updated), acknowledgedAt: updated.acknowledgedAt });
+    } catch (err) {
+      console.error('❌ POST /payments/:paymentId/acknowledge:', err.message);
+      res.status(err.statusCode || 500).json({ error: err.message || 'Error acusando Payment' });
+    }
+  }
+);
+
+// GET /api/branches/:branchId/sessions/active — mesas activas del branch con su
+// balance pendiente. Alimenta la sección "Mesas activas" de CajaShell (Sprint
+// 5.8) donde el cajero libera una mesa manualmente.
+router.get(
+  '/branches/:branchId/sessions/active',
+  authMiddleware.checkBranchPermission,
+  async (req, res) => {
+    try {
+      const branchId = parseInt(req.params.branchId, 10);
+      if (!Number.isFinite(branchId)) {
+        return res.status(400).json({ error: 'branchId inválido' });
+      }
+      const list = await sessionsService.listActiveSessionsForBranch(branchId);
+      res.json(list);
+    } catch (err) {
+      console.error('❌ GET /branches/:branchId/sessions/active:', err.message);
+      res.status(500).json({ error: 'Error listando mesas activas' });
+    }
+  }
+);
+
+// POST /api/tables/:tableId/release — liberación manual individual de una mesa
+// (Sprint 5.8). Cierra la sesión activa con motivo opcional + dispara VACATE.
+// Permiso: waiter/cashier/owner (waiter típicamente desde OpShell) + acceso al
+// branch de la mesa.
+router.post(
+  '/tables/:tableId/release',
+  authMiddleware.requireRole('waiter', 'cashier', 'owner'),
+  async (req, res) => {
+    try {
+      const tableId = parseInt(req.params.tableId, 10);
+      if (!Number.isFinite(tableId)) {
+        return res.status(400).json({ error: 'tableId inválido' });
+      }
+
+      const table = await Table.findByPk(tableId, { attributes: ['id', 'branchId'] });
+      if (!table) {
+        return res.status(404).json({ error: 'Mesa no encontrada' });
+      }
+      if (!req.user.isAdmin) {
+        const authService = require('../services/auth');
+        const hasAccess = await authService.hasPermission(req.user.id, 'branch', table.branchId);
+        if (!hasAccess) {
+          return res.status(403).json({ error: 'Sin acceso a este branch' });
+        }
+      }
+
+      const { releaseReason } = req.body || {};
+      const result = await sessionsService.releaseTable({
+        tableId,
+        userId: req.user.id,
+        releaseReason
+      });
+      res.json(result);
+    } catch (err) {
+      console.error('❌ POST /tables/:tableId/release:', err.message);
+      res.status(err.statusCode || 500).json({ error: err.message || 'Error liberando mesa' });
     }
   }
 );

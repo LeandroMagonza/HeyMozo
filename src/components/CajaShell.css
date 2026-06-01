@@ -59,13 +59,39 @@
   display: flex;
   align-items: center;
   gap: 0.625rem;
+  width: 100%;
   padding: 0.5625rem 0.75rem;
+  border: none;
+  background: transparent;
   border-radius: var(--rd-radius-md, 8px);
   color: var(--rd-text-quaternary, #94a3b8);
+  font-family: inherit;
   font-size: 0.875rem;
   font-weight: 500;
+  text-align: left;
   text-decoration: none;
+  cursor: pointer;
   transition: background 0.15s ease, color 0.15s ease;
+}
+
+.caja-shell__nav-badge {
+  margin-left: auto;
+  min-width: 20px;
+  padding: 0 0.375rem;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--rd-brand-green-cajero, #13eca7);
+  color: #04241a;
+  border-radius: 10px;
+  font-size: 0.6875rem;
+  font-weight: 800;
+}
+
+.caja-shell__nav-badge--muted {
+  background: rgba(148, 163, 184, 0.22);
+  color: var(--rd-text-secondary, #e4e2e4);
 }
 
 .caja-shell__nav-item:hover {
@@ -161,6 +187,10 @@
   top: 0;
   z-index: 10;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
 }
 
 .caja-shell__topnav-title {
@@ -171,34 +201,71 @@
   letter-spacing: -0.01em;
 }
 
+.caja-shell__countdown {
+  color: var(--rd-text-quaternary, #94a3b8);
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
 .caja-shell__content {
   flex: 1;
-  padding: 2rem 1.5rem;
+  padding: 1.5rem;
 }
 
-/* ===== Placeholder ===== */
+/* ===== Empty state ===== */
 
-.caja-shell__placeholder {
-  max-width: 480px;
-  padding: 2rem;
-  background: var(--rd-bg-cajero-panel, #1a1c29);
-  border: 1px solid var(--rd-border-cajero, #1e293b);
-  border-radius: var(--rd-radius-lg, 12px);
+.caja-shell__empty {
+  max-width: 460px;
+  margin: 3rem auto 0;
+  text-align: center;
 }
 
-.caja-shell__placeholder-title {
-  margin: 0 0 0.5rem;
+.caja-shell__empty-icon {
+  font-size: 2.25rem;
+  color: var(--rd-brand-green-cajero, #13eca7);
+  opacity: 0.7;
+  margin-bottom: 0.75rem;
+}
+
+.caja-shell__empty-title {
+  margin: 0 0 0.375rem;
   color: var(--rd-text, #ffffff);
-  font-size: 1.125rem;
+  font-size: 1.0625rem;
   font-weight: 700;
 }
 
-.caja-shell__placeholder-desc {
+.caja-shell__empty-desc,
+.caja-shell__empty-text {
   margin: 0;
   color: var(--rd-text-quaternary, #94a3b8);
   font-size: 0.875rem;
   line-height: 1.5;
 }
+
+/* ===== Acciones — feed ===== */
+
+.caja-shell__section {
+  margin-bottom: 1.75rem;
+}
+
+.caja-shell__section-title {
+  margin: 0 0 0.75rem;
+  color: var(--rd-text-quaternary, #94a3b8);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.caja-shell__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 0.875rem;
+}
+
+/* ===== Mesas activas ===== */
+/* La lista vive en el componente compartido ActiveTablesList (ActiveTablesList.css). */
 
 /* ===== Responsive ===== */
 

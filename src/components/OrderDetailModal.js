@@ -11,7 +11,7 @@ function formatWaitTime(createdAt) {
   return `${mins} min`;
 }
 
-const OrderDetailModal = ({ order, onClose, onReady, loading }) => {
+const OrderDetailModal = ({ order, onClose, onReady, onRelease, loading }) => {
   if (!order) return null;
 
   const tableName = order.table?.tableName ?? `Mesa ${order.tableId}`;
@@ -57,6 +57,15 @@ const OrderDetailModal = ({ order, onClose, onReady, loading }) => {
           >
             {loading ? 'Marcando…' : 'LISTO'}
           </button>
+          {onRelease && (
+            <button
+              className="order-modal__release-btn"
+              onClick={onRelease}
+              disabled={loading}
+            >
+              Liberar mesa
+            </button>
+          )}
         </div>
       </div>
     </div>
