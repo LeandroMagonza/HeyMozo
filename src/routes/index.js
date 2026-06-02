@@ -1550,4 +1550,36 @@ router.get(
   }
 );
 
+// ============================================================
+// Sprint 5.11 — Canje de voucher (mozo desde OpShell)
+// ============================================================
+
+// POST /api/branches/:branchId/vouchers/redeem — el mozo canjea el voucher de
+// un socio. Body: { code }. Valida el código, que pertenezca a este branch y
+// que no esté ya canjeado → marca redeemed + resetea member.visits = 0.
+// Permisos: rol waiter/cashier/owner + acceso al branch.
+//
+// QR-ready: el canje es por `code` y es agnóstico del medio de entrada. Un QR
+// a futuro codificaría el mismo `code` verbatim → este endpoint no cambia (el
+// escáner solo alimenta el code). Ver RedeemVoucherModal.redeemCode.
+router.post(
+  '/branches/:branchId/vouchers/redeem',
+  authMiddleware.requireRole('waiter', 'cashier', 'owner'),
+  authMiddleware.checkBranchPermission,
+  async (req, res) => {
+    try {
+      const branchId = parseInt(req.params.branchId, 10);
+      if (!Number.isFinite(branchId)) {
+        return res.status(400).json({ error: 'branchId inválido' });
+      }
+      const { code } = req.body || {};
+      const result = await clubService.redeemVoucher({ code, branchId, userId: req.user.id });
+      res.json(result);
+    } catch (err) {
+      console.error('❌ POST /branches/:branchId/vouchers/redeem:', err.message);
+      res.status(err.statusCode || 500).json({ error: err.message || 'Error canjeando el voucher' });
+    }
+  }
+);
+
 module.exports = router;

@@ -284,6 +284,45 @@
   color: var(--rd-text-secondary, #e4e2e4);
 }
 
+/* Voucher generado (Sprint 5.11) — código a mostrar al mozo */
+.pp-club__voucher {
+  margin-top: 0.85rem;
+  padding: 0.9rem 1rem;
+  border-radius: var(--rd-radius-md, 8px);
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  text-align: center;
+}
+
+.pp-club__voucher-label {
+  margin: 0 0 0.5rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #fbbf24;
+}
+
+.pp-club__voucher-code {
+  display: inline-block;
+  padding: 0.5rem 1.25rem;
+  background: #1a1205;
+  border-radius: var(--rd-radius-md, 8px);
+  color: #fbbf24;
+  font-family: var(--rd-font-mono, ui-monospace, "SFMono-Regular", Menlo, monospace);
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: 0.22em;
+  text-indent: 0.22em;
+}
+
+.pp-club__voucher-hint {
+  margin: 0.55rem 0 0;
+  font-size: 0.75rem;
+  color: var(--rd-text-tertiary, #a1a1a6);
+  line-height: 1.4;
+}
+
 /* Volver al inicio — botón ghost, única salida de la pantalla */
 .pp-back {
   width: 100%;

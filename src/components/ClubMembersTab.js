@@ -1,9 +1,14 @@
 // src/components/ClubMembersTab.js
 //
-// Tab "Club" de la CajaShell (Sprint 5.10). Lista los socios del Club VIP del
-// branch con filtros client-side (búsqueda por teléfono, días sin volver,
-// voucher alcanzado) y envío de WhatsApp — individual o masivo — vía links
-// `wa.me/...`.
+// Tab "Club" de la CajaShell (Sprint 5.10 + vouchers 5.11). Lista los socios del
+// Club VIP del branch con filtros client-side (búsqueda por teléfono, días sin
+// volver, voucher pendiente) y envío de WhatsApp — individual o masivo — vía
+// links `wa.me/...`.
+//
+// Sprint 5.11: los socios que alcanzaron el goal tienen un Voucher generado
+// (código + premio). Para esos socios el mensaje usa una plantilla distinta que
+// incluye el código de canje ({codigo}). El socio puede mostrar ese código al
+// mozo, o esperar a que HeyMozo lo detecte solo en su próxima visita.
 //
 // Sobre el "masivo": wa.me abre un chat por vez y los navegadores bloquean
 // abrir N pestañas en un solo gesto. Por eso el envío masivo es una COLA: al
@@ -12,13 +17,18 @@
 // El upgrade a envío server-side real (WhatsApp Business API) queda post-MVP.
 
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
-import { FaWhatsapp, FaCrown, FaSearch, FaSyncAlt } from 'react-icons/fa';
+import { FaWhatsapp, FaCrown, FaSearch, FaSyncAlt, FaGift } from 'react-icons/fa';
 import { getClubMembers } from '../services/api';
 import './ClubMembersTab.css';
 
 const DEFAULT_TEMPLATE =
   '¡Hola! 👋 En {sucursal} ya sumás {visitas} de {meta} visitas del Club. ' +
   '¡Te esperamos para tu {premio}! 🎉';
+
+// Plantilla para socios que ya tienen un voucher generado. Incluye el código.
+const DEFAULT_VOUCHER_TEMPLATE =
+  '¡Hola! 🎁 ¡Ganaste tu {premio} en {sucursal}! ' +
+  'Mostrá este código cuando vengas: {codigo}';
 
 const INACTIVE_OPTIONS = [
   { value: 0, label: 'Todos' },
@@ -43,17 +53,23 @@ function formatLastVisit(ts) {
 }
 
 // El teléfono se guarda ya normalizado a dígitos (club.js _normalizePhone).
-// Lo mostramos crudo; wa.me lo consume tal cual.
-function buildMessage(template, member, data) {
-  return template
+// Lo mostramos crudo; wa.me lo consume tal cual. Si el socio tiene un voucher
+// pendiente usamos la plantilla de voucher (con {codigo} + premio snapshot);
+// si no, la plantilla regular de progreso.
+function buildMessage(member, data, templates) {
+  const useVoucher = member.hasPendingVoucher;
+  const tpl = useVoucher ? templates.voucher : templates.regular;
+  const premio = (useVoucher ? member.voucherReward : data.reward) || 'premio';
+  return tpl
     .replace(/{sucursal}/g, data.branchName || 'nuestro local')
     .replace(/{visitas}/g, String(member.visits))
     .replace(/{meta}/g, data.goal != null ? String(data.goal) : '')
-    .replace(/{premio}/g, data.reward || 'premio');
+    .replace(/{premio}/g, premio)
+    .replace(/{codigo}/g, member.voucherCode || '');
 }
 
-function waLink(template, member, data) {
-  const text = encodeURIComponent(buildMessage(template, member, data));
+function waLink(member, data, templates) {
+  const text = encodeURIComponent(buildMessage(member, data, templates));
   return `https://wa.me/${member.phone}?text=${text}`;
 }
 
@@ -64,12 +80,18 @@ const ClubMembersTab = ({ branchId }) => {
 
   const [search, setSearch] = useState('');
   const [inactiveDays, setInactiveDays] = useState(0);
-  const [onlyReachedGoal, setOnlyReachedGoal] = useState(false);
+  const [onlyPendingVoucher, setOnlyPendingVoucher] = useState(false);
   const [template, setTemplate] = useState(DEFAULT_TEMPLATE);
+  const [voucherTemplate, setVoucherTemplate] = useState(DEFAULT_VOUCHER_TEMPLATE);
 
   // Cola de envío masivo: lista snapshot de los filtrados + índice del actual.
   const [waQueue, setWaQueue] = useState(null);
   const [waIndex, setWaIndex] = useState(0);
+
+  const templates = useMemo(
+    () => ({ regular: template, voucher: voucherTemplate }),
+    [template, voucherTemplate]
+  );
 
   const fetchMembers = useCallback(async () => {
     setLoading(true);
@@ -90,32 +112,36 @@ const ClubMembersTab = ({ branchId }) => {
   }, [fetchMembers]);
 
   const members = useMemo(() => data?.members || [], [data]);
+  const voucherCount = useMemo(
+    () => members.filter((m) => m.hasPendingVoucher).length,
+    [members]
+  );
 
   const filtered = useMemo(() => {
     const digits = search.replace(/[^\d]/g, '');
     return members.filter((m) => {
       if (digits && !m.phone.includes(digits)) return false;
-      if (onlyReachedGoal && !m.reachedGoal) return false;
+      if (onlyPendingVoucher && !m.hasPendingVoucher) return false;
       if (inactiveDays > 0 && daysSince(m.lastVisitAt) < inactiveDays) return false;
       return true;
     });
-  }, [members, search, inactiveDays, onlyReachedGoal]);
+  }, [members, search, inactiveDays, onlyPendingVoucher]);
 
   const startBulk = useCallback(() => {
     if (filtered.length === 0) return;
     setWaQueue(filtered);
     setWaIndex(0);
-    window.open(waLink(template, filtered[0], data), '_blank', 'noopener');
-  }, [filtered, template, data]);
+    window.open(waLink(filtered[0], data, templates), '_blank', 'noopener');
+  }, [filtered, data, templates]);
 
   const openNext = useCallback(() => {
     if (!waQueue) return;
     const next = waIndex + 1;
     if (next < waQueue.length) {
-      window.open(waLink(template, waQueue[next], data), '_blank', 'noopener');
+      window.open(waLink(waQueue[next], data, templates), '_blank', 'noopener');
       setWaIndex(next);
     }
-  }, [waQueue, waIndex, template, data]);
+  }, [waQueue, waIndex, data, templates]);
 
   const closeBulk = useCallback(() => {
     setWaQueue(null);
@@ -158,6 +184,9 @@ const ClubMembersTab = ({ branchId }) => {
 
   const bulkActive = waQueue !== null;
   const bulkDone = bulkActive && waIndex >= waQueue.length - 1;
+  // ¿Hay algún socio con voucher en el set filtrado? Si sí, mostramos la
+  // plantilla de voucher (sino solo la regular, para no saturar).
+  const filteredHasVoucher = filtered.some((m) => m.hasPendingVoucher);
 
   return (
     <div className="club-tab">
@@ -188,11 +217,12 @@ const ClubMembersTab = ({ branchId }) => {
           ))}
           <button
             type="button"
-            className={`club-tab__chip${onlyReachedGoal ? ' club-tab__chip--active' : ''}`}
-            onClick={() => setOnlyReachedGoal((v) => !v)}
-            title="Solo socios que alcanzaron el objetivo de visitas"
+            className={`club-tab__chip${onlyPendingVoucher ? ' club-tab__chip--active' : ''}`}
+            onClick={() => setOnlyPendingVoucher((v) => !v)}
+            title="Solo socios con un voucher pendiente de canjear"
           >
-            <FaCrown /> Voucher alcanzado
+            <FaGift /> Voucher pendiente
+            {voucherCount > 0 && <span className="club-tab__chip-count">{voucherCount}</span>}
           </button>
         </div>
       </div>
@@ -211,6 +241,23 @@ const ClubMembersTab = ({ branchId }) => {
           onChange={(e) => setTemplate(e.target.value)}
         />
       </div>
+
+      {filteredHasVoucher && (
+        <div className="club-tab__message club-tab__message--voucher">
+          <label className="club-tab__message-label">
+            <FaGift className="club-tab__message-gift" /> Mensaje para socios con voucher
+            <span className="club-tab__message-hint">
+              Variables: {'{sucursal}'} · {'{premio}'} · {'{codigo}'}
+            </span>
+          </label>
+          <textarea
+            className="club-tab__message-input"
+            rows={2}
+            value={voucherTemplate}
+            onChange={(e) => setVoucherTemplate(e.target.value)}
+          />
+        </div>
+      )}
 
       {/* Header del listado + acción masiva */}
       <div className="club-tab__list-header">
@@ -262,7 +309,13 @@ const ClubMembersTab = ({ branchId }) => {
               <div key={m.id} className="club-tab__row">
                 <div className="club-tab__row-main">
                   <span className="club-tab__phone">{m.phone}</span>
-                  <span className="club-tab__last">Última visita: {formatLastVisit(m.lastVisitAt)}</span>
+                  {m.hasPendingVoucher ? (
+                    <span className="club-tab__voucher-badge">
+                      <FaGift /> Premio listo · <strong>{m.voucherCode}</strong>
+                    </span>
+                  ) : (
+                    <span className="club-tab__last">Última visita: {formatLastVisit(m.lastVisitAt)}</span>
+                  )}
                 </div>
 
                 <div className="club-tab__progress">
@@ -280,7 +333,7 @@ const ClubMembersTab = ({ branchId }) => {
 
                 <a
                   className="club-tab__wa"
-                  href={waLink(template, m, data)}
+                  href={waLink(m, data, templates)}
                   target="_blank"
                   rel="noopener noreferrer"
                 >

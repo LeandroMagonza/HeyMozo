@@ -25,6 +25,7 @@ import PaymentMethodSheet from './PaymentMethodSheet';
 import WaiterOnTheWaySheet from './WaiterOnTheWaySheet';
 import OnlinePaymentSheet from './OnlinePaymentSheet';
 import MpPendingSheet from './MpPendingSheet';
+import VoucherBanner from './VoucherBanner';
 import usePendingPayment from '../hooks/usePendingPayment';
 import {
   getCompany,
@@ -33,6 +34,7 @@ import {
   getPublicMenu,
   sendEvent,
   getTableOrders,
+  getTableClubVoucher,
 } from '../services/api';
 import './UserScreen.css';
 
@@ -50,6 +52,9 @@ const UserScreen = () => {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [toast, setToast] = useState(null); // { label, color }
   const [pastOrders, setPastOrders] = useState([]);
+  // Sprint 5.11 — voucher pendiente detectado al escanear (por device).
+  const [voucher, setVoucher] = useState(null);
+  const [voucherDismissed, setVoucherDismissed] = useState(false);
   const [paySheetOpen, setPaySheetOpen] = useState(false);
   // Sheet de pago activo. cash/card → "mozo en camino"; transfer/modo →
   // OnlinePaymentSheet con alias + "ya transferí". Una sola flag — el
@@ -131,6 +136,18 @@ const UserScreen = () => {
         // /tables/:id/orders antes de que la cookie hm_device esté seteada,
         // devolviendo lista vacía aunque el cliente ya tenga pedidos.
         refreshPastOrders();
+
+        // Sprint 5.11 — detección "próxima visita": ¿este device tiene un
+        // voucher pendiente del Club en esta sucursal? Best-effort; va después
+        // del bootstrap por la misma razón que refreshPastOrders (cookie).
+        try {
+          const { data: voucherData } = await getTableClubVoucher(tableId);
+          if (voucherData && voucherData.voucher) {
+            setVoucher(voucherData.voucher);
+          }
+        } catch (_) {
+          /* best-effort, no rompe la pantalla */
+        }
       } catch (err) {
         console.error('Error loading data:', err);
       }
@@ -262,6 +279,13 @@ const UserScreen = () => {
             <p className="user-screen__branch">{branch.name}</p>
           )}
         </div>
+
+        {voucher && !voucherDismissed && (
+          <VoucherBanner
+            voucher={voucher}
+            onDismiss={() => setVoucherDismissed(true)}
+          />
+        )}
 
         <div className="user-screen__actions">
           <button

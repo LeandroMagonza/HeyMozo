@@ -1,0 +1,78 @@
+/* src/components/VoucherBanner.css — banner "próxima visita" (Sprint 5.11) */
+
+.voucher-banner {
+  position: relative;
+  width: 100%;
+  margin: 0 0 1.75rem;
+  padding: 1.5rem 1.25rem 1.25rem;
+  border-radius: var(--rd-radius-xl);
+  background: linear-gradient(145deg, #f59e0b 0%, #d97706 60%, #b45309 100%);
+  color: #1a1205;
+  text-align: center;
+  box-shadow: 0 10px 30px -8px rgba(245, 158, 11, 0.55);
+  animation: rd-fade-in 0.25s ease-out;
+}
+
+.voucher-banner__close {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.75rem;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: none;
+  background: rgba(0, 0, 0, 0.12);
+  border-radius: var(--rd-radius-full);
+  color: #1a1205;
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.voucher-banner__close:hover {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.voucher-banner__icon {
+  font-size: 2.5rem;
+  line-height: 1;
+}
+
+.voucher-banner__title {
+  margin: 0.5rem 0 0;
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.voucher-banner__reward {
+  margin: 0.15rem 0 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #3a2a08;
+}
+
+.voucher-banner__hint {
+  margin: 0.85rem 0 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #4a3608;
+}
+
+.voucher-banner__code {
+  display: inline-block;
+  padding: 0.6rem 1.4rem;
+  background: #1a1205;
+  color: #fbbf24;
+  border-radius: var(--rd-radius-lg, 0.75rem);
+  font-family: var(--rd-font-mono, ui-monospace, "SFMono-Regular", Menlo, monospace);
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: 0.25em;
+  /* el código no incluye 0/O/1/I/L, pero por las dudas lo mostramos en mono */
+  text-indent: 0.25em;
+}

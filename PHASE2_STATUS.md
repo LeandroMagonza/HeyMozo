@@ -2,7 +2,7 @@
 
 Tracker live de los sub-PRs de Fase 2. Una línea por sub-PR con commit, branch, PR# y estado.
 
-**Última actualización:** 2026-06-01 (5.10 #39 + hardening conteo Club #40 mergeados a master; nada en review; próximo 5.11)
+**Última actualización:** 2026-06-01 (5.11 Vouchers en review — PR #42, commit `beedffc`. Smoke servicio 21/21 + smoke visual + build OK. Cierra Sprint 5 al mergear.)
 
 > Cuando un PR se mergea, mover su sub-PR a "✅ Mergeado" abajo y actualizar el [PHASE2_PLAN.md](PHASE2_PLAN.md) si corresponde (cambiar 🚧 → ✅ para el sprint completo cuando todas las sub-PRs estén in).
 
@@ -10,7 +10,12 @@ Tracker live de los sub-PRs de Fase 2. Una línea por sub-PR con commit, branch,
 
 ## 🚧 En review / abiertos
 
-_Nada en review. Próximo: **5.11 (Vouchers)** — último de Sprint 5._
+**5.11 (Vouchers)** — [PR #42](https://github.com/LeandroMagonza/HeyMozo/pull/42), commit `beedffc`, branch `feature/phase2-club-voucher`. Último sub-PR de Sprint 5: al mergear, marcar Sprint 5 ✅ en PHASE2_PLAN.
+- Modelo `ClubMemberDevice` (link device↔member) + migración `20260602_add_club_member_device.js`.
+- `club.js`: generación automática de Voucher al alcanzar `clubGoal` (guard "1 voucher pendiente por member", no resetea visits hasta el canje), `getPendingVoucherForDevice`, `redeemVoucher` (valida branch + ya-canjeado → reset visits a 0), voucher pendiente en `listMembersForBranch` y `getClubStatusForSession`.
+- Rutas: `club-join` ahora pasa `deviceId`; `GET /tables/:id/club-voucher` (público, best-effort, 200 `{voucher:null}` sin cookie); `POST /branches/:id/vouchers/redeem` (requireRole waiter/cashier/owner + checkBranchPermission).
+- Frontend: `VoucherBanner` en UserScreen (detección "próxima visita" al escanear), `RedeemVoucherModal` + botón "Canjear voucher" en OpShell, `ClubMembersTab` con badge 🎁 + template `{codigo}` + filtro "Voucher pendiente", celebración del código en PagoConfirmadoPage.
+- Smoke de servicio 21/21 (generación al goal, no-duplicación, detección por device + aislamiento de comensal/otra sucursal, listado, canje, doble-canje 409, código inválido 404, post-canje sin voucher). Build CRA OK (mis archivos sin warnings).
 
 > Aparte de Fase 2: **#36** (`fix/mp-webhook-verification`) sigue abierta — fix de robustez del webhook MP, ortogonal al Club. Requiere smoke MP propio antes de mergear (ver [SPRINT_5_6_PROD_CHECKLIST.md]).
 
@@ -18,9 +23,9 @@ _Nada en review. Próximo: **5.11 (Vouchers)** — último de Sprint 5._
 
 ## 📝 Pendientes (próximos)
 
-_(Sprint 4 cerrado. Sprint 5.1–5.10 mergeados + hardening conteo Club (#40). Sprint 5 en curso — diseño cerrado 2026-05-24, ver [PHASE2_PLAN.md](PHASE2_PLAN.md) §Sprint 5)._
+_(Sprint 4 cerrado. Sprint 5.1–5.10 mergeados + hardening conteo Club (#40). **Sprint 5.11 implementado** (en review/pendiente PR). Al mergear 5.11 → Sprint 5 completo. Diseño cerrado 2026-05-24, ver [PHASE2_PLAN.md](PHASE2_PLAN.md) §Sprint 5)._
 
-Próximos sub-PRs Sprint 5: ~~5.8~~ ~~5.9~~ ~~5.10~~ → **5.11 (Vouchers)** — último de Sprint 5. Al mergear, marcar Sprint 5 ✅ en PHASE2_PLAN. **5.11**: generación automática de Voucher al alcanzar goal + entrega "próxima visita" (detección al escanear QR + UI UserScreen) + entrega WhatsApp manual desde tab Club + botón "Canjear voucher" en OpShell mozo (valida código → marca redeemed + reset visits a 0). Se apoya en el conteo ya endurecido por #40.
+Sub-PRs Sprint 5: ~~5.8~~ ~~5.9~~ ~~5.10~~ ~~5.11~~ → todos los sub-PRs in (5.11 pendiente de merge). **Próximo macro: cerrar Sprint 5 y arrancar Sprint 6** (casos edge de liberación: zombi vs caliente, modal "soy otra persona", transferencias mesa-a-mesa, auto-close por inactividad) — ver PHASE2_PLAN.
 
 **Tarea operacional pendiente (MP nativo, pre-deploy):** el smoke 5.6 confirmó que los webhooks reales de MP dan `SignatureMismatch` cuando hay **múltiples webhooks configurados en el panel MP devs** (se acumularon al rotar ngrok en dev). Antes de prod: dejar UN solo webhook y sincronizar su Clave Secreta con `MP_WEBHOOK_SECRET`. El código de validación de firma está OK (validado crafteando un webhook firmado). Ver `SPRINT_5_6_PROD_CHECKLIST.md`.
 

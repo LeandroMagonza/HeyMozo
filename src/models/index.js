@@ -27,6 +27,7 @@ const reviewTagAssignmentFactory = require('./ReviewTagAssignment');
 const clubMemberFactory = require('./ClubMember');
 const clubVisitFactory = require('./ClubVisit');
 const voucherFactory = require('./Voucher');
+const clubMemberDeviceFactory = require('./ClubMemberDevice');
 
 // Initialize new models
 const EventType = eventTypeFactory(sequelize);
@@ -44,6 +45,7 @@ const ReviewTagAssignment = reviewTagAssignmentFactory(sequelize);
 const ClubMember = clubMemberFactory(sequelize);
 const ClubVisit = clubVisitFactory(sequelize);
 const Voucher = voucherFactory(sequelize);
+const ClubMemberDevice = clubMemberDeviceFactory(sequelize);
 
 // Set up new model associations
 const models = {
@@ -51,7 +53,7 @@ const models = {
   EventType, EventConfiguration, Category, MenuItem,
   Device, TableSession, TableSessionDevice, Order, OrderItem,
   Payment, Review, ReviewTag, ReviewTagAssignment,
-  ClubMember, ClubVisit, Voucher
+  ClubMember, ClubVisit, Voucher, ClubMemberDevice
 };
 Object.keys(models).forEach(modelName => {
   if (models[modelName].associate) {
@@ -100,6 +102,10 @@ TableSession.hasMany(Review, { foreignKey: 'tableSessionId', as: 'reviews' });
 Branch.hasMany(ReviewTag, { foreignKey: 'branchId', as: 'reviewTags' });
 Branch.hasMany(ClubMember, { foreignKey: 'branchId', as: 'clubMembers' });
 
+// Sprint 5.11: link device ↔ member para detección de voucher al escanear.
+ClubMember.hasMany(ClubMemberDevice, { foreignKey: 'clubMemberId', as: 'deviceLinks' });
+Device.hasMany(ClubMemberDevice, { foreignKey: 'deviceId', as: 'clubLinks' });
+
 module.exports = {
   User,
   Permission,
@@ -124,5 +130,6 @@ module.exports = {
   ReviewTagAssignment,
   ClubMember,
   ClubVisit,
-  Voucher
+  Voucher,
+  ClubMemberDevice
 };
