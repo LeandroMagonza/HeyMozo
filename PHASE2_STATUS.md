@@ -2,7 +2,7 @@
 
 Tracker live de los sub-PRs de Fase 2. Una línea por sub-PR con commit, branch, PR# y estado.
 
-**Última actualización:** 2026-06-01 (5.11 Vouchers en review — PR #42, commit `beedffc`. Smoke servicio 21/21 + smoke visual + build OK. Cierra Sprint 5 al mergear.)
+**Última actualización:** 2026-06-01 (5.11 Vouchers mergeado — PR #42, squash `495dc9d`. **Sprint 5 COMPLETO** (5.1→5.11 + hardening). Sprint 4 y 5 marcados ✅ en PHASE2_PLAN. Próximo: Sprint 6.)
 
 > Cuando un PR se mergea, mover su sub-PR a "✅ Mergeado" abajo y actualizar el [PHASE2_PLAN.md](PHASE2_PLAN.md) si corresponde (cambiar 🚧 → ✅ para el sprint completo cuando todas las sub-PRs estén in).
 
@@ -10,12 +10,7 @@ Tracker live de los sub-PRs de Fase 2. Una línea por sub-PR con commit, branch,
 
 ## 🚧 En review / abiertos
 
-**5.11 (Vouchers)** — [PR #42](https://github.com/LeandroMagonza/HeyMozo/pull/42), commit `beedffc`, branch `feature/phase2-club-voucher`. Último sub-PR de Sprint 5: al mergear, marcar Sprint 5 ✅ en PHASE2_PLAN.
-- Modelo `ClubMemberDevice` (link device↔member) + migración `20260602_add_club_member_device.js`.
-- `club.js`: generación automática de Voucher al alcanzar `clubGoal` (guard "1 voucher pendiente por member", no resetea visits hasta el canje), `getPendingVoucherForDevice`, `redeemVoucher` (valida branch + ya-canjeado → reset visits a 0), voucher pendiente en `listMembersForBranch` y `getClubStatusForSession`.
-- Rutas: `club-join` ahora pasa `deviceId`; `GET /tables/:id/club-voucher` (público, best-effort, 200 `{voucher:null}` sin cookie); `POST /branches/:id/vouchers/redeem` (requireRole waiter/cashier/owner + checkBranchPermission).
-- Frontend: `VoucherBanner` en UserScreen (detección "próxima visita" al escanear), `RedeemVoucherModal` + botón "Canjear voucher" en OpShell, `ClubMembersTab` con badge 🎁 + template `{codigo}` + filtro "Voucher pendiente", celebración del código en PagoConfirmadoPage.
-- Smoke de servicio 21/21 (generación al goal, no-duplicación, detección por device + aislamiento de comensal/otra sucursal, listado, canje, doble-canje 409, código inválido 404, post-canje sin voucher). Build CRA OK (mis archivos sin warnings).
+_Nada de Fase 2 en review. **Sprint 5 cerrado** (5.1→5.11 + hardening). Próximo: Sprint 6._
 
 > Aparte de Fase 2: **#36** (`fix/mp-webhook-verification`) sigue abierta — fix de robustez del webhook MP, ortogonal al Club. Requiere smoke MP propio antes de mergear (ver [SPRINT_5_6_PROD_CHECKLIST.md]).
 
@@ -23,9 +18,9 @@ Tracker live de los sub-PRs de Fase 2. Una línea por sub-PR con commit, branch,
 
 ## 📝 Pendientes (próximos)
 
-_(Sprint 4 cerrado. Sprint 5.1–5.10 mergeados + hardening conteo Club (#40). **Sprint 5.11 implementado** (en review/pendiente PR). Al mergear 5.11 → Sprint 5 completo. Diseño cerrado 2026-05-24, ver [PHASE2_PLAN.md](PHASE2_PLAN.md) §Sprint 5)._
+_(Sprints 1–5 completos y mergeados a master. **Próximo: Sprint 6** — diseño aún no abierto, ver [PHASE2_PLAN.md](PHASE2_PLAN.md) §tabla de sprints fila 6)._
 
-Sub-PRs Sprint 5: ~~5.8~~ ~~5.9~~ ~~5.10~~ ~~5.11~~ → todos los sub-PRs in (5.11 pendiente de merge). **Próximo macro: cerrar Sprint 5 y arrancar Sprint 6** (casos edge de liberación: zombi vs caliente, modal "soy otra persona", transferencias mesa-a-mesa, auto-close por inactividad) — ver PHASE2_PLAN.
+**Sprint 6 (próxima sesión)** — Trust + hard limits + transferencias mesa + casos edge de liberación: trust dot, hard limits enforcement, transferencia cliente-iniciada y mozo-iniciada, modal "soy otra persona" con clasificación zombi vs caliente, aprobación transitiva, auto-close por inactividad >30min + tope absoluto. **Diseño a cerrar al arrancar** (ver Sprint 5 §"Casos edge complejos van en Sprint 6").
 
 **Tarea operacional pendiente (MP nativo, pre-deploy):** el smoke 5.6 confirmó que los webhooks reales de MP dan `SignatureMismatch` cuando hay **múltiples webhooks configurados en el panel MP devs** (se acumularon al rotar ngrok en dev). Antes de prod: dejar UN solo webhook y sincronizar su Clave Secreta con `MP_WEBHOOK_SECRET`. El código de validación de firma está OK (validado crafteando un webhook firmado). Ver `SPRINT_5_6_PROD_CHECKLIST.md`.
 
@@ -66,6 +61,7 @@ Sub-PRs Sprint 5: ~~5.8~~ ~~5.9~~ ~~5.10~~ ~~5.11~~ → todos los sub-PRs in (5.
 | 5.9 | `feature/phase2-postpago-review` | `b81c144` | [#38](https://github.com/LeandroMagonza/HeyMozo/pull/38) | feat(payments): PostPagoPage reescrito (stars → tags negativos ≤3 → submit + Google Maps siempre + card Club VIP). `reviews.js` (getPostpagoContext/submitReview/markReviewDerivedToGoogle) + `club.js` (joinClub con loyalty acceleration + getClubStatusForSession). Rutas públicas en `customerSessions.js`. Sticky redirect a PostPago vía flag localStorage `hm_postpago_<c>_<b>_<t>`; botón "← Volver al inicio" como único exit. Mergeado tras resolver conflictos con 5.8 (`api.js` + `PHASE2_STATUS.md`, ambos aditivos). |
 | 5.10 | `feature/phase2-club-cajashell` | `5660429` | [#39](https://github.com/LeandroMagonza/HeyMozo/pull/39) | feat(club): tab **Club VIP** en CajaShell. `club.listMembersForBranch` + `GET /branches/:id/club/members` (`checkBranchPermission`). `ClubMembersTab`: búsqueda por teléfono, chips inactividad (+7/+14/+30d) + toggle "Voucher alcanzado", barra progreso, mensaje WhatsApp editable (vars sucursal/visitas/meta/premio), envío individual + masivo como cola (`wa.me`, "Abrir siguiente" respeta popup-blocker). Smoke servicio 12/12 + prueba visual OK. |
 | 5.10-hard | `feature/phase2-club-visit-integrity` | `6c230eb` | [#40](https://github.com/LeandroMagonza/HeyMozo/pull/40) | feat(club): integridad del conteo de visitas. `joinClub` ahora: (2) gate **pago paid** (409 si no), (3) **cooldown por member** `Branch.clubVisitCooldownHours` (default 12h) — no suma dentro de la ventana, registra `ClubVisit` visitsAdded=0 sin mover visits/lastVisitAt, devuelve `cooldownActive`. Migration `20260601_add_club_visit_cooldown` (idempotente). Copy cooldown en PagoConfirmadoPage + input en config Club. Captura sigue solo-teléfono (extensible a email post-MVP). Smoke servicio 9/9. |
+| 5.11 | `feature/phase2-club-voucher` | `495dc9d` | [#42](https://github.com/LeandroMagonza/HeyMozo/pull/42) | feat(club): **Vouchers — cierra Sprint 5**. Modelo `ClubMemberDevice` (link device↔member) + migración `20260602` (idempotente). `club.js`: generación automática de `Voucher` al alcanzar `clubGoal` (guard "1 pendiente por member", visits se resetea solo al canjear), `getPendingVoucherForDevice` (detección por device + branch), `redeemVoucher` (valida branch + ya-canjeado → reset visits a 0), voucher pendiente en `listMembersForBranch`/`getClubStatusForSession`. Rutas: `club-join` pasa `deviceId`; `GET /tables/:id/club-voucher` (público, best-effort); `POST /branches/:id/vouchers/redeem` (requireRole + checkBranchPermission). Front: `VoucherBanner` en UserScreen (detección "próxima visita" al escanear), `RedeemVoucherModal`+botón en OpShell, `ClubMembersTab` con badge 🎁/template `{codigo}`/filtro, código celebrado en PagoConfirmado. **Canje QR-ready** (código = token canónico; seam en `redeemCode` + comentado en VoucherBanner; QR diferido, ver [[project-future-features]]). Smoke servicio 21/21 + smoke visual (UserScreen/CajaShell/OpShell canje E2E). |
 
 ---
 
